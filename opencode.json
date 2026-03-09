@@ -1,0 +1,38 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "copilot/claude-opus-4-6",
+  "small_model": "copilot/gemini-3.0-flash",
+  "instructions": ["AGENTS.md", "00_OPENCODE_SPEC.md"],
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true,
+      "timeout": 15000,
+      "headers": {
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+      }
+    },
+    "supabase": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?project_ref=wzyyozqfcuqnznfvqfzc&read_only=true&features=database,docs,development,debugging",
+      "enabled": true,
+      "timeout": 15000
+    }
+  },
+  "tools": {
+    "supabase_*": true,
+    "context7_*": true
+  },
+  "formatter": {
+    "prettier": {
+      "command": ["npx", "prettier", "--write", "$FILE"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx", ".json", ".md", ".css"]
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true
+  },
+  "autoupdate": true
+}

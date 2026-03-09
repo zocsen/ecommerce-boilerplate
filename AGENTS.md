@@ -38,3 +38,4 @@ You are an Elite Principal Next.js Engineer and High-End UI Designer. Your goal 
 - Use `supabase` MCP for Supabase docs, schema inspection, project diagnostics, and safe non-production investigation.
 - Treat Supabase MCP as development-only infrastructure. Prefer read-only access unless a task explicitly requires controlled writes.
 - Keep reusable OpenCode skills in `.opencode/skills/` so they are discovered reliably at the project root.
+- Consider using skills for each request if makes sense.

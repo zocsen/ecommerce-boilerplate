@@ -60,8 +60,10 @@ Create `/lib/config/site.config.ts` which exports a typed config object:
   - barion: environment (test/prod), posKey env var name, payee, redirectUrls
 - shipping:
   - methods enabled: homeDelivery, pickupPoint
+  - homeDelivery carriers: GLS, MPL, Express One
+  - pickupPoint carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox
   - rules: baseFee, freeOver, weightTiers (optional)
-  - pickupPoints: foxpostEnabled (optional hook)
+  - pickupPoints: provider toggles + selector integration hooks
 - invoicing:
   - provider: "billingo" | "szamlazz" | "none"
   - mode: "auto_on_paid" | "manual"
@@ -164,6 +166,10 @@ Create SQL migration(s) under `/supabase/migrations/001_init.sql`. Must include:
 - coupon_code text null
 - shipping_method text not null default 'home'
 - shipping_address jsonb not null default '{}'
+- shipping_phone text null
+- pickup_point_provider text null
+- pickup_point_id text null
+- pickup_point_label text null
 - billing_address jsonb not null default '{}'
 - notes text null
 - barion_payment_id text null
@@ -174,6 +180,13 @@ Create SQL migration(s) under `/supabase/migrations/001_init.sql`. Must include:
 - invoice_url text null
 - created_at, updated_at, paid_at, shipped_at
 - idempotency_key text unique null (for safe retries)
+
+Notes:
+
+- For `homeDelivery`, `shipping_address` must contain street, city, zip code, and validated Hungarian phone number.
+- For `pickupPoint`, home street address is not required; store the selected `pickup_point_id`, provider, display label, and the user's phone/email.
+- `billing_address` is always required for invoicing. By default it should mirror the delivery address via a checked checkbox, but the customer must be able to provide a different invoice address.
+- If the order uses `pickupPoint`, invoicing still requires full `billing_address` details even though no home delivery address is collected.
 
 8. order_items
 
@@ -268,10 +281,15 @@ Use route groups: `(shop)`, `(auth)`, `(admin)`.
 
 - Purpose: convert sale
 - Requirements:
-  - Multi-step form (client):
-    - Step 1: contact (email, phone), billing/shipping address
-    - Step 2: shipping method select; if pickupPoint chosen and foxpost enabled, allow pickup point selector UI (can be stubbed with hook + interface)
-    - Step 3: review and pay
+- Multi-step form (client):
+  - Step 1: contact (email, phone), billing/shipping address
+    - Billing/invoice address should default to the delivery address via a checked `same as delivery` checkbox
+    - User must be able to uncheck it and enter a separate invoice address
+    - If `pickupPoint` is chosen later, invoice address is still mandatory even though home delivery address is not
+  - Step 2: shipping method select with two distinct UX paths, not a flat courier list:
+    - `Házhozszállítás` (Home Delivery): choose GLS, MPL, or Express One; require street, city, zip code, and phone number with `+36` Hungarian validation
+    - `Csomagautomata / Átvételi pont` (Parcel Locker / Pickup Point): choose Foxpost, GLS Automata, Packeta, MPL Automata, or Easybox; show map or dropdown API integration to select a locker/pickup point; do not require home delivery address, only selected `locker_id` plus user phone/email, but still require invoice address details
+  - Step 3: review and pay
   - On submit:
     - Server action validates cart against DB (price, active, stock)
     - Creates order + order_items snapshots
@@ -410,6 +428,7 @@ Agency viewer must see dashboards but cannot mutate.
 - CheckoutStepper
 - AddressForm
 - ShippingMethodSelector
+- HomeDeliveryForm
 - PickupPointSelector interface component
 - OrderSummary panel
 
@@ -491,7 +510,12 @@ Also create `/lib/security/*`:
 ### Shipping
 
 - Implement flexible fee rules
-- Pickup point selection interface + storage to order.shipping_address or dedicated field
+- Checkout UX must branch into `Házhozszállítás` and `Csomagautomata / Átvételi pont`
+- Home delivery carriers: GLS, MPL, Express One
+- Pickup point carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox
+- Pickup point selection requires map or provider dropdown integration hooks
+- For pickup points, do not collect or require home street address; persist locker/provider selection plus customer phone/email
+- Invoicing must always collect `billing_address`; support a checked-by-default `same as delivery` toggle and allow override with a separate invoice address
 
 ## SEO & Performance (must implement)
 

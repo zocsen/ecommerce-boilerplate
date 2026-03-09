@@ -7,7 +7,7 @@ import { updateSession } from "@/lib/supabase/middleware"
  * 2. Protects /admin routes (requires admin or agency_viewer role)
  * 3. Protects /account routes (requires authentication)
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Refresh Supabase session (sets/refreshes cookies)
   const response = await updateSession(request)
 

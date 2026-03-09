@@ -1,0 +1,191 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdminOrViewer } from "@/lib/security/roles";
+import { formatHUF, formatDate } from "@/lib/utils/format";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+
+/* ------------------------------------------------------------------ */
+/*  Admin Dashboard — "God view" KPIs                                  */
+/* ------------------------------------------------------------------ */
+
+interface KpiData {
+  revenue30d: number;
+  orders30d: number;
+  aov: number;
+  lowStockVariants: number;
+  recentPaidOrders: Array<{
+    id: string;
+    email: string;
+    total_amount: number;
+    created_at: string;
+    status: string;
+  }>;
+}
+
+async function getDashboardData(): Promise<KpiData> {
+  const admin = createAdminClient();
+  const thirtyDaysAgo = new Date(
+    Date.now() - 30 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  const [ordersResult, lowStockResult, recentResult] = await Promise.all([
+    // Orders in last 30 days that are paid or beyond
+    admin
+      .from("orders")
+      .select("total_amount, status")
+      .gte("created_at", thirtyDaysAgo)
+      .in("status", ["paid", "processing", "shipped"]),
+
+    // Variants with low stock (< 5 and active)
+    admin
+      .from("product_variants")
+      .select("id", { count: "exact" })
+      .eq("is_active", true)
+      .lt("stock_quantity", 5),
+
+    // Recent paid orders
+    admin
+      .from("orders")
+      .select("id, email, total_amount, created_at, status")
+      .in("status", ["paid", "processing", "shipped"])
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  const orders = ordersResult.data ?? [];
+  const revenue30d = orders.reduce((sum, o) => sum + o.total_amount, 0);
+  const orders30d = orders.length;
+  const aov = orders30d > 0 ? Math.round(revenue30d / orders30d) : 0;
+  const lowStockVariants = lowStockResult.count ?? 0;
+
+  return {
+    revenue30d,
+    orders30d,
+    aov,
+    lowStockVariants,
+    recentPaidOrders: recentResult.data ?? [],
+  };
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    draft: { label: "Piszkozat", variant: "outline" },
+    awaiting_payment: { label: "Fizetésre vár", variant: "secondary" },
+    paid: { label: "Fizetve", variant: "default" },
+    processing: { label: "Feldolgozás", variant: "default" },
+    shipped: { label: "Kiszállítva", variant: "secondary" },
+    cancelled: { label: "Törölve", variant: "destructive" },
+    refunded: { label: "Visszatérítve", variant: "destructive" },
+  };
+
+  const entry = map[status] ?? { label: status, variant: "outline" as const };
+  return <Badge variant={entry.variant}>{entry.label}</Badge>;
+}
+
+export default async function AdminDashboardPage() {
+  await requireAdminOrViewer();
+  const data = await getDashboardData();
+
+  return (
+    <div className="space-y-8">
+      {/* Page heading */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Áttekintés az elmúlt 30 napról
+        </p>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader>
+            <CardDescription>Bevétel (30 nap)</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {formatHUF(data.revenue30d)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardDescription>Rendelések (30 nap)</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {data.orders30d}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardDescription>Átlagos rendelési érték</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {formatHUF(data.aov)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardDescription>Alacsony készlet</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {data.lowStockVariants}
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
+                változat
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* Recent orders */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Legutóbbi fizetett rendelések</CardTitle>
+          <CardDescription>
+            Az utolsó 5 kifizetett rendelés
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {data.recentPaidOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nincsenek rendelések.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {data.recentPaidOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/admin/orders/${order.id}`}
+                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors duration-300 hover:bg-muted/50"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">
+                      {order.id.slice(0, 8).toUpperCase()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {order.email} &middot; {formatDate(order.created_at)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={order.status} />
+                    <span className="text-sm font-medium tabular-nums">
+                      {formatHUF(order.total_amount)}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

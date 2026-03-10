@@ -57,8 +57,8 @@ import { Separator } from "@/components/ui/separator";
 // ── Constants ──────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: 1, label: "Kapcsolat es szamlazas", icon: User },
-  { id: 2, label: "Szallitas", icon: Truck },
+  { id: 1, label: "Szallitas", icon: Truck },
+  { id: 2, label: "Kapcsolat es szamlazas", icon: User },
   { id: 3, label: "Osszegzes es fizetes", icon: CreditCard },
 ] as const;
 
@@ -102,7 +102,14 @@ const addressSchema = z.object({
 });
 
 const checkoutFormSchema = z.object({
-  // Step 1
+  // Step 1 — Shipping
+  shippingMethod: z.enum(["home", "pickup"]),
+  carrier: z.string().optional(),
+  pickupPointProvider: z.string().optional(),
+  pickupPointId: z.string().optional(),
+  pickupPointLabel: z.string().optional(),
+
+  // Step 2 — Contact & Billing
   email: z.string().email("Ervenytelen e-mail cim"),
   phone: z
     .string()
@@ -111,14 +118,7 @@ const checkoutFormSchema = z.object({
   sameAsBilling: z.boolean(),
   shippingAddressOverride: addressSchema.optional(),
 
-  // Step 2
-  shippingMethod: z.enum(["home", "pickup"]),
-  carrier: z.string().optional(),
-  pickupPointProvider: z.string().optional(),
-  pickupPointId: z.string().optional(),
-  pickupPointLabel: z.string().optional(),
-
-  // Step 3
+  // Step 3 — Review & Pay
   notes: z.string().optional(),
   termsAccepted: z.boolean(),
 });
@@ -208,11 +208,6 @@ export default function CheckoutPage() {
         let fieldsToValidate: (keyof CheckoutFormValues)[] = [];
 
         if (currentStep === 1) {
-          fieldsToValidate = ["email", "phone", "billingAddress"];
-          if (!sameAsBilling) {
-            fieldsToValidate.push("shippingAddressOverride");
-          }
-        } else if (currentStep === 2) {
           fieldsToValidate = ["shippingMethod"];
           if (shippingMethod === "home") {
             fieldsToValidate.push("carrier");
@@ -222,6 +217,19 @@ export default function CheckoutPage() {
               "pickupPointId",
               "pickupPointLabel",
             );
+          }
+        } else if (currentStep === 2) {
+          fieldsToValidate = ["email", "phone"];
+          if (shippingMethod === "pickup") {
+            // Pickup: only billing address required
+            fieldsToValidate.push("billingAddress");
+          } else {
+            // Home delivery: shipping address is the primary address
+            fieldsToValidate.push("shippingAddressOverride");
+            if (!sameAsBilling) {
+              // Separate billing address was provided
+              fieldsToValidate.push("billingAddress");
+            }
           }
         }
 
@@ -253,12 +261,18 @@ export default function CheckoutPage() {
 
       try {
         // Build CheckoutFormData for the server action
+        // Home delivery: shippingAddressOverride is the primary address;
+        //   billing copies from it when sameAsBilling is checked.
+        // Pickup: no home address needed; billing is entered directly.
         const shippingAddress =
           data.shippingMethod === "home"
-            ? data.sameAsBilling
-              ? data.billingAddress
-              : data.shippingAddressOverride ?? data.billingAddress
+            ? data.shippingAddressOverride ?? data.billingAddress
             : { name: "", street: "", city: "", zip: "", country: "HU" };
+
+        const resolvedBillingAddress =
+          data.shippingMethod === "home" && data.sameAsBilling
+            ? data.shippingAddressOverride ?? data.billingAddress
+            : data.billingAddress;
 
         const checkoutData: CheckoutFormData = {
           email: data.email,
@@ -269,8 +283,8 @@ export default function CheckoutPage() {
             country: shippingAddress.country === "Magyarorszag" ? "HU" : shippingAddress.country,
           },
           billingAddress: {
-            ...data.billingAddress,
-            country: data.billingAddress.country === "Magyarorszag" ? "HU" : data.billingAddress.country,
+            ...resolvedBillingAddress,
+            country: resolvedBillingAddress.country === "Magyarorszag" ? "HU" : resolvedBillingAddress.country,
           },
           sameAsBilling: data.sameAsBilling,
           pickupPointProvider:
@@ -418,121 +432,8 @@ export default function CheckoutPage() {
         <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
           {/* ── Left: Form steps ───────────────────────── */}
           <div>
-            {/* ── STEP 1: Contact & Billing ────────────── */}
+            {/* ── STEP 1: Shipping ─────────────────────── */}
             {currentStep === 1 && (
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                    Kapcsolat
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Adja meg elerhettosegi adatait a rendeleshez.
-                  </p>
-
-                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <FormField
-                      label="E-mail cim"
-                      error={errors.email?.message}
-                      icon={<Mail className="size-4" />}
-                    >
-                      <Input
-                        type="email"
-                        placeholder="pelda@email.hu"
-                        {...register("email")}
-                        aria-invalid={!!errors.email}
-                      />
-                    </FormField>
-
-                    <FormField
-                      label="Telefonszam"
-                      error={errors.phone?.message}
-                      icon={<Phone className="size-4" />}
-                    >
-                      <Input
-                        type="tel"
-                        placeholder="+36 30 123 4567"
-                        {...register("phone")}
-                        aria-invalid={!!errors.phone}
-                      />
-                    </FormField>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* ── Billing address ──────────────────── */}
-                <div>
-                  <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                    Szamlazasi cim
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    A szamla erre a cimre kerul kiallitasra.
-                  </p>
-
-                  <AddressFields
-                    prefix="billingAddress"
-                    register={register}
-                    errors={errors.billingAddress as Record<string, { message?: string }> | undefined}
-                  />
-                </div>
-
-                <Separator />
-
-                {/* ── Same as billing checkbox ──────────── */}
-                <div>
-                  <Controller
-                    name="sameAsBilling"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) =>
-                            field.onChange(checked === true)
-                          }
-                        />
-                        <Label className="cursor-pointer text-sm">
-                          Szallitasi cim megegyezik a szamlazasi cimmel
-                        </Label>
-                      </div>
-                    )}
-                  />
-
-                  {/* ── Separate shipping address ──────── */}
-                  {!sameAsBilling && (
-                    <div className="mt-6">
-                      <h3 className="text-base font-medium">Szallitasi cim</h3>
-                      <AddressFields
-                        prefix="shippingAddressOverride"
-                        register={register}
-                        errors={errors.shippingAddressOverride as Record<string, { message?: string }> | undefined}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between pt-4">
-                  <Link
-                    href="/cart"
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
-                  >
-                    <ArrowLeft className="size-3.5" />
-                    Vissza a kosarhoz
-                  </Link>
-                  <Button
-                    type="button"
-                    size="lg"
-                    onClick={() => void goToStep(2)}
-                  >
-                    Tovabb
-                    <ArrowRight className="ml-1.5 size-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* ── STEP 2: Shipping ─────────────────────── */}
-            {currentStep === 2 && (
               <div className="space-y-8">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.02em]">
@@ -758,6 +659,139 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="flex items-center justify-between pt-4">
+                  <Link
+                    href="/cart"
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                  >
+                    <ArrowLeft className="size-3.5" />
+                    Vissza a kosarhoz
+                  </Link>
+                  <Button
+                    type="button"
+                    size="lg"
+                    onClick={() => void goToStep(2)}
+                  >
+                    Tovabb
+                    <ArrowRight className="ml-1.5 size-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 2: Contact & Billing ────────────── */}
+            {currentStep === 2 && (
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                    Kapcsolat
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Adja meg elerhettosegi adatait a rendeleshez.
+                  </p>
+
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      label="E-mail cim"
+                      error={errors.email?.message}
+                      icon={<Mail className="size-4" />}
+                    >
+                      <Input
+                        type="email"
+                        placeholder="pelda@email.hu"
+                        {...register("email")}
+                        aria-invalid={!!errors.email}
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Telefonszam"
+                      error={errors.phone?.message}
+                      icon={<Phone className="size-4" />}
+                    >
+                      <Input
+                        type="tel"
+                        placeholder="+36 30 123 4567"
+                        {...register("phone")}
+                        aria-invalid={!!errors.phone}
+                      />
+                    </FormField>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* ── Address section — depends on shipping method ── */}
+                {shippingMethod === "pickup" ? (
+                  /* ── Pickup: only billing/invoice address ────── */
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                      Szamlazasi cim
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      A szamla erre a cimre kerul kiallitasra.
+                    </p>
+
+                    <AddressFields
+                      prefix="billingAddress"
+                      register={register}
+                      errors={errors.billingAddress as Record<string, { message?: string }> | undefined}
+                    />
+                  </div>
+                ) : (
+                  /* ── Home delivery: shipping address first, then optional separate billing ── */
+                  <>
+                    <div>
+                      <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                        Szallitasi cim
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        A csomag erre a cimre kerul kiszallitasra.
+                      </p>
+
+                      <AddressFields
+                        prefix="shippingAddressOverride"
+                        register={register}
+                        errors={errors.shippingAddressOverride as Record<string, { message?: string }> | undefined}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <Controller
+                        name="sameAsBilling"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={(checked) =>
+                                field.onChange(checked === true)
+                              }
+                            />
+                            <Label className="cursor-pointer text-sm">
+                              Szamlazasi cim megegyezik a szallitasi cimmel
+                            </Label>
+                          </div>
+                        )}
+                      />
+
+                      {/* ── Separate billing address ──────── */}
+                      {!sameAsBilling && (
+                        <div className="mt-6">
+                          <h3 className="text-base font-medium">Szamlazasi cim</h3>
+                          <AddressFields
+                            prefix="billingAddress"
+                            register={register}
+                            errors={errors.billingAddress as Record<string, { message?: string }> | undefined}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <div className="flex items-center justify-between pt-4">
                   <Button
                     type="button"
                     variant="ghost"
@@ -826,16 +860,6 @@ export default function CheckoutPage() {
                     <p>{watchedValues.phone}</p>
                   </ReviewSection>
 
-                  <ReviewSection title="Szamlazasi cim">
-                    <p>{watchedValues.billingAddress.name}</p>
-                    <p>{watchedValues.billingAddress.street}</p>
-                    <p>
-                      {watchedValues.billingAddress.zip}{" "}
-                      {watchedValues.billingAddress.city}
-                    </p>
-                    <p>{watchedValues.billingAddress.country}</p>
-                  </ReviewSection>
-
                   <ReviewSection title="Szallitas">
                     {shippingMethod === "home" ? (
                       <>
@@ -844,24 +868,16 @@ export default function CheckoutPage() {
                           {homeCarriers.find((c) => c.id === selectedCarrier)
                             ?.name ?? selectedCarrier}
                         </p>
-                        {sameAsBilling ? (
-                          <p className="text-muted-foreground">
-                            Megegyezik a szamlazasi cimmel
-                          </p>
-                        ) : (
-                          <>
-                            <p>
-                              {watchedValues.shippingAddressOverride?.name}
-                            </p>
-                            <p>
-                              {watchedValues.shippingAddressOverride?.street}
-                            </p>
-                            <p>
-                              {watchedValues.shippingAddressOverride?.zip}{" "}
-                              {watchedValues.shippingAddressOverride?.city}
-                            </p>
-                          </>
-                        )}
+                        <p>
+                          {watchedValues.shippingAddressOverride?.name}
+                        </p>
+                        <p>
+                          {watchedValues.shippingAddressOverride?.street}
+                        </p>
+                        <p>
+                          {watchedValues.shippingAddressOverride?.zip}{" "}
+                          {watchedValues.shippingAddressOverride?.city}
+                        </p>
                       </>
                     ) : (
                       <>
@@ -875,6 +891,24 @@ export default function CheckoutPage() {
                         <p className="text-xs text-muted-foreground">
                           {watchedValues.pickupPointId}
                         </p>
+                      </>
+                    )}
+                  </ReviewSection>
+
+                  <ReviewSection title="Szamlazasi cim">
+                    {shippingMethod === "home" && sameAsBilling ? (
+                      <p className="text-muted-foreground">
+                        Megegyezik a szallitasi cimmel
+                      </p>
+                    ) : (
+                      <>
+                        <p>{watchedValues.billingAddress.name}</p>
+                        <p>{watchedValues.billingAddress.street}</p>
+                        <p>
+                          {watchedValues.billingAddress.zip}{" "}
+                          {watchedValues.billingAddress.city}
+                        </p>
+                        <p>{watchedValues.billingAddress.country}</p>
                       </>
                     )}
                   </ReviewSection>

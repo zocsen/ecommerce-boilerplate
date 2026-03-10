@@ -10,7 +10,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { listProducts } from "@/lib/actions/products";
+import { adminListProducts } from "@/lib/actions/products";
 import { formatHUF, formatDate } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +42,7 @@ export function AdminProductsClient() {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
-    const result = await listProducts({
+    const result = await adminListProducts({
       page,
       perPage: 20,
       sort,

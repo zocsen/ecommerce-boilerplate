@@ -9,12 +9,14 @@ import {
   FolderTree,
   Save,
   X,
+  RotateCcw,
 } from "lucide-react";
 import {
-  listCategories,
+  adminListCategories,
   adminCreateCategory,
   adminUpdateCategory,
   adminDeleteCategory,
+  adminRestoreCategory,
 } from "@/lib/actions/categories";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,6 +78,7 @@ export default function AdminCategoriesPage() {
 
   // Delete
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
 
   // General
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +86,7 @@ export default function AdminCategoriesPage() {
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchCategories = useCallback(async () => {
     setLoading(true);
-    const res = await listCategories();
+    const res = await adminListCategories();
     if (res.success && res.data) {
       setCategories(res.data);
     }
@@ -216,6 +219,23 @@ export default function AdminCategoriesPage() {
     }
 
     setDeletingId(null);
+    fetchCategories();
+  }
+
+  // ── Restore ────────────────────────────────────────────────────
+  async function handleRestore(id: string) {
+    setRestoringId(id);
+    setError(null);
+
+    const res = await adminRestoreCategory(id);
+
+    if (!res.success) {
+      setError(res.error ?? "Hiba a kategória visszaállításakor.");
+      setRestoringId(null);
+      return;
+    }
+
+    setRestoringId(null);
     fetchCategories();
   }
 
@@ -430,6 +450,11 @@ export default function AdminCategoriesPage() {
                           <span className="text-muted-foreground">└</span>
                         )}
                         <span className="font-medium">{cat.name}</span>
+                        {!cat.is_active && (
+                          <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">
+                            Inaktív
+                          </Badge>
+                        )}
                       </span>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
@@ -451,18 +476,34 @@ export default function AdminCategoriesPage() {
                         >
                           <Pencil className="size-3.5" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(cat.id)}
-                        >
-                          {deletingId === cat.id ? (
-                            <span className="text-xs">Megerősítés?</span>
-                          ) : (
-                            <Trash2 className="size-3.5" />
-                          )}
-                        </Button>
+                        {!cat.is_active ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-emerald-600 hover:text-emerald-600"
+                            onClick={() => handleRestore(cat.id)}
+                            disabled={restoringId === cat.id}
+                          >
+                            {restoringId === cat.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <RotateCcw className="size-3.5" />
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(cat.id)}
+                          >
+                            {deletingId === cat.id ? (
+                              <span className="text-xs">Megerősítés?</span>
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </>

@@ -12,9 +12,8 @@ import {
   ImagePlus,
   AlertTriangle,
 } from "lucide-react";
-import { adminUpdateProduct, adminDeleteProduct } from "@/lib/actions/products";
+import { adminUpdateProduct, adminDeleteProduct, adminGetProduct } from "@/lib/actions/products";
 import { listCategories } from "@/lib/actions/categories";
-import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -123,20 +122,16 @@ export default function AdminProductEditPage({
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const supabase = createClient();
 
-      // Fetch product (admin needs to see inactive too, so use client)
-      const { data: prod, error: prodErr } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const result = await adminGetProduct(id);
 
-      if (prodErr || !prod) {
+      if (!result.success || !result.data) {
         setNotFound(true);
         setLoading(false);
         return;
       }
+
+      const { product: prod, variants: dbVariants, categories: prodCategories } = result.data;
 
       setProduct(prod);
       setTitle(prod.title);
@@ -150,27 +145,11 @@ export default function AdminProductEditPage({
       setImageUrls(prod.image_urls ?? []);
       setIsActive(prod.is_active);
 
-      // Fetch variants
-      const { data: dbVariants } = await supabase
-        .from("product_variants")
-        .select("*")
-        .eq("product_id", id)
-        .order("created_at", { ascending: true });
-
       if (dbVariants) {
         setVariants(dbVariants.map(variantFromDB));
       }
 
-      // Fetch category links
-      const { data: links } = await supabase
-        .from("product_categories")
-        .select("category_id")
-        .eq("product_id", id);
-
-      if (links) {
-        setSelectedCategoryIds(links.map((l) => l.category_id));
-      }
-
+      setSelectedCategoryIds(prodCategories.map((c: CategoryRow) => c.id));
       setLoading(false);
     }
 

@@ -32,6 +32,19 @@ export type AddressJson = {
   country: string;
 };
 
+// ── Billing address JSON (extends AddressJson with optional B2B fields) ─
+export type BillingAddressJson = AddressJson & {
+  company_name?: string;
+  tax_number?: string;
+};
+
+// ── Pickup point JSON (stored in profiles.default_pickup_point) ─
+export type PickupPointJson = {
+  provider?: string;
+  point_id?: string;
+  point_label?: string;
+};
+
 // ── Variant snapshot shape (stored in order_items.variant_snapshot) ─
 export type VariantSnapshotJson = {
   option1Name?: string;
@@ -49,6 +62,9 @@ export type ProfileRow = {
   role: AppRole;
   full_name: string | null;
   phone: string | null;
+  default_shipping_address: AddressJson | Record<string, never>;
+  default_billing_address: BillingAddressJson | Record<string, never>;
+  default_pickup_point: PickupPointJson | Record<string, never>;
   created_at: Timestamptz;
 };
 
@@ -57,6 +73,9 @@ export type ProfileInsert = {
   role?: AppRole;
   full_name?: string | null;
   phone?: string | null;
+  default_shipping_address?: AddressJson | Record<string, never>;
+  default_billing_address?: BillingAddressJson | Record<string, never>;
+  default_pickup_point?: PickupPointJson | Record<string, never>;
   created_at?: Timestamptz;
 };
 
@@ -65,6 +84,9 @@ export type ProfileUpdate = {
   role?: AppRole;
   full_name?: string | null;
   phone?: string | null;
+  default_shipping_address?: AddressJson | Record<string, never>;
+  default_billing_address?: BillingAddressJson | Record<string, never>;
+  default_pickup_point?: PickupPointJson | Record<string, never>;
   created_at?: Timestamptz;
 };
 

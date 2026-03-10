@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/security/roles";
+import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { couponCreateSchema } from "@/lib/validators/coupon";
 import type { CouponRow } from "@/lib/types/database";
@@ -56,7 +56,7 @@ export async function adminListCoupons(
   filters: { page?: number; perPage?: number; search?: string } = {},
 ): Promise<ActionResult<CouponListData>> {
   try {
-    await requireAdmin();
+    await requireAdminOrViewer();
 
     const parsed = listFiltersSchema.safeParse(filters);
     if (!parsed.success) {

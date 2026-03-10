@@ -1,94 +1,86 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { updateSession } from "@/lib/supabase/middleware"
+import { type NextRequest, NextResponse } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-/**
- * Next.js middleware
- * 1. Refreshes Supabase auth session on every request
- * 2. Protects /admin routes (requires admin or agency_viewer role)
- * 3. Protects /account routes (requires authentication)
- */
+/* ------------------------------------------------------------------ */
+/*  Next.js middleware — role-based route protection                    */
+/*                                                                     */
+/*  Rules:                                                             */
+/*  - Guests: public routes only. /profile/* and /admin/* redirect     */
+/*    to /login?redirectTo=[url].                                      */
+/*  - Customers: cannot access /login, /register, /reset-password      */
+/*    (redirect to /profile). Cannot access /admin/* (redirect to      */
+/*    /profile).                                                       */
+/*  - Admins/agency_viewer: cannot access /login, /register,           */
+/*    /reset-password (redirect to /admin). Cannot access /profile/*   */
+/*    (redirect to /admin).                                            */
+/* ------------------------------------------------------------------ */
+
+const AUTH_ROUTES = ["/login", "/register", "/reset-password"];
+const LOGOUT_ROUTE = "/logout";
+
+function isAuthRoute(pathname: string): boolean {
+  return AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
 export async function proxy(request: NextRequest) {
-  // Refresh Supabase session (sets/refreshes cookies)
-  const response = await updateSession(request)
+  const { response, user } = await updateSession(request);
+  const { pathname } = request.nextUrl;
 
-  const { pathname } = request.nextUrl
-
-  // ── Admin route protection ────────────────────────────────────
-  if (pathname.startsWith("/admin")) {
-    const { createServerClient } = await import("@supabase/ssr")
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options)
-            })
-          },
-        },
-      },
-    )
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      const loginUrl = new URL("/login", request.url)
-      loginUrl.searchParams.set("redirectTo", pathname)
-      return NextResponse.redirect(loginUrl)
+  // ── Guest (not authenticated) ──────────────────────────────────
+  if (!user) {
+    // Protected routes require login
+    if (pathname.startsWith("/admin") || pathname.startsWith("/profile")) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(loginUrl);
     }
-
-    // Check role from profiles table
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-
-    if (!profile || (profile.role !== "admin" && profile.role !== "agency_viewer")) {
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+    // Guests can access everything else (shop, auth pages, etc.)
+    return response;
   }
 
-  // ── Account route protection ──────────────────────────────────
-  if (pathname.startsWith("/account")) {
-    const { createServerClient } = await import("@supabase/ssr")
+  const isAdmin = user.role === "admin" || user.role === "agency_viewer";
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options)
-            })
-          },
-        },
-      },
-    )
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      const loginUrl = new URL("/login", request.url)
-      loginUrl.searchParams.set("redirectTo", pathname)
-      return NextResponse.redirect(loginUrl)
-    }
+  // ── /logout is always accessible to authenticated users ────────
+  if (pathname === LOGOUT_ROUTE) {
+    return response;
   }
 
-  return response
+  // ── Authenticated users cannot visit auth pages ────────────────
+  if (isAuthRoute(pathname)) {
+    const destination = isAdmin ? "/admin" : "/profile";
+    return NextResponse.redirect(new URL(destination, request.url));
+  }
+
+  // ── Customer role ──────────────────────────────────────────────
+  if (!isAdmin) {
+    // Customers cannot access admin
+    if (pathname.startsWith("/admin")) {
+      return NextResponse.redirect(new URL("/profile", request.url));
+    }
+    // Redirect old /account routes to /profile
+    if (pathname.startsWith("/account")) {
+      const newPath = pathname.replace(/^\/account/, "/profile");
+      return NextResponse.redirect(new URL(newPath, request.url));
+    }
+    return response;
+  }
+
+  // ── Admin / agency_viewer role ─────────────────────────────────
+  if (isAdmin) {
+    // Admins cannot access customer profile pages
+    if (pathname.startsWith("/profile")) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    // Redirect old /account routes to /admin
+    if (pathname.startsWith("/account")) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    return response;
+  }
+
+  return response;
 }
 
 export const config = {
@@ -98,8 +90,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico (favicon)
-     * - Public files (svg, png, jpg, etc.)
+     * - Public files (svg, png, jpg, jpeg, gif, webp)
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
-}
+};

@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   LogOut,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -137,13 +138,20 @@ function DesktopSidebar({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border p-3 space-y-0.5">
         <Link
           href="/"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-300 hover:bg-muted hover:text-foreground"
         >
-          <LogOut className="size-4" />
+          <ArrowLeft className="size-4" />
           Vissza a boltba
+        </Link>
+        <Link
+          href="/logout"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-300 hover:bg-muted hover:text-destructive"
+        >
+          <LogOut className="size-4" />
+          Kijelentkezes
         </Link>
       </div>
     </aside>
@@ -178,7 +186,7 @@ function MobileSidebar({ isAgencyViewer }: { isAgencyViewer: boolean }) {
           <NavLinks pathname={pathname} isAgencyViewer={isAgencyViewer} />
         </div>
 
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border p-3 space-y-0.5">
           <SheetClose
             render={
               <Link
@@ -187,8 +195,19 @@ function MobileSidebar({ isAgencyViewer }: { isAgencyViewer: boolean }) {
               />
             }
           >
-            <LogOut className="size-4" />
+            <ArrowLeft className="size-4" />
             Vissza a boltba
+          </SheetClose>
+          <SheetClose
+            render={
+              <Link
+                href="/logout"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-300 hover:bg-muted hover:text-destructive"
+              />
+            }
+          >
+            <LogOut className="size-4" />
+            Kijelentkezes
           </SheetClose>
         </div>
       </SheetContent>

@@ -10,6 +10,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import {
+  DashboardCharts,
+  type DailyDataPoint,
+} from "@/components/admin/dashboard-charts";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Dashboard — "God view" KPIs                                  */
@@ -27,6 +31,7 @@ interface KpiData {
     created_at: string;
     status: string;
   }>;
+  dailyData: DailyDataPoint[];
 }
 
 async function getDashboardData(): Promise<KpiData> {
@@ -39,7 +44,7 @@ async function getDashboardData(): Promise<KpiData> {
     // Orders in last 30 days that are paid or beyond
     admin
       .from("orders")
-      .select("total_amount, status")
+      .select("total_amount, status, created_at")
       .gte("created_at", thirtyDaysAgo)
       .in("status", ["paid", "processing", "shipped"]),
 
@@ -65,12 +70,41 @@ async function getDashboardData(): Promise<KpiData> {
   const aov = orders30d > 0 ? Math.round(revenue30d / orders30d) : 0;
   const lowStockVariants = lowStockResult.count ?? 0;
 
+  // Build daily aggregation for charts
+  const dailyMap = new Map<string, { revenue: number; orders: number }>();
+
+  // Pre-fill all 30 days so the chart always has entries
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const key = `${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}.`;
+    dailyMap.set(key, { revenue: 0, orders: 0 });
+  }
+
+  for (const order of orders) {
+    const d = new Date(order.created_at);
+    const key = `${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}.`;
+    const entry = dailyMap.get(key);
+    if (entry) {
+      entry.revenue += order.total_amount;
+      entry.orders += 1;
+    }
+  }
+
+  const dailyData: DailyDataPoint[] = Array.from(dailyMap.entries()).map(
+    ([date, vals]) => ({
+      date,
+      revenue: vals.revenue,
+      orders: vals.orders,
+    }),
+  );
+
   return {
     revenue30d,
     orders30d,
     aov,
     lowStockVariants,
     recentPaidOrders: recentResult.data ?? [],
+    dailyData,
   };
 }
 
@@ -144,6 +178,9 @@ export default async function AdminDashboardPage() {
           </CardHeader>
         </Card>
       </div>
+
+      {/* Daily charts */}
+      <DashboardCharts data={data.dailyData} />
 
       {/* Recent orders */}
       <Card>

@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/security/roles";
+import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { productCreateSchema, productUpdateSchema } from "@/lib/validators/product";
 import type { ProductRow, ProductVariantRow, CategoryRow } from "@/lib/types/database";
@@ -264,7 +264,177 @@ export async function getProductBySlug(
   }
 }
 
-// ── Admin actions ──────────────────────────────────────────────────
+// ── Admin read actions ─────────────────────────────────────────────
+
+interface AdminListProductsFilters {
+  search?: string;
+  isActive?: boolean;
+  sort?: string;
+  page?: number;
+  perPage?: number;
+}
+
+interface AdminListProductsData {
+  products: ProductRow[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+const adminListFiltersSchema = z.object({
+  search: z.string().optional(),
+  isActive: z.boolean().optional(),
+  sort: z.string().optional(),
+  page: z.number().int().min(1).optional(),
+  perPage: z.number().int().min(1).max(100).optional(),
+});
+
+export async function adminListProducts(
+  filters: AdminListProductsFilters = {},
+): Promise<ActionResult<AdminListProductsData>> {
+  try {
+    await requireAdminOrViewer();
+
+    const parsed = adminListFiltersSchema.safeParse(filters);
+    if (!parsed.success) {
+      return { success: false, error: "Érvénytelen szűrő paraméterek." };
+    }
+
+    const {
+      search,
+      isActive,
+      sort,
+      page = 1,
+      perPage = 20,
+    } = parsed.data;
+
+    const admin = createAdminClient();
+
+    let query = admin
+      .from("products")
+      .select("*", { count: "exact" });
+
+    // Filter by active status (admins can see both active and inactive)
+    if (isActive !== undefined) {
+      query = query.eq("is_active", isActive);
+    }
+
+    // Search by title or slug
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,slug.ilike.%${search}%`);
+    }
+
+    // Sorting
+    switch (sort) {
+      case "price_asc":
+        query = query.order("base_price", { ascending: true });
+        break;
+      case "price_desc":
+        query = query.order("base_price", { ascending: false });
+        break;
+      case "newest":
+        query = query.order("created_at", { ascending: false });
+        break;
+      default:
+        query = query.order("created_at", { ascending: false });
+    }
+
+    // Pagination
+    const from = (page - 1) * perPage;
+    const to = from + perPage - 1;
+    query = query.range(from, to);
+
+    const { data: products, count, error } = await query;
+
+    if (error) {
+      console.error("[adminListProducts] DB error:", error.message);
+      return { success: false, error: "Hiba a termékek lekérésekor." };
+    }
+
+    const total = count ?? 0;
+
+    return {
+      success: true,
+      data: {
+        products: products ?? [],
+        total,
+        page,
+        totalPages: Math.ceil(total / perPage),
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminListProducts] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+export async function adminGetProduct(
+  id: string,
+): Promise<ActionResult<ProductDetail>> {
+  try {
+    await requireAdminOrViewer();
+
+    const idParsed = z.string().uuid().safeParse(id);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen termék azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    // Fetch product (including inactive — no is_active filter)
+    const { data: product, error: productError } = await admin
+      .from("products")
+      .select("*")
+      .eq("id", idParsed.data)
+      .single();
+
+    if (productError || !product) {
+      return { success: false, error: "A termék nem található." };
+    }
+
+    // Fetch variants and category joins in parallel
+    const [variantsResult, categoriesJoinResult] = await Promise.all([
+      admin
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", product.id)
+        .order("created_at", { ascending: true }),
+      admin
+        .from("product_categories")
+        .select("category_id")
+        .eq("product_id", product.id),
+    ]);
+
+    const variants = variantsResult.data ?? [];
+
+    // Fetch actual category rows (including inactive for admin)
+    const categoryIds = (categoriesJoinResult.data ?? []).map(
+      (pc) => pc.category_id,
+    );
+    let categories: CategoryRow[] = [];
+
+    if (categoryIds.length > 0) {
+      const { data: catRows } = await admin
+        .from("categories")
+        .select("*")
+        .in("id", categoryIds);
+
+      categories = catRows ?? [];
+    }
+
+    return {
+      success: true,
+      data: { product, variants, categories },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminGetProduct] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+// ── Admin write actions ───────────────────────────────────────────
 
 export async function adminCreateProduct(
   formData: FormData,

@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth, requireAdmin, getCurrentUser } from "@/lib/security/roles";
+import { requireAuth, requireAdmin, requireAdminOrViewer, getCurrentUser } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { checkoutSchema } from "@/lib/validators/checkout";
 import { siteConfig } from "@/lib/config/site.config";
@@ -500,7 +500,7 @@ export async function adminListOrders(
   filters: AdminOrderFilters = {},
 ): Promise<ActionResult<AdminOrderListData>> {
   try {
-    await requireAdmin();
+    await requireAdminOrViewer();
 
     const parsed = adminFiltersSchema.safeParse(filters);
     if (!parsed.success) {
@@ -528,8 +528,13 @@ export async function adminListOrders(
     }
 
     if (search) {
-      // Search by email or order ID
-      query = query.or(`email.ilike.%${search}%,id.eq.${search}`);
+      // Search by email or order ID — only include id.eq if search is a valid UUID
+      const isUuid = z.string().uuid().safeParse(search).success;
+      if (isUuid) {
+        query = query.or(`email.ilike.%${search}%,id.eq.${search}`);
+      } else {
+        query = query.ilike("email", `%${search}%`);
+      }
     }
 
     if (dateFrom) {
@@ -573,7 +578,7 @@ export async function adminGetOrder(
   orderId: string,
 ): Promise<ActionResult<OrderWithItems>> {
   try {
-    await requireAdmin();
+    await requireAdminOrViewer();
 
     const idParsed = z.string().uuid().safeParse(orderId);
     if (!idParsed.success) {

@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/security/roles";
+import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import type { CategoryRow } from "@/lib/types/database";
 
@@ -73,6 +73,37 @@ export async function listCategories(): Promise<
 }
 
 // ── Admin actions ──────────────────────────────────────────────────
+
+/**
+ * List ALL categories (including inactive/soft-deleted) for admin view.
+ * Uses the admin client to bypass RLS.
+ */
+export async function adminListCategories(): Promise<
+  ActionResult<CategoryRow[]>
+> {
+  try {
+    await requireAdminOrViewer();
+
+    const admin = createAdminClient();
+
+    const { data, error } = await admin
+      .from("categories")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("[adminListCategories] DB error:", error.message);
+      return { success: false, error: "Hiba a kategóriák lekérésekor." };
+    }
+
+    return { success: true, data: data ?? [] };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminListCategories] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
 
 export async function adminCreateCategory(data: {
   slug: string;
@@ -273,6 +304,45 @@ export async function adminDeleteCategory(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[adminDeleteCategory] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+export async function adminRestoreCategory(
+  id: string,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin();
+
+    const idParsed = z.string().uuid().safeParse(id);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen kategória azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    const { error } = await admin
+      .from("categories")
+      .update({ is_active: true })
+      .eq("id", idParsed.data);
+
+    if (error) {
+      console.error("[adminRestoreCategory] Update error:", error.message);
+      return { success: false, error: "Hiba a kategória visszaállításakor." };
+    }
+
+    await logAudit({
+      actorId: profile.id,
+      actorRole: profile.role,
+      action: "category.restore",
+      entityType: "category",
+      entityId: idParsed.data,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminRestoreCategory] Unexpected error:", message);
     return { success: false, error: "Váratlan hiba történt." };
   }
 }

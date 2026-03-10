@@ -549,3 +549,112 @@ Project runs locally with:
 - admin can CRUD products and see orders
 - role-based access works (agency_viewer read-only)
 - receipts can be sent in dev mode (email provider configured)
+
+## Authentication & Session Management (implemented)
+
+### Middleware (`src/proxy.ts`)
+
+Single middleware intercepts every request. Uses `updateSession()` from `src/lib/supabase/middleware.ts` which returns `{ response, user }` where `user` contains `{ id, role }` (fetched once from profiles table).
+
+### Role-based routing rules
+
+| User state | Can access | Cannot access | Redirect to |
+|---|---|---|---|
+| Guest (no session) | `/`, `/products/**`, `/cart`, `/checkout/**`, `/login`, `/register`, `/reset-password`, legal pages | `/profile/*`, `/admin/*` | `/login?redirectTo=[url]` |
+| Customer (`role=customer`) | All public routes, `/profile/*` | `/login`, `/register`, `/reset-password`, `/admin/*` | `/profile` |
+| Admin (`role=admin` or `agency_viewer`) | All public routes, `/admin/*` | `/login`, `/register`, `/reset-password`, `/profile/*` | `/admin` |
+
+### Auth pages
+
+- `/login` — Email/password sign in, supports `?redirectTo=` param
+- `/register` — Email/password registration, auto-creates profile row
+- `/reset-password` — Password reset flow via Supabase Auth
+
+### Supabase clients
+
+- `createClient()` (`src/lib/supabase/server.ts`) — User-scoped SSR client using cookies. Respects RLS. Used in Server Components and Server Actions for customer-facing operations.
+- `createAdminClient()` (`src/lib/supabase/admin.ts`) — Service-role client that bypasses RLS. Singleton with env-var invalidation guard. Used only in admin Server Actions for privileged operations.
+
+### Security helpers (`src/lib/security/roles.ts`)
+
+- `requireAuth()` — Returns authenticated user or throws (redirects to login)
+- `requireAdmin()` — Returns user with admin role or throws (write operations)
+- `requireAdminOrViewer()` — Returns user with admin or agency_viewer role (read-only admin operations)
+- `getCurrentProfile()` — Returns profile or null (non-throwing, used in layouts/headers)
+
+## Customer Profile Section (implemented)
+
+### Route: `/profile/*` (inside `(shop)` route group)
+
+Layout: `src/app/(shop)/profile/layout.tsx` — Server component, fetches profile, renders sidebar navigation + content area. Protected by middleware (redirects guests to login).
+
+### Profile pages
+
+1. `/profile` — Dashboard overview: name, email, recent orders summary
+2. `/profile/orders` — Paginated list of customer's own orders (excludes drafts). Uses `listUserOrders()` action with RLS filtering by `user_id`.
+3. `/profile/orders/[id]` — Order detail with line items, shipping info, billing info, payment status, invoice link. Uses `getUserOrder(id)` which filters by both order ID and authenticated user ID.
+4. `/profile/addresses` — Manage default shipping address, billing/invoice address (with optional B2B fields: company name, tax number), and default pickup point selection.
+5. `/profile/settings` — Update name, phone (Hungarian `+36` validation), change password.
+6. `/profile/logout` — Client component that calls `signOut()` server action and redirects to `/`.
+
+### Profile server actions (`src/lib/actions/profile.ts`)
+
+- `getProfile()` — Fetch authenticated user's profile
+- `updateProfile({ fullName, phone })` — Update name and phone with Zod validation
+- `updateAddresses({ shippingAddress?, billingAddress?, pickupPoint? })` — Update default addresses
+- `changePassword({ newPassword })` — Change password via Supabase Auth
+- `listUserOrders({ page?, perPage? })` — Paginated order list for current user
+- `getUserOrder(orderId)` — Single order detail with items, filtered by user ownership
+- `signOut()` — Sign out via Supabase Auth
+
+### Database migration: `002_add_profile_addresses.sql`
+
+Added columns to `profiles` table:
+- `default_shipping_address jsonb` — `{name, street, city, zip, country}`
+- `default_billing_address jsonb` — `{name, street, city, zip, country, company_name?, tax_number?}`
+- `default_pickup_point jsonb` — `{provider, point_id, point_label}`
+
+## Admin Access Patterns (implemented)
+
+### Admin actions use two client types:
+
+- **Read-only operations** (`adminListProducts`, `adminListOrders`, `adminGetProduct`, `adminGetOrder`, `adminListCoupons`): Use `requireAdminOrViewer()` guard. Agency viewers can access.
+- **Write operations** (`adminCreateProduct`, `adminUpdateProduct`, `adminDeleteProduct`, `adminUpdateOrderStatus`): Use `requireAdmin()` guard. Agency viewers are blocked.
+
+### Admin client (`createAdminClient`)
+
+The admin client uses the service-role key to bypass RLS. This is necessary because:
+- Admin users need to see ALL products (including inactive)
+- Admin users need to see ALL orders (not just their own)
+- Agency viewers need SELECT access across all tables
+
+The singleton includes an env-var invalidation guard to prevent stale cached clients during hot-reload or test environment switching.
+
+## Layout & Container Consistency (implemented)
+
+All page containers follow this pattern to align with the header:
+
+| Context | Max-width | Padding |
+|---|---|---|
+| Header / Footer | `max-w-7xl` | `px-6 lg:px-8` |
+| Shop pages (home, products, cart, checkout) | `max-w-7xl` | `px-6 lg:px-8` |
+| Profile section | `max-w-7xl` | `px-6 lg:px-8` |
+| Admin content area | `max-w-7xl` | `px-4 lg:px-8` |
+| Legal pages (terms, privacy, shipping) | `max-w-3xl` | `px-6` (intentionally narrower for reading) |
+| Checkout success/cancel | `max-w-2xl` | `px-6 lg:px-8` (intentionally compact) |
+
+## Header Component (implemented)
+
+Auth-aware server component (`src/components/shared/header.tsx`):
+- Fetches profile via `getCurrentProfile()`
+- Shows role-appropriate account link: Login (guest), Fiokom (customer), Admin (admin/viewer)
+- Links to correct destination: `/login`, `/profile`, or `/admin`
+- Mobile sheet navigation with same role logic
+
+## Admin Sidebar (implemented)
+
+Client component (`src/components/shared/admin-sidebar.tsx`):
+- Desktop sidebar (260px) + mobile sheet
+- Collapsible via top bar toggle
+- Agency viewer badge: "Csak olvasas" (read-only indicator)
+- Footer: "Vissza a boltba" (back to shop) + "Kijelentkezes" (sign out) links

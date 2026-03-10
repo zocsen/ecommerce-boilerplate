@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -17,9 +17,11 @@ import {
   X,
   LogOut,
   ArrowLeft,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+  PanelLeftClose,
+  PanelRightClose,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetTrigger,
@@ -27,31 +29,31 @@ import {
   SheetHeader,
   SheetTitle,
   SheetClose,
-} from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/sheet'
+import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
 
 /* ------------------------------------------------------------------ */
 /*  Admin sidebar navigation items                                     */
 /* ------------------------------------------------------------------ */
 
 interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  label: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Rendelések", href: "/admin/orders", icon: ShoppingCart },
-  { label: "Termékek", href: "/admin/products", icon: Package },
-  { label: "Kategóriák", href: "/admin/categories", icon: FolderTree },
-  { label: "Kuponok", href: "/admin/coupons", icon: Ticket },
-  { label: "Szállítás", href: "/admin/shipping", icon: Truck },
-  { label: "Marketing", href: "/admin/marketing", icon: Megaphone },
-  { label: "Beállítások", href: "/admin/settings", icon: Settings },
-  { label: "Audit log", href: "/admin/audit", icon: FileText },
-];
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Rendelések', href: '/admin/orders', icon: ShoppingCart },
+  { label: 'Termékek', href: '/admin/products', icon: Package },
+  { label: 'Kategóriák', href: '/admin/categories', icon: FolderTree },
+  { label: 'Kuponok', href: '/admin/coupons', icon: Ticket },
+  { label: 'Szállítás', href: '/admin/shipping', icon: Truck },
+  { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
+  { label: 'Beállítások', href: '/admin/settings', icon: Settings },
+  { label: 'Audit log', href: '/admin/audit', icon: FileText },
+]
 
 /* ------------------------------------------------------------------ */
 /*  Shared navigation list                                             */
@@ -62,16 +64,15 @@ function NavLinks({
   isAgencyViewer,
   onNavigate,
 }: {
-  pathname: string;
-  isAgencyViewer: boolean;
-  onNavigate?: () => void;
+  pathname: string
+  isAgencyViewer: boolean
+  onNavigate?: () => void
 }) {
   return (
     <nav className="flex flex-col gap-1">
       {navItems.map((item) => {
         const isActive =
-          pathname === item.href ||
-          (item.href !== "/admin" && pathname.startsWith(item.href));
+          pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
 
         return (
           <Link
@@ -79,16 +80,16 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300",
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300',
               isActive
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
             <item.icon className="size-4 shrink-0" />
             {item.label}
           </Link>
-        );
+        )
       })}
 
       {isAgencyViewer && (
@@ -102,7 +103,7 @@ function NavLinks({
         </>
       )}
     </nav>
-  );
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -113,12 +114,12 @@ function DesktopSidebar({
   collapsed,
   isAgencyViewer,
 }: {
-  collapsed: boolean;
-  isAgencyViewer: boolean;
+  collapsed: boolean
+  isAgencyViewer: boolean
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname()
 
-  if (collapsed) return null;
+  if (collapsed) return null
 
   return (
     <aside className="hidden w-[260px] shrink-0 border-r border-border bg-background lg:flex lg:flex-col">
@@ -151,11 +152,11 @@ function DesktopSidebar({
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-300 hover:bg-muted hover:text-destructive"
         >
           <LogOut className="size-4" />
-          Kijelentkezes
+          Kijelentkezés
         </Link>
       </div>
     </aside>
-  );
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -163,7 +164,7 @@ function DesktopSidebar({
 /* ------------------------------------------------------------------ */
 
 function MobileSidebar({ isAgencyViewer }: { isAgencyViewer: boolean }) {
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   return (
     <Sheet>
@@ -207,12 +208,12 @@ function MobileSidebar({ isAgencyViewer }: { isAgencyViewer: boolean }) {
             }
           >
             <LogOut className="size-4" />
-            Kijelentkezes
+            Kijelentkezés
           </SheetClose>
         </div>
       </SheetContent>
     </Sheet>
-  );
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -224,9 +225,9 @@ function TopBar({
   onToggleCollapse,
   isAgencyViewer,
 }: {
-  collapsed: boolean;
-  onToggleCollapse: () => void;
-  isAgencyViewer: boolean;
+  collapsed: boolean
+  onToggleCollapse: () => void
+  isAgencyViewer: boolean
 }) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4 lg:px-6">
@@ -242,13 +243,11 @@ function TopBar({
           className="hidden lg:inline-flex"
         >
           {collapsed ? (
-            <Menu className="size-[18px]" />
+            <PanelRightClose className="size-[18px]" />
           ) : (
-            <X className="size-[18px]" />
+            <PanelLeftClose className="size-[18px]" />
           )}
-          <span className="sr-only">
-            {collapsed ? "Sidebar megnyitása" : "Sidebar bezárása"}
-          </span>
+          <span className="sr-only">{collapsed ? 'Sidebar megnyitása' : 'Sidebar bezárása'}</span>
         </Button>
 
         <span className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground lg:hidden">
@@ -264,7 +263,7 @@ function TopBar({
         )}
       </div>
     </header>
-  );
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -275,10 +274,10 @@ export function AdminShell({
   children,
   isAgencyViewer = false,
 }: {
-  children: React.ReactNode;
-  isAgencyViewer?: boolean;
+  children: React.ReactNode
+  isAgencyViewer?: boolean
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30">
@@ -292,11 +291,9 @@ export function AdminShell({
         />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-            {children}
-          </div>
+          <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>
-  );
+  )
 }

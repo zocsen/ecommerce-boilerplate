@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Truck, FileText, Send } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Truck, FileText, Send } from "lucide-react";
 import { adminGetOrder, adminUpdateOrderStatus } from "@/lib/actions/orders";
 import { sendReceipt, sendShippingUpdate } from "@/lib/integrations/email/actions";
 import { formatHUF, formatDate, formatDateTime } from "@/lib/utils/format";
@@ -86,7 +85,6 @@ interface OrderWithItems extends OrderRow {
 
 export default function AdminOrderDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const orderId = params.id as string;
 
   const [order, setOrder] = useState<OrderWithItems | null>(null);
@@ -148,10 +146,6 @@ export default function AdminOrderDetailPage() {
   if (error || !order) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/admin/orders")}>
-          <ArrowLeft className="mr-2 size-4" />
-          Vissza
-        </Button>
         <p className="text-sm text-destructive">{error}</p>
       </div>
     );
@@ -164,14 +158,6 @@ export default function AdminOrderDetailPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link href="/admin/orders" />}
-          >
-            <ArrowLeft className="mr-2 size-4" />
-            Vissza
-          </Button>
           <div>
             <h1 className="text-xl font-semibold tracking-tight">
               Rendelés #{order.id.slice(0, 8).toUpperCase()}

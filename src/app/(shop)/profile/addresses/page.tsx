@@ -100,9 +100,9 @@ export default function ProfileAddressesPage() {
 
     const result = await updateAddresses({ shippingAddress: shipping });
     if (result.success) {
-      setSuccess("Szallitasi cim sikeresen mentve.");
+      setSuccess("Szállítási cím sikeresen mentve.");
     } else {
-      setError(result.error ?? "Hiba tortent.");
+      setError(result.error ?? "Hiba történt.");
     }
     setSaving(null);
     setTimeout(() => setSuccess(null), 3000);
@@ -115,9 +115,9 @@ export default function ProfileAddressesPage() {
 
     const result = await updateAddresses({ billingAddress: billing });
     if (result.success) {
-      setSuccess("Szamlazasi cim sikeresen mentve.");
+      setSuccess("Számlázási cím sikeresen mentve.");
     } else {
-      setError(result.error ?? "Hiba tortent.");
+      setError(result.error ?? "Hiba történt.");
     }
     setSaving(null);
     setTimeout(() => setSuccess(null), 3000);
@@ -130,9 +130,9 @@ export default function ProfileAddressesPage() {
 
     const result = await updateAddresses({ pickupPoint: pickup });
     if (result.success) {
-      setSuccess("Atveteli pont sikeresen mentve.");
+      setSuccess("Átvételi pont sikeresen mentve.");
     } else {
-      setError(result.error ?? "Hiba tortent.");
+      setError(result.error ?? "Hiba történt.");
     }
     setSaving(null);
     setTimeout(() => setSuccess(null), 3000);
@@ -142,7 +142,7 @@ export default function ProfileAddressesPage() {
     return (
       <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
         <Loader2 className="mr-2 size-4 animate-spin" />
-        Betoltes...
+        Betöltés...
       </div>
     );
   }
@@ -150,9 +150,9 @@ export default function ProfileAddressesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Cimek</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Címek</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Alapertelmezett szallitasi, szamlazasi es atveteli pont cimek kezelese.
+          Alapértelmezett szállítási, számlázási és átvételi pont címek kezelése.
         </p>
       </div>
 
@@ -174,9 +174,9 @@ export default function ProfileAddressesPage() {
           <div className="flex items-center gap-2">
             <MapPin className="size-5 text-muted-foreground" />
             <div>
-              <CardTitle>Szallitasi cim</CardTitle>
+              <CardTitle>Szállítási cím</CardTitle>
               <CardDescription>
-                Alapertelmezett hazhozszallitasi cim a megrendelesekhez.
+                Alapértelmezett házhozszállítási cím a megrendelésekhez.
               </CardDescription>
             </div>
           </div>
@@ -185,25 +185,25 @@ export default function ProfileAddressesPage() {
           <form onSubmit={handleSaveShipping} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="ship-name">Nev *</Label>
+                <Label htmlFor="ship-name">Név *</Label>
                 <Input
                   id="ship-name"
                   value={shipping.name}
                   onChange={(e) => setShipping({ ...shipping, name: e.target.value })}
-                  placeholder="Teljes nev"
+                  placeholder="Teljes név"
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="ship-street">Utca, hazszam *</Label>
+                <Label htmlFor="ship-street">Utca, házszám *</Label>
                 <Input
                   id="ship-street"
                   value={shipping.street}
                   onChange={(e) => setShipping({ ...shipping, street: e.target.value })}
-                  placeholder="Fo utca 1."
+                  placeholder="Fő utca 1."
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ship-city">Varos *</Label>
+                <Label htmlFor="ship-city">Város *</Label>
                 <Input
                   id="ship-city"
                   value={shipping.city}
@@ -212,7 +212,7 @@ export default function ProfileAddressesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ship-zip">Iranyitoszam *</Label>
+                <Label htmlFor="ship-zip">Irányítószám *</Label>
                 <Input
                   id="ship-zip"
                   value={shipping.zip}
@@ -229,7 +229,7 @@ export default function ProfileAddressesPage() {
                 ) : (
                   <Save className="mr-2 size-4" />
                 )}
-                Szallitasi cim mentese
+                Szállítási cím mentése
               </Button>
             </div>
           </form>
@@ -242,9 +242,9 @@ export default function ProfileAddressesPage() {
           <div className="flex items-center gap-2">
             <FileText className="size-5 text-muted-foreground" />
             <div>
-              <CardTitle>Szamlazasi cim</CardTitle>
+              <CardTitle>Számlázási cím</CardTitle>
               <CardDescription>
-                Alapertelmezett szamlazasi cim. Ceges szamlazashoz adja meg a cegnevet es adoszamot.
+                Alapértelmezett számlázási cím. Céges számlázáshoz adja meg a cégnevet és adószámot.
               </CardDescription>
             </div>
           </div>
@@ -253,25 +253,25 @@ export default function ProfileAddressesPage() {
           <form onSubmit={handleSaveBilling} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="bill-name">Nev *</Label>
+                <Label htmlFor="bill-name">Név *</Label>
                 <Input
                   id="bill-name"
                   value={billing.name}
                   onChange={(e) => setBilling({ ...billing, name: e.target.value })}
-                  placeholder="Teljes nev"
+                  placeholder="Teljes név"
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="bill-street">Utca, hazszam *</Label>
+                <Label htmlFor="bill-street">Utca, házszám *</Label>
                 <Input
                   id="bill-street"
                   value={billing.street}
                   onChange={(e) => setBilling({ ...billing, street: e.target.value })}
-                  placeholder="Fo utca 1."
+                  placeholder="Fő utca 1."
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bill-city">Varos *</Label>
+                <Label htmlFor="bill-city">Város *</Label>
                 <Input
                   id="bill-city"
                   value={billing.city}
@@ -280,7 +280,7 @@ export default function ProfileAddressesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bill-zip">Iranyitoszam *</Label>
+                <Label htmlFor="bill-zip">Irányítószám *</Label>
                 <Input
                   id="bill-zip"
                   value={billing.zip}
@@ -292,18 +292,18 @@ export default function ProfileAddressesPage() {
 
               {/* B2B fields */}
               <div className="space-y-2">
-                <Label htmlFor="bill-company">Cegnev</Label>
+                <Label htmlFor="bill-company">Cégnév</Label>
                 <Input
                   id="bill-company"
                   value={billing.company_name ?? ""}
                   onChange={(e) =>
                     setBilling({ ...billing, company_name: e.target.value })
                   }
-                  placeholder="Pelda Kft."
+                  placeholder="Példa Kft."
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bill-tax">Adoszam</Label>
+                <Label htmlFor="bill-tax">Adószám</Label>
                 <Input
                   id="bill-tax"
                   value={billing.tax_number ?? ""}
@@ -321,7 +321,7 @@ export default function ProfileAddressesPage() {
                 ) : (
                   <Save className="mr-2 size-4" />
                 )}
-                Szamlazasi cim mentese
+                Számlázási cím mentése
               </Button>
             </div>
           </form>
@@ -334,9 +334,9 @@ export default function ProfileAddressesPage() {
           <div className="flex items-center gap-2">
             <Package className="size-5 text-muted-foreground" />
             <div>
-              <CardTitle>Atveteli pont</CardTitle>
+              <CardTitle>Átvételi pont</CardTitle>
               <CardDescription>
-                Alapertelmezett csomagautomata / atveteli pont.
+                Alapértelmezett csomagautomata / átvételi pont.
               </CardDescription>
             </div>
           </div>
@@ -345,14 +345,14 @@ export default function ProfileAddressesPage() {
           <form onSubmit={handleSavePickup} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="pickup-provider">Szolgaltato</Label>
+                <Label htmlFor="pickup-provider">Szolgáltató</Label>
                 <select
                   id="pickup-provider"
                   value={pickup.provider ?? ""}
                   onChange={(e) => setPickup({ ...pickup, provider: e.target.value })}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <option value="">Valasszon...</option>
+                  <option value="">Válasszon...</option>
                   <option value="foxpost">Foxpost</option>
                   <option value="gls_automata">GLS Automata</option>
                   <option value="packeta">Packeta</option>
@@ -361,7 +361,7 @@ export default function ProfileAddressesPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pickup-id">Pont azonosito</Label>
+                <Label htmlFor="pickup-id">Pont azonosító</Label>
                 <Input
                   id="pickup-id"
                   value={pickup.point_id ?? ""}
@@ -370,7 +370,7 @@ export default function ProfileAddressesPage() {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="pickup-label">Megnevezes</Label>
+                <Label htmlFor="pickup-label">Megnevezés</Label>
                 <Input
                   id="pickup-label"
                   value={pickup.point_label ?? ""}
@@ -386,7 +386,7 @@ export default function ProfileAddressesPage() {
                 ) : (
                   <Save className="mr-2 size-4" />
                 )}
-                Atveteli pont mentese
+                Átvételi pont mentése
               </Button>
             </div>
           </form>

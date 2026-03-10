@@ -13,12 +13,12 @@ import type { OrderStatus } from "@/lib/types/database";
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   draft: "Piszkozat",
-  awaiting_payment: "Fizetesre var",
+  awaiting_payment: "Fizetésre vár",
   paid: "Fizetve",
-  processing: "Feldolgozas alatt",
-  shipped: "Kiszallitva",
+  processing: "Feldolgozás alatt",
+  shipped: "Kiszállítva",
   cancelled: "Lemondva",
-  refunded: "Visszateritve",
+  refunded: "Visszatérítve",
 };
 
 const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -48,17 +48,17 @@ export default async function ProfileOrdersPage({
     <div className="space-y-8">
       <Breadcrumbs
         items={[
-          { label: "Fiokom", href: "/profile" },
-          { label: "Rendeleseim" },
+          { label: "Fiókom", href: "/profile" },
+          { label: "Rendeléseim" },
         ]}
       />
 
       <div>
         <h1 className="text-3xl font-semibold tracking-[-0.03em]">
-          Rendeleseim
+          Rendeléseim
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {total} rendeles osszesen
+          {total} rendelés összesen
         </p>
       </div>
 
@@ -68,16 +68,16 @@ export default async function ProfileOrdersPage({
             <Package className="size-7 text-muted-foreground" />
           </div>
           <h2 className="mt-4 text-lg font-medium">
-            Meg nincsenek rendeleseid
+            Még nincsenek rendeléseid
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Amint leadod az elso rendelest, itt fog megjelenni.
+            Amint leadod az első rendelést, itt fog megjelenni.
           </p>
           <Link
             href="/products"
             className="mt-6 text-sm font-medium underline underline-offset-2 transition-colors hover:text-foreground/70"
           >
-            Termekek bongeszese
+            Termékek böngészése
           </Link>
         </div>
       ) : (
@@ -91,17 +91,17 @@ export default async function ProfileOrdersPage({
               >
                 <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
                   <div>
-                    <p className="text-xs text-muted-foreground">Rendeles</p>
+                    <p className="text-xs text-muted-foreground">Rendelés</p>
                     <p className="font-mono text-sm font-medium">
                       #{order.id.slice(0, 8).toUpperCase()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Datum</p>
+                    <p className="text-xs text-muted-foreground">Dátum</p>
                     <p className="text-sm">{formatDate(order.created_at)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Osszeg</p>
+                    <p className="text-xs text-muted-foreground">Összeg</p>
                     <p className="text-sm font-medium tabular-nums">
                       {formatHUF(order.total_amount)}
                     </p>

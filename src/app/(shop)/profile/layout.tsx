@@ -8,10 +8,10 @@ import { redirect } from "next/navigation";
 /* ------------------------------------------------------------------ */
 
 const sidebarLinks = [
-  { href: "/profile", label: "Attekintes", icon: User },
-  { href: "/profile/orders", label: "Rendeleseim", icon: Package },
-  { href: "/profile/addresses", label: "Cimeim", icon: MapPin },
-  { href: "/profile/settings", label: "Beallitasok", icon: Settings },
+  { href: "/profile", label: "Áttekintés", icon: User },
+  { href: "/profile/orders", label: "Rendeléseim", icon: Package },
+  { href: "/profile/addresses", label: "Címeim", icon: MapPin },
+  { href: "/profile/settings", label: "Beállítások", icon: Settings },
 ] as const;
 
 export default async function ProfileLayout({
@@ -31,9 +31,9 @@ export default async function ProfileLayout({
         {/* -- Sidebar -- */}
         <aside className="space-y-1">
           <div className="mb-6">
-            <p className="text-sm text-muted-foreground">Fiokom</p>
+            <p className="text-sm text-muted-foreground">Fiókom</p>
             <p className="mt-0.5 text-base font-medium truncate">
-              {profile.full_name || "Felhasznalo"}
+              {profile.full_name || "Felhasználó"}
             </p>
           </div>
 
@@ -59,7 +59,7 @@ export default async function ProfileLayout({
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-300 hover:bg-muted hover:text-destructive"
             >
               <LogOut className="size-4" />
-              Kijelentkezes
+              Kijelentkezés
             </Link>
           </nav>
         </aside>

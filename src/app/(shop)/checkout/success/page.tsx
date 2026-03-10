@@ -19,12 +19,12 @@ interface SuccessPageProps {
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Piszkozat",
-  awaiting_payment: "Fizetesre var",
+  awaiting_payment: "Fizetésre vár",
   paid: "Fizetve",
-  processing: "Feldolgozas alatt",
-  shipped: "Kiszallitva",
+  processing: "Feldolgozás alatt",
+  shipped: "Kiszállítva",
   cancelled: "Lemondva",
-  refunded: "Visszateritve",
+  refunded: "Visszatérítve",
 };
 
 export default async function CheckoutSuccessPage({
@@ -59,10 +59,10 @@ export default async function CheckoutSuccessPage({
         </div>
 
         <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">
-          Sikeres fizetes!
+          Sikeres fizetés!
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Koszonjuk a rendeleset. Hamarosan e-mailben kuldjuk a visszaigazolast.
+          Köszönjük a rendelését. Hamarosan e-mailben küldjük a visszaigazolást.
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export default async function CheckoutSuccessPage({
         <div className="mt-10 rounded-xl border border-border p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-              Rendeles reszletei
+              Rendelés részletei
             </h2>
             <Badge variant="secondary">
               {STATUS_LABELS[orderData.status] ?? orderData.status}
@@ -82,16 +82,16 @@ export default async function CheckoutSuccessPage({
 
           <dl className="space-y-3">
             <DetailRow
-              label="Rendeles azonosito"
+              label="Rendelés azonosító"
               value={orderData.id.slice(0, 8).toUpperCase()}
             />
             <DetailRow
-              label="Datum"
+              label="Dátum"
               value={formatDate(orderData.created_at)}
             />
             <DetailRow label="E-mail" value={orderData.email} />
             <DetailRow
-              label="Vegosszeg"
+              label="Végösszeg"
               value={formatHUF(orderData.total_amount)}
               bold
             />
@@ -103,7 +103,7 @@ export default async function CheckoutSuccessPage({
         <div className="mt-10 rounded-xl border border-border p-6 text-center">
           <Package className="mx-auto size-8 text-muted-foreground" />
           <p className="mt-3 text-sm text-muted-foreground">
-            Rendeles azonosito:{" "}
+            Rendelés azonosító:{" "}
             <span className="font-mono font-medium text-foreground">
               {orderId.slice(0, 8).toUpperCase()}
             </span>
@@ -115,7 +115,7 @@ export default async function CheckoutSuccessPage({
       <div className="mt-8 flex flex-col items-center gap-3">
         {user && siteConfig.features.enableAccounts ? (
           <Button size="lg" render={<Link href="/account/orders" />}>
-            Rendeleseim
+            Rendeléseim
             <ArrowRight className="ml-1.5 size-4" />
           </Button>
         ) : (
@@ -129,7 +129,7 @@ export default async function CheckoutSuccessPage({
           href="/"
           className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
         >
-          Vissza a fooldal
+          Vissza a főoldalra
         </Link>
       </div>
     </div>

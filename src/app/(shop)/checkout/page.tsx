@@ -15,7 +15,6 @@ import {
   CreditCard,
   Truck,
   Package,
-  MapPin,
   Home,
   User,
   Mail,
@@ -47,6 +46,7 @@ import type {
 
 import { CartLineItem } from "@/components/cart/cart-line-item";
 import { OrderSummary } from "@/components/cart/order-summary";
+import { PickupPointSelector } from "@/components/cart/pickup-point-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,9 +57,9 @@ import { Separator } from "@/components/ui/separator";
 // ── Constants ──────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: 1, label: "Szallitas", icon: Truck },
-  { id: 2, label: "Kapcsolat es szamlazas", icon: User },
-  { id: 3, label: "Osszegzes es fizetes", icon: CreditCard },
+  { id: 1, label: "Szállítás", icon: Truck },
+  { id: 2, label: "Kapcsolat és számlázás", icon: User },
+  { id: 3, label: "Összegzés és fizetés", icon: CreditCard },
 ] as const;
 
 const MOCK_PICKUP_POINTS: Record<
@@ -73,11 +73,11 @@ const MOCK_PICKUP_POINTS: Record<
   ],
   gls_automata: [
     { id: "GLS-BP-001", label: "GLS Automata - Budapest, Keleti pu." },
-    { id: "GLS-BP-002", label: "GLS Automata - Budapest, Deli pu." },
+    { id: "GLS-BP-002", label: "GLS Automata - Budapest, Déli pu." },
   ],
   packeta: [
-    { id: "PKT-BP-001", label: "Packeta - Budapest, Blaha Lujza ter" },
-    { id: "PKT-GYR-001", label: "Packeta - Gyor, Arkad" },
+    { id: "PKT-BP-001", label: "Packeta - Budapest, Blaha Lujza tér" },
+    { id: "PKT-GYR-001", label: "Packeta - Győr, Árkád" },
   ],
   mpl_automata: [
     { id: "MPL-BP-001", label: "MPL Automata - Budapest, Corvin" },
@@ -85,7 +85,7 @@ const MOCK_PICKUP_POINTS: Record<
   ],
   easybox: [
     { id: "EB-BP-001", label: "Easybox - Budapest, Mammut" },
-    { id: "EB-PCS-001", label: "Easybox - Pecs, Arkad" },
+    { id: "EB-PCS-001", label: "Easybox - Pécs, Árkád" },
   ],
 };
 
@@ -94,10 +94,10 @@ const MOCK_PICKUP_POINTS: Record<
 const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/;
 
 const addressSchema = z.object({
-  name: z.string().min(1, "A nev megadasa kotelezo"),
-  street: z.string().min(1, "Az utca megadasa kotelezo"),
-  city: z.string().min(1, "A varos megadasa kotelezo"),
-  zip: z.string().regex(/^\d{4}$/, "Az iranyitoszam 4 szamjegyu kell legyen"),
+  name: z.string().min(1, "A név megadása kötelező"),
+  street: z.string().min(1, "Az utca megadása kötelező"),
+  city: z.string().min(1, "A város megadása kötelező"),
+  zip: z.string().regex(/^\d{4}$/, "Az irányítószám 4 számjegyű kell legyen"),
   country: z.string().min(1, "Az ország megadása kötelező"),
 });
 
@@ -110,10 +110,10 @@ const checkoutFormSchema = z.object({
   pickupPointLabel: z.string().optional(),
 
   // Step 2 — Contact & Billing
-  email: z.string().email("Ervenytelen e-mail cim"),
+  email: z.string().email("Érvénytelen e-mail cím"),
   phone: z
     .string()
-    .regex(hungarianPhoneRegex, "Ervenytelen magyar telefonszam (pl. +36 30 123 4567)"),
+    .regex(hungarianPhoneRegex, "Érvénytelen magyar telefonszám (pl. +36 30 123 4567)"),
   billingAddress: addressSchema,
   sameAsBilling: z.boolean(),
   shippingAddressOverride: addressSchema.optional(),
@@ -159,7 +159,7 @@ export default function CheckoutPage() {
         street: "",
         city: "",
         zip: "",
-        country: "Magyarorszag",
+        country: "Magyarország",
       },
       sameAsBilling: true,
       shippingAddressOverride: {
@@ -167,7 +167,7 @@ export default function CheckoutPage() {
         street: "",
         city: "",
         zip: "",
-        country: "Magyarorszag",
+        country: "Magyarország",
       },
       shippingMethod: "home",
       carrier: homeCarriers[0]?.id ?? "",
@@ -248,12 +248,12 @@ export default function CheckoutPage() {
   const onSubmit = useCallback(
     async (data: CheckoutFormValues) => {
       if (!data.termsAccepted) {
-        toast.error("Kerlek, fogadd el az Altalanos Szerzodesi Felteteleket.");
+        toast.error("Kérlek, fogadd el az Általános Szerződési Feltételeket.");
         return;
       }
 
       if (items.length === 0) {
-        toast.error("A kosarad ures.");
+        toast.error("A kosarad üres.");
         return;
       }
 
@@ -280,11 +280,11 @@ export default function CheckoutPage() {
           shippingMethod: data.shippingMethod as ShippingMethod,
           shippingAddress: {
             ...shippingAddress,
-            country: shippingAddress.country === "Magyarorszag" ? "HU" : shippingAddress.country,
+            country: shippingAddress.country === "Magyarország" ? "HU" : shippingAddress.country,
           },
           billingAddress: {
             ...resolvedBillingAddress,
-            country: resolvedBillingAddress.country === "Magyarorszag" ? "HU" : resolvedBillingAddress.country,
+            country: resolvedBillingAddress.country === "Magyarország" ? "HU" : resolvedBillingAddress.country,
           },
           sameAsBilling: data.sameAsBilling,
           pickupPointProvider:
@@ -314,7 +314,7 @@ export default function CheckoutPage() {
         });
 
         if (!orderResult.success || !orderResult.data) {
-          toast.error(orderResult.error ?? "Hiba tortent a rendeles letrehozasakor.");
+          toast.error(orderResult.error ?? "Hiba történt a rendelés létrehozásakor.");
           setIsSubmitting(false);
           return;
         }
@@ -325,7 +325,7 @@ export default function CheckoutPage() {
         const paymentResult = await startPaymentAction(orderId);
 
         if (!paymentResult.success || !paymentResult.data) {
-          toast.error(paymentResult.error ?? "Hiba tortent a fizetes inditasakor.");
+          toast.error(paymentResult.error ?? "Hiba történt a fizetés indításakor.");
           // Order was created — redirect to success with orderId
           // (payment can be retried from admin)
           router.push(`/checkout/success?orderId=${orderId}`);
@@ -340,7 +340,7 @@ export default function CheckoutPage() {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error("[Checkout] Submit error:", message);
-        toast.error("Varatlan hiba tortent. Kerlek, probald ujra.");
+        toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
         setIsSubmitting(false);
       }
     },
@@ -357,17 +357,17 @@ export default function CheckoutPage() {
             <ShoppingBag className="size-8 text-muted-foreground" />
           </div>
           <h1 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">
-            A kosarad ures
+            A kosarad üres
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Adj hozza termekeket a kosaradhoz a fizetes elott.
+            Adj hozzá termékeket a kosaradhoz a fizetés előtt.
           </p>
           <Button
             className="mt-8"
             size="lg"
             render={<Link href="/products" />}
           >
-            Termekek bongeszese
+            Termékek böngészése
           </Button>
         </div>
       </div>
@@ -379,7 +379,7 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
       <h1 className="text-3xl font-semibold tracking-[-0.03em]">
-        Penztar
+        Pénztár
       </h1>
 
       {/* ── Step indicators ────────────────────────────── */}
@@ -407,7 +407,7 @@ export default function CheckoutPage() {
                 disabled={!isCompleted && !isActive}
                 className={cn(
                   "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-500",
-                  isActive && "bg-foreground text-background",
+                  isActive && "cursor-pointer bg-foreground text-background",
                   isCompleted &&
                     "cursor-pointer bg-muted text-foreground hover:bg-muted/80",
                   !isActive &&
@@ -437,10 +437,10 @@ export default function CheckoutPage() {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                    Szallitasi mod
+                    Szállítási mód
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Valasszon szallitasi modot es futarszolgalatot.
+                    Válasszon szállítási módot és futárszolgálatot.
                   </p>
                 </div>
 
@@ -457,7 +457,7 @@ export default function CheckoutPage() {
                         }
                       }}
                       className={cn(
-                        "flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500",
+                        "flex cursor-pointer flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500",
                         shippingMethod === "home"
                           ? "border-foreground bg-foreground/[0.03]"
                           : "border-border hover:border-foreground/30",
@@ -465,12 +465,12 @@ export default function CheckoutPage() {
                     >
                       <div className="flex items-center gap-2.5">
                         <Home className="size-5" />
-                        <span className="font-medium">
-                          Hazhozsz&aacute;ll&iacute;t&aacute;s
+                         <span className="font-medium">
+                          Házhozszállítás
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Futarszolgalat altal szallitva az On altal megadott cimre.
+                        Futárszolgálat által szállítva az Ön által megadott címre.
                       </p>
                     </button>
                   )}
@@ -486,7 +486,7 @@ export default function CheckoutPage() {
                         }
                       }}
                       className={cn(
-                        "flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500",
+                        "flex cursor-pointer flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500",
                         shippingMethod === "pickup"
                           ? "border-foreground bg-foreground/[0.03]"
                           : "border-border hover:border-foreground/30",
@@ -495,11 +495,11 @@ export default function CheckoutPage() {
                       <div className="flex items-center gap-2.5">
                         <Package className="size-5" />
                         <span className="font-medium">
-                          Csomagautomata / Atveteli pont
+                          Csomagautomata / Átvételi pont
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Csomagautomatabol vagy atveteli ponton veheto at.
+                        Csomagautomatából vagy átvételi ponton vehető át.
                       </p>
                     </button>
                   )}
@@ -511,7 +511,7 @@ export default function CheckoutPage() {
                 {shippingMethod === "home" && (
                   <div className="space-y-4">
                     <h3 className="text-base font-medium">
-                      Futarszolgalat valasztasa
+                      Futárszolgálat választása
                     </h3>
                     <div className="space-y-3">
                       {homeCarriers.map((carrier) => {
@@ -553,109 +553,23 @@ export default function CheckoutPage() {
 
                 {/* ── Pickup point providers ──────────── */}
                 {shippingMethod === "pickup" && (
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <h3 className="text-base font-medium">
-                        Szolgaltato valasztasa
-                      </h3>
-                      <div className="space-y-3">
-                        {pickupCarriers.map((carrier) => {
-                          const fee = getCarrierFee(
-                            "pickup",
-                            carrier.id,
-                            subtotal,
-                          );
-                          const isSelected =
-                            selectedPickupProvider === carrier.id;
-
-                          return (
-                            <label
-                              key={carrier.id}
-                              className={cn(
-                                "flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3.5 transition-all duration-300",
-                                isSelected
-                                  ? "border-foreground bg-foreground/[0.03]"
-                                  : "border-border hover:border-foreground/30",
-                              )}
-                            >
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="radio"
-                                  value={carrier.id}
-                                  checked={isSelected}
-                                  onChange={() => {
-                                    setValue("pickupPointProvider", carrier.id);
-                                    setValue("pickupPointId", "");
-                                    setValue("pickupPointLabel", "");
-                                  }}
-                                  className="size-4 accent-foreground"
-                                />
-                                <span className="text-sm font-medium">
-                                  {carrier.name}
-                                </span>
-                              </div>
-                              <span className="text-sm font-medium tabular-nums">
-                                {fee === 0
-                                  ? "Ingyenes"
-                                  : formatHUF(fee ?? 0)}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* ── Pickup point selector ─────────── */}
-                    {selectedPickupProvider && (
-                      <div className="space-y-3">
-                        <h3 className="text-base font-medium">
-                          <MapPin className="mr-1.5 inline-block size-4" />
-                          Atveteli pont valasztasa
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          Valasszon a lista erhetoe atveteli pontok kozul.
-                        </p>
-                        <div className="space-y-2">
-                          {(
-                            MOCK_PICKUP_POINTS[
-                              selectedPickupProvider as PickupPointProvider
-                            ] ?? []
-                          ).map((point) => (
-                            <label
-                              key={point.id}
-                              className={cn(
-                                "flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-all duration-300",
-                                selectedPickupPointId === point.id
-                                  ? "border-foreground bg-foreground/[0.03]"
-                                  : "border-border hover:border-foreground/30",
-                              )}
-                            >
-                              <input
-                                type="radio"
-                                checked={selectedPickupPointId === point.id}
-                                onChange={() => {
-                                  setValue("pickupPointId", point.id);
-                                  setValue("pickupPointLabel", point.label);
-                                }}
-                                className="size-4 accent-foreground"
-                              />
-                              <div>
-                                <span className="text-sm">{point.label}</span>
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                  ({point.id})
-                                </span>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                        {errors.pickupPointId && (
-                          <p className="text-sm text-red-600 dark:text-red-400">
-                            Kerlek, valassz atveteli pontot.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <PickupPointSelector
+                    carriers={pickupCarriers}
+                    pointsByProvider={MOCK_PICKUP_POINTS}
+                    selectedProvider={selectedPickupProvider}
+                    selectedPointId={selectedPickupPointId}
+                    subtotal={subtotal}
+                    onProviderChange={(id) => {
+                      setValue("pickupPointProvider", id);
+                      setValue("pickupPointId", "");
+                      setValue("pickupPointLabel", "");
+                    }}
+                    onPointChange={(id, label) => {
+                      setValue("pickupPointId", id);
+                      setValue("pickupPointLabel", label);
+                    }}
+                    pointError={errors.pickupPointId?.message}
+                  />
                 )}
 
                 <div className="flex items-center justify-between pt-4">
@@ -671,7 +585,7 @@ export default function CheckoutPage() {
                     size="lg"
                     onClick={() => void goToStep(2)}
                   >
-                    Tovabb
+                    Tovább
                     <ArrowRight className="ml-1.5 size-4" />
                   </Button>
                 </div>
@@ -686,12 +600,12 @@ export default function CheckoutPage() {
                     Kapcsolat
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Adja meg elerhettosegi adatait a rendeleshez.
+                    Adja meg elérhetőségi adatait a rendeléshez.
                   </p>
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     <FormField
-                      label="E-mail cim"
+                      label="E-mail cím"
                       error={errors.email?.message}
                       icon={<Mail className="size-4" />}
                     >
@@ -704,7 +618,7 @@ export default function CheckoutPage() {
                     </FormField>
 
                     <FormField
-                      label="Telefonszam"
+                      label="Telefonszám"
                       error={errors.phone?.message}
                       icon={<Phone className="size-4" />}
                     >
@@ -725,10 +639,10 @@ export default function CheckoutPage() {
                   /* ── Pickup: only billing/invoice address ────── */
                   <div>
                     <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                      Szamlazasi cim
+                      Számlázási cím
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      A szamla erre a cimre kerul kiallitasra.
+                      A számla erre a címre kerül kiállításra.
                     </p>
 
                     <AddressFields
@@ -742,10 +656,10 @@ export default function CheckoutPage() {
                   <>
                     <div>
                       <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                        Szallitasi cim
+                        Szállítási cím
                       </h2>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        A csomag erre a cimre kerul kiszallitasra.
+                        A csomag erre a címre kerül kiszállításra.
                       </p>
 
                       <AddressFields
@@ -770,7 +684,7 @@ export default function CheckoutPage() {
                               }
                             />
                             <Label className="cursor-pointer text-sm">
-                              Szamlazasi cim megegyezik a szallitasi cimmel
+                              Számlázási cím megegyezik a szállítási címmel
                             </Label>
                           </div>
                         )}
@@ -779,7 +693,7 @@ export default function CheckoutPage() {
                       {/* ── Separate billing address ──────── */}
                       {!sameAsBilling && (
                         <div className="mt-6">
-                          <h3 className="text-base font-medium">Szamlazasi cim</h3>
+                          <h3 className="text-base font-medium">Számlázási cím</h3>
                           <AddressFields
                             prefix="billingAddress"
                             register={register}
@@ -805,7 +719,7 @@ export default function CheckoutPage() {
                     size="lg"
                     onClick={() => void goToStep(3)}
                   >
-                    Tovabb
+                    Tovább
                     <ArrowRight className="ml-1.5 size-4" />
                   </Button>
                 </div>
@@ -817,10 +731,10 @@ export default function CheckoutPage() {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                    Rendeles osszegzese
+                    Rendelés összegzése
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Ellenorizze a rendeles reszleteit a fizetes elott.
+                    Ellenőrizze a rendelés részleteit a fizetés előtt.
                   </p>
                 </div>
 
@@ -860,11 +774,11 @@ export default function CheckoutPage() {
                     <p>{watchedValues.phone}</p>
                   </ReviewSection>
 
-                  <ReviewSection title="Szallitas">
+                  <ReviewSection title="Szállítás">
                     {shippingMethod === "home" ? (
                       <>
                         <p className="font-medium">
-                          Hazhozsz&aacute;ll&iacute;t&aacute;s &mdash;{" "}
+                          Házhozszállítás —{" "}
                           {homeCarriers.find((c) => c.id === selectedCarrier)
                             ?.name ?? selectedCarrier}
                         </p>
@@ -895,10 +809,10 @@ export default function CheckoutPage() {
                     )}
                   </ReviewSection>
 
-                  <ReviewSection title="Szamlazasi cim">
+                  <ReviewSection title="Számlázási cím">
                     {shippingMethod === "home" && sameAsBilling ? (
                       <p className="text-muted-foreground">
-                        Megegyezik a szallitasi cimmel
+                        Megegyezik a szállítási címmel
                       </p>
                     ) : (
                       <>
@@ -914,7 +828,7 @@ export default function CheckoutPage() {
                   </ReviewSection>
 
                   {shippingFee > 0 && (
-                    <ReviewSection title="Szallitasi dij">
+                    <ReviewSection title="Szállítási díj">
                       <p className="font-medium">{formatHUF(shippingFee)}</p>
                     </ReviewSection>
                   )}
@@ -924,10 +838,10 @@ export default function CheckoutPage() {
                 <div>
                   <Label className="mb-2 text-sm">
                     <FileText className="size-4" />
-                    Megjegyzes (opcionalis)
+                    Megjegyzés (opcionális)
                   </Label>
                   <Textarea
-                    placeholder="Megegyzes a rendeleshez..."
+                    placeholder="Megjegyzés a rendeléshez..."
                     {...register("notes")}
                     className="min-h-[80px]"
                   />
@@ -955,7 +869,7 @@ export default function CheckoutPage() {
                           target="_blank"
                           className="underline underline-offset-2 transition-colors hover:text-foreground/70"
                         >
-                          Altalanos Szerzodesi Felteteleket
+                         Általános Szerződési Feltételeket
                         </Link>{" "}
                         es az{" "}
                         <Link
@@ -963,7 +877,7 @@ export default function CheckoutPage() {
                           target="_blank"
                           className="underline underline-offset-2 transition-colors hover:text-foreground/70"
                         >
-                          Adatkezelesi Tajekeztatot
+                         Adatkezelési Tájékoztatót
                         </Link>
                         .
                       </Label>
@@ -989,12 +903,12 @@ export default function CheckoutPage() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-1.5 size-4 animate-spin" />
-                        Feldolgozas...
+                        Feldolgozás...
                       </>
                     ) : (
                       <>
                         <CreditCard className="mr-1.5 size-4" />
-                        Fizetes &mdash; {formatHUF(total)}
+                        Fizetés — {formatHUF(total)}
                       </>
                     )}
                   </Button>
@@ -1062,11 +976,11 @@ function AddressFields({
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <FormField
-          label="Teljes nev"
+          label="Teljes név"
           error={errors?.name?.message}
         >
           <Input
-            placeholder="Kovacs Janos"
+            placeholder="Kovács János"
             {...register(`${prefix}.name`)}
             aria-invalid={!!errors?.name}
           />
@@ -1075,18 +989,18 @@ function AddressFields({
 
       <div className="sm:col-span-2">
         <FormField
-          label="Utca, hazszam"
+          label="Utca, házszám"
           error={errors?.street?.message}
         >
           <Input
-            placeholder="Vaci utca 1."
+            placeholder="Váci utca 1."
             {...register(`${prefix}.street`)}
             aria-invalid={!!errors?.street}
           />
         </FormField>
       </div>
 
-      <FormField label="Varos" error={errors?.city?.message}>
+      <FormField label="Város" error={errors?.city?.message}>
         <Input
           placeholder="Budapest"
           {...register(`${prefix}.city`)}
@@ -1095,7 +1009,7 @@ function AddressFields({
       </FormField>
 
       <FormField
-        label="Iranyitoszam"
+        label="Irányítószám"
         error={errors?.zip?.message}
       >
         <Input
@@ -1107,9 +1021,9 @@ function AddressFields({
       </FormField>
 
       <div className="sm:col-span-2">
-        <FormField label="Orszag" error={errors?.country?.message}>
+        <FormField label="Ország" error={errors?.country?.message}>
           <Input
-            defaultValue="Magyarorszag"
+            defaultValue="Magyarország"
             {...register(`${prefix}.country`)}
             aria-invalid={!!errors?.country}
           />

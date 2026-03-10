@@ -10,6 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth, requireAdmin, requireAdminOrViewer, getCurrentUser } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { checkoutSchema } from "@/lib/validators/checkout";
+import { uuidSchema } from "@/lib/validators/uuid";
 import { siteConfig } from "@/lib/config/site.config";
 import { getHooks } from "@/lib/config/hooks";
 import { calculateShippingFee } from "@/lib/utils/shipping";
@@ -53,8 +54,8 @@ interface AdminOrderFilters {
 // ── Validation schemas ─────────────────────────────────────────────
 
 const cartItemSchema = z.object({
-  productId: z.string().uuid(),
-  variantId: z.string().uuid().nullable(),
+  productId: uuidSchema,
+  variantId: uuidSchema.nullable(),
   title: z.string(),
   variantLabel: z.string(),
   price: z.number().int().min(0),
@@ -456,7 +457,7 @@ export async function getOrderForUser(
   orderId: string,
 ): Promise<ActionResult<OrderWithItems>> {
   try {
-    const idParsed = z.string().uuid().safeParse(orderId);
+    const idParsed = uuidSchema.safeParse(orderId);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen rendelés azonosító." };
     }
@@ -529,7 +530,7 @@ export async function adminListOrders(
 
     if (search) {
       // Search by email or order ID — only include id.eq if search is a valid UUID
-      const isUuid = z.string().uuid().safeParse(search).success;
+      const isUuid = uuidSchema.safeParse(search).success;
       if (isUuid) {
         query = query.or(`email.ilike.%${search}%,id.eq.${search}`);
       } else {
@@ -580,7 +581,7 @@ export async function adminGetOrder(
   try {
     await requireAdminOrViewer();
 
-    const idParsed = z.string().uuid().safeParse(orderId);
+    const idParsed = uuidSchema.safeParse(orderId);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen rendelés azonosító." };
     }
@@ -624,7 +625,7 @@ export async function adminUpdateOrderStatus(
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(orderId);
+    const idParsed = uuidSchema.safeParse(orderId);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen rendelés azonosító." };
     }

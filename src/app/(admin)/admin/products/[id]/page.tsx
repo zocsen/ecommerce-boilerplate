@@ -2,17 +2,17 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  ArrowLeft,
   Plus,
   Trash2,
   Save,
   Loader2,
   ImagePlus,
   AlertTriangle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
-import { adminUpdateProduct, adminDeleteProduct, adminGetProduct } from "@/lib/actions/products";
+import { adminUpdateProduct, adminHardDeleteProduct, adminToggleProductActive, adminGetProduct } from "@/lib/actions/products";
 import { listCategories } from "@/lib/actions/categories";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -115,6 +115,7 @@ export default function AdminProductEditPage({
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -286,7 +287,7 @@ export default function AdminProductEditPage({
     setDeleting(true);
 
     try {
-      const result = await adminDeleteProduct(id);
+      const result = await adminHardDeleteProduct(id);
       if (!result.success) {
         setError(result.error ?? "Hiba a termék törlésekor.");
         setDeleting(false);
@@ -296,6 +297,27 @@ export default function AdminProductEditPage({
     } catch {
       setError("Váratlan hiba történt.");
       setDeleting(false);
+    }
+  }
+
+  // ── Toggle active/inactive ─────────────────────────────────────
+  async function handleToggleActive() {
+    if (!product) return;
+    setToggling(true);
+    setError(null);
+    try {
+      const newActive = !isActive;
+      const result = await adminToggleProductActive(id, newActive);
+      if (!result.success) {
+        setError(result.error ?? "Hiba a termék státuszának módosításakor.");
+      } else {
+        setIsActive(newActive);
+        setProduct({ ...product, is_active: newActive });
+      }
+    } catch {
+      setError("Váratlan hiba történt.");
+    } finally {
+      setToggling(false);
     }
   }
 
@@ -313,9 +335,6 @@ export default function AdminProductEditPage({
     return (
       <div className="flex h-60 flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
         <p>A termék nem található.</p>
-        <Button size="sm" render={<Link href="/admin/products" />}>
-          Vissza a termékekhez
-        </Button>
       </div>
     );
   }
@@ -324,25 +343,34 @@ export default function AdminProductEditPage({
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link href="/admin/products" />}
-          >
-            <ArrowLeft className="mr-2 size-4" />
-            Vissza
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Termék szerkesztése
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground font-mono">
-              {product?.slug}
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Termék szerkesztése
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground font-mono">
+            {product?.slug}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Toggle active / inactive */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleToggleActive}
+            disabled={toggling}
+            title={isActive ? "Inaktiválás" : "Aktiválás"}
+          >
+            {toggling ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : isActive ? (
+              <EyeOff className="mr-2 size-4" />
+            ) : (
+              <Eye className="mr-2 size-4" />
+            )}
+            {isActive ? "Inaktiválás" : "Aktiválás"}
+          </Button>
+          {/* Hard delete */}
           <Button
             type="button"
             variant="destructive"
@@ -387,7 +415,7 @@ export default function AdminProductEditPage({
           gombra.
           <button
             type="button"
-            className="ml-auto underline"
+            className="ml-auto cursor-pointer underline"
             onClick={() => setConfirmDelete(false)}
           >
             Mégsem
@@ -533,7 +561,7 @@ export default function AdminProductEditPage({
                         <button
                           type="button"
                           onClick={() => removeImageUrl(i)}
-                          className="text-muted-foreground hover:text-destructive"
+                          className="cursor-pointer text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
@@ -585,7 +613,7 @@ export default function AdminProductEditPage({
                       <button
                         type="button"
                         onClick={() => removeVariant(v.key)}
-                        className="text-muted-foreground hover:text-destructive"
+                        className="cursor-pointer text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="size-4" />
                       </button>

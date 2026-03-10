@@ -13,12 +13,12 @@ import type { OrderStatus } from "@/lib/types/database";
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   draft: "Piszkozat",
-  awaiting_payment: "Fizetesre var",
+  awaiting_payment: "Fizetésre vár",
   paid: "Fizetve",
-  processing: "Feldolgozas alatt",
-  shipped: "Kiszallitva",
+  processing: "Feldolgozás alatt",
+  shipped: "Kiszállítva",
   cancelled: "Lemondva",
-  refunded: "Visszateritve",
+  refunded: "Visszatérítve",
 };
 
 const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -44,21 +44,21 @@ export default async function ProfilePage() {
       {/* -- Welcome -- */}
       <div>
         <h1 className="text-3xl font-semibold tracking-[-0.03em]">
-          Udvozollek, {profile.full_name || "Felhasznalo"}
+          Üdvözöllek, {profile.full_name || "Felhasználó"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Itt kezelheted a rendeleseidet, cimeidet es fiokbeallitasaidat.
+          Itt kezelheted a rendeléseidet, címeidet és fiókbeállításaidat.
         </p>
       </div>
 
       {/* -- Quick stats -- */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-border p-5">
-          <p className="text-xs text-muted-foreground">Osszes rendeles</p>
+          <p className="text-xs text-muted-foreground">Összes rendelés</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{totalOrders}</p>
         </div>
         <div className="rounded-xl border border-border p-5">
-          <p className="text-xs text-muted-foreground">Tag ota</p>
+          <p className="text-xs text-muted-foreground">Tag óta</p>
           <p className="mt-1 text-2xl font-semibold">{formatDate(profile.created_at)}</p>
         </div>
         <div className="rounded-xl border border-border p-5">
@@ -72,13 +72,13 @@ export default async function ProfilePage() {
       {/* -- Recent orders -- */}
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Legutobbi rendelesek</h2>
+          <h2 className="text-lg font-semibold">Legutóbbi rendelések</h2>
           {totalOrders > 0 && (
             <Link
               href="/profile/orders"
               className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Osszes megtekintese
+              Összes megtekintése
               <ArrowRight className="size-3.5" />
             </Link>
           )}
@@ -90,13 +90,13 @@ export default async function ProfilePage() {
               <Package className="size-6 text-muted-foreground" />
             </div>
             <p className="mt-3 text-sm text-muted-foreground">
-              Meg nincsenek rendeleseid.
+              Még nincsenek rendeléseid.
             </p>
             <Link
               href="/products"
               className="mt-4 text-sm font-medium underline underline-offset-2 transition-colors hover:text-foreground/70"
             >
-              Termekek bongeszese
+              Termékek böngészése
             </Link>
           </div>
         ) : (

@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/table";
 import type { ProductRow } from "@/lib/types/database";
 
+type ProductWithCategories = ProductRow & { categoryNames: string[] };
+
 /* ------------------------------------------------------------------ */
 /*  Admin Products List (client component)                              */
 /* ------------------------------------------------------------------ */
@@ -32,7 +34,7 @@ export function AdminProductsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [products, setProducts] = useState<ProductWithCategories[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,7 @@ export function AdminProductsClient() {
           <TableHeader>
             <TableRow>
               <TableHead>Termék</TableHead>
-              <TableHead>Slug</TableHead>
+              <TableHead>Kategóriák</TableHead>
               <TableHead className="text-right">Ár</TableHead>
               <TableHead>Státusz</TableHead>
               <TableHead className="text-right">Létrehozva</TableHead>
@@ -153,8 +155,22 @@ export function AdminProductsClient() {
                     <span className="font-medium">{product.title}</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
-                  {product.slug}
+                <TableCell>
+                  {product.categoryNames.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {product.categoryNames.map((name) => (
+                        <Badge
+                          key={name}
+                          variant="secondary"
+                          className="text-[11px] px-1.5 py-0 font-normal"
+                        >
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   <div>
@@ -219,3 +235,4 @@ export function AdminProductsClient() {
     </div>
   );
 }
+

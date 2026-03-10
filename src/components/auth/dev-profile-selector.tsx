@@ -97,7 +97,7 @@ function DevProfileSelectorInner() {
               type="button"
               disabled={isDisabled}
               onClick={() => handleSelect(user)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:bg-amber-100/60 dark:hover:bg-amber-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:bg-amber-100/60 dark:hover:bg-amber-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isActive && isPending ? (
                 <Loader2 className="size-3.5 animate-spin text-amber-600 shrink-0" />

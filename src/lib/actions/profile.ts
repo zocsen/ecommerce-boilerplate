@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/security/roles";
+import { uuidSchema } from "@/lib/validators/uuid";
 import type {
   ProfileRow,
   OrderRow,
@@ -29,18 +30,18 @@ interface ActionResult<T = undefined> {
 const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/;
 
 const updateProfileSchema = z.object({
-  fullName: z.string().min(1, "A nev megadasa kotelezo").max(200),
+  fullName: z.string().min(1, "A név megadása kötelező").max(200),
   phone: z
     .string()
-    .regex(hungarianPhoneRegex, "Ervenytelen magyar telefonszam (pl. +36 30 123 4567)")
+    .regex(hungarianPhoneRegex, "Érvénytelen magyar telefonszám (pl. +36 30 123 4567)")
     .or(z.literal("")),
 });
 
 const addressSchema = z.object({
-  name: z.string().min(1, "A nev megadasa kotelezo"),
-  street: z.string().min(1, "Az utca megadasa kotelezo"),
-  city: z.string().min(1, "A varos megadasa kotelezo"),
-  zip: z.string().regex(/^\d{4}$/, "Az iranyitoszam 4 szamjegyu kell legyen"),
+  name: z.string().min(1, "A név megadása kötelező"),
+  street: z.string().min(1, "Az utca megadása kötelező"),
+  city: z.string().min(1, "A város megadása kötelező"),
+  zip: z.string().regex(/^\d{4}$/, "Az irányítószám 4 számjegyű kell legyen"),
   country: z.string().default("HU"),
 });
 
@@ -56,7 +57,7 @@ const pickupPointSchema = z.object({
 });
 
 const changePasswordSchema = z.object({
-  newPassword: z.string().min(8, "A jelszonak legalabb 8 karakter hosszunak kell lennie"),
+  newPassword: z.string().min(8, "A jelszónak legalább 8 karakter hosszúnak kell lennie"),
 });
 
 // ── Get current profile ────────────────────────────────────────────
@@ -73,14 +74,14 @@ export async function getProfile(): Promise<ActionResult<ProfileRow>> {
       .single();
 
     if (error || !profile) {
-      return { success: false, error: "A profil nem talalhato." };
+      return { success: false, error: "A profil nem található." };
     }
 
     return { success: true, data: profile };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[getProfile] Unexpected error:", message);
-    return { success: false, error: "Varatlan hiba tortent." };
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -96,7 +97,7 @@ export async function updateProfile(input: {
     const parsed = updateProfileSchema.safeParse(input);
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
-      return { success: false, error: firstIssue?.message ?? "Ervenytelen adatok." };
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." };
     }
 
     const supabase = await createClient();
@@ -111,14 +112,14 @@ export async function updateProfile(input: {
 
     if (error) {
       console.error("[updateProfile] DB error:", error.message);
-      return { success: false, error: "Hiba a profil frissitesekor." };
+      return { success: false, error: "Hiba a profil frissítésekor." };
     }
 
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[updateProfile] Unexpected error:", message);
-    return { success: false, error: "Varatlan hiba tortent." };
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -138,7 +139,7 @@ export async function updateAddresses(input: {
       const parsed = addressSchema.safeParse(input.shippingAddress);
       if (!parsed.success) {
         const firstIssue = parsed.error.issues[0];
-        return { success: false, error: `Szallitasi cim: ${firstIssue?.message ?? "ervenytelen"}` };
+        return { success: false, error: `Szállítási cím: ${firstIssue?.message ?? "érvénytelen"}` };
       }
       updatePayload.default_shipping_address = parsed.data;
     }
@@ -147,7 +148,7 @@ export async function updateAddresses(input: {
       const parsed = billingAddressSchema.safeParse(input.billingAddress);
       if (!parsed.success) {
         const firstIssue = parsed.error.issues[0];
-        return { success: false, error: `Szamlazasi cim: ${firstIssue?.message ?? "ervenytelen"}` };
+        return { success: false, error: `Számlázási cím: ${firstIssue?.message ?? "érvénytelen"}` };
       }
       updatePayload.default_billing_address = parsed.data;
     }
@@ -155,13 +156,13 @@ export async function updateAddresses(input: {
     if (input.pickupPoint) {
       const parsed = pickupPointSchema.safeParse(input.pickupPoint);
       if (!parsed.success) {
-        return { success: false, error: "Ervenytelen atveteli pont adatok." };
+        return { success: false, error: "Érvénytelen átvételi pont adatok." };
       }
       updatePayload.default_pickup_point = parsed.data;
     }
 
     if (Object.keys(updatePayload).length === 0) {
-      return { success: false, error: "Nincs frissitendo mezo." };
+      return { success: false, error: "Nincs frissítendő mező." };
     }
 
     const supabase = await createClient();
@@ -173,14 +174,14 @@ export async function updateAddresses(input: {
 
     if (error) {
       console.error("[updateAddresses] DB error:", error.message);
-      return { success: false, error: "Hiba a cimek frissitesekor." };
+      return { success: false, error: "Hiba a címek frissítésekor." };
     }
 
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[updateAddresses] Unexpected error:", message);
-    return { success: false, error: "Varatlan hiba tortent." };
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -195,7 +196,7 @@ export async function changePassword(input: {
     const parsed = changePasswordSchema.safeParse(input);
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
-      return { success: false, error: firstIssue?.message ?? "Ervenytelen jelszo." };
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen jelszó." };
     }
 
     const supabase = await createClient();
@@ -206,14 +207,14 @@ export async function changePassword(input: {
 
     if (error) {
       console.error("[changePassword] Auth error:", error.message);
-      return { success: false, error: "Hiba a jelszo megvaltoztatasakor." };
+      return { success: false, error: "Hiba a jelszó megváltoztatásakor." };
     }
 
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[changePassword] Unexpected error:", message);
-    return { success: false, error: "Varatlan hiba tortent." };
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -243,7 +244,7 @@ export async function listUserOrders(input?: {
 
     if (error) {
       console.error("[listUserOrders] DB error:", error.message);
-      return { success: false, error: "Hiba a rendelesek lekeresekor." };
+      return { success: false, error: "Hiba a rendelések lekérésekor." };
     }
 
     const total = count ?? 0;
@@ -260,7 +261,7 @@ export async function listUserOrders(input?: {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[listUserOrders] Unexpected error:", message);
-    return { success: false, error: "Varatlan hiba tortent." };
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -282,9 +283,9 @@ export async function getUserOrder(orderId: string): Promise<
   try {
     const user = await requireAuth();
 
-    const idParsed = z.string().uuid().safeParse(orderId);
+    const idParsed = uuidSchema.safeParse(orderId);
     if (!idParsed.success) {
-      return { success: false, error: "Ervenytelen rendeles azonosito." };
+      return { success: false, error: "Érvénytelen rendelés azonosító." };
     }
 
     const supabase = await createClient();
@@ -304,7 +305,7 @@ export async function getUserOrder(orderId: string): Promise<
     ]);
 
     if (orderResult.error || !orderResult.data) {
-      return { success: false, error: "A rendeles nem talalhato." };
+      return { success: false, error: "A rendelés nem található." };
     }
 
     return {
@@ -317,7 +318,7 @@ export async function getUserOrder(orderId: string): Promise<
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[getUserOrder] Unexpected error:", message);
-    return { success: false, error: "Varatlan hiba tortent." };
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -330,13 +331,13 @@ export async function signOut(): Promise<ActionResult> {
 
     if (error) {
       console.error("[signOut] Auth error:", error.message);
-      return { success: false, error: "Hiba a kijelentkezeskor." };
+      return { success: false, error: "Hiba a kijelentkezéskor." };
     }
 
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[signOut] Unexpected error:", message);
-    return { success: false, error: "Varatlan hiba tortent." };
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }

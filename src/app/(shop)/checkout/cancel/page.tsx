@@ -16,11 +16,11 @@ export default function CheckoutCancelPage() {
         </div>
 
         <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">
-          A fizetes megszakadt
+          A fizetés megszakadt
         </h1>
         <p className="mt-2 max-w-md text-muted-foreground">
-          A fizetesi folyamat megszakadt vagy nem sikerult. A kosarad tartalma
-          megmaradt, nyugodtan probald ujra.
+          A fizetési folyamat megszakadt vagy nem sikerült. A kosarad tartalma
+          megmaradt, nyugodtan próbáld újra.
         </p>
 
         {/* ── CTAs ──────────────────────────────────────── */}
@@ -34,7 +34,7 @@ export default function CheckoutCancelPage() {
             href="/products"
             className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
           >
-            Termekek bongeszese
+            Termékek böngészése
           </Link>
         </div>
       </div>

@@ -3,6 +3,7 @@
 /* ------------------------------------------------------------------ */
 
 import { z } from "zod";
+import { uuidSchema } from "@/lib/validators/uuid";
 
 // ── Slug regex: lowercase letters, digits, hyphens ─────────────────
 
@@ -37,7 +38,7 @@ export const productCreateSchema = z.object({
   mainImageUrl: z.url("Érvénytelen kép URL").optional(),
   imageUrls: z.array(z.string()),
   isActive: z.boolean(),
-  categoryIds: z.array(z.uuid("Érvénytelen kategória azonosító")),
+  categoryIds: z.array(uuidSchema),
 });
 
 export type ProductCreateInput = z.infer<typeof productCreateSchema>;
@@ -45,7 +46,7 @@ export type ProductCreateInput = z.infer<typeof productCreateSchema>;
 // ── Product update schema (all optional except id) ─────────────────
 
 export const productUpdateSchema = z.object({
-  id: z.uuid("Érvénytelen termék azonosító"),
+  id: uuidSchema,
   title: z.string().min(1, "A termék neve kötelező").optional(),
   slug: z
     .string()
@@ -62,7 +63,7 @@ export const productUpdateSchema = z.object({
   mainImageUrl: z.url("Érvénytelen kép URL").optional().nullable(),
   imageUrls: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
-  categoryIds: z.array(z.uuid("Érvénytelen kategória azonosító")).optional(),
+  categoryIds: z.array(uuidSchema).optional(),
 });
 
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;

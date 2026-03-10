@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
+import { uuidSchema } from "@/lib/validators/uuid";
 import type { CategoryRow } from "@/lib/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -29,7 +30,7 @@ const categoryCreateSchema = z.object({
     .min(1, "A slug kötelező")
     .regex(slugPattern, "A slug csak kisbetűket, számokat és kötőjelet tartalmazhat"),
   name: z.string().min(1, "A kategória neve kötelező"),
-  parentId: z.string().uuid().optional(),
+  parentId: uuidSchema.optional(),
   sortOrder: z.number().int().min(0).optional(),
 });
 
@@ -40,7 +41,7 @@ const categoryUpdateSchema = z.object({
     .regex(slugPattern, "A slug csak kisbetűket, számokat és kötőjelet tartalmazhat")
     .optional(),
   name: z.string().min(1).optional(),
-  parentId: z.string().uuid().nullable().optional(),
+  parentId: uuidSchema.nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
 });
 
@@ -188,7 +189,7 @@ export async function adminUpdateCategory(
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen kategória azonosító." };
     }
@@ -274,7 +275,7 @@ export async function adminDeleteCategory(
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen kategória azonosító." };
     }
@@ -308,13 +309,110 @@ export async function adminDeleteCategory(
   }
 }
 
+export async function adminToggleCategory(
+  id: string,
+  isActive: boolean,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin();
+
+    const idParsed = uuidSchema.safeParse(id);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen kategória azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    const { error } = await admin
+      .from("categories")
+      .update({ is_active: isActive })
+      .eq("id", idParsed.data);
+
+    if (error) {
+      console.error("[adminToggleCategory] Update error:", error.message);
+      return { success: false, error: "Hiba a kategória státuszának módosításakor." };
+    }
+
+    await logAudit({
+      actorId: profile.id,
+      actorRole: profile.role,
+      action: isActive ? "category.activate" : "category.deactivate",
+      entityType: "category",
+      entityId: idParsed.data,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminToggleCategory] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+export async function adminHardDeleteCategory(
+  id: string,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin();
+
+    const idParsed = uuidSchema.safeParse(id);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen kategória azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    // Remove category from all products first (product_categories join table)
+    const { error: joinError } = await admin
+      .from("product_categories")
+      .delete()
+      .eq("category_id", idParsed.data);
+
+    if (joinError) {
+      console.error("[adminHardDeleteCategory] Join delete error:", joinError.message);
+      return { success: false, error: "Hiba a kategória törlésének előkészítésekor." };
+    }
+
+    // Also clear parent_id references so children become top-level
+    await admin
+      .from("categories")
+      .update({ parent_id: null })
+      .eq("parent_id", idParsed.data);
+
+    // Hard-delete the category
+    const { error } = await admin
+      .from("categories")
+      .delete()
+      .eq("id", idParsed.data);
+
+    if (error) {
+      console.error("[adminHardDeleteCategory] Delete error:", error.message);
+      return { success: false, error: "Hiba a kategória törlésekor." };
+    }
+
+    await logAudit({
+      actorId: profile.id,
+      actorRole: profile.role,
+      action: "category.hard_delete",
+      entityType: "category",
+      entityId: idParsed.data,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminHardDeleteCategory] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
 export async function adminRestoreCategory(
   id: string,
 ): Promise<ActionResult> {
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen kategória azonosító." };
     }

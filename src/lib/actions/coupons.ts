@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { couponCreateSchema } from "@/lib/validators/coupon";
+import { uuidSchema } from "@/lib/validators/uuid";
 import type { CouponRow } from "@/lib/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ export async function adminListCoupons(
       .from("coupons")
       .select("*", { count: "exact" })
       .order("is_active", { ascending: false })
-      .order("created_at" as string, { ascending: false });
+      .order("code", { ascending: true });
 
     if (search) {
       query = query.ilike("code", `%${search.toUpperCase()}%`);
@@ -196,7 +197,7 @@ export async function adminUpdateCoupon(
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen kupon azonosító." };
     }
@@ -270,34 +271,74 @@ export async function adminUpdateCoupon(
   }
 }
 
-export async function adminDeleteCoupon(
+export async function adminToggleCoupon(
   id: string,
+  isActive: boolean,
 ): Promise<ActionResult> {
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen kupon azonosító." };
     }
 
     const admin = createAdminClient();
 
-    // Soft-delete: deactivate the coupon
     const { error } = await admin
       .from("coupons")
-      .update({ is_active: false })
+      .update({ is_active: isActive })
       .eq("id", idParsed.data);
 
     if (error) {
-      console.error("[adminDeleteCoupon] Update error:", error.message);
+      console.error("[adminToggleCoupon] Update error:", error.message);
+      return { success: false, error: "Hiba a kupon státuszának módosításakor." };
+    }
+
+    await logAudit({
+      actorId: profile.id,
+      actorRole: profile.role,
+      action: isActive ? "coupon.activate" : "coupon.deactivate",
+      entityType: "coupon",
+      entityId: idParsed.data,
+      metadata: { is_active: isActive },
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminToggleCoupon] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+export async function adminDeleteCoupon(
+  id: string,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin();
+
+    const idParsed = uuidSchema.safeParse(id);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen kupon azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    const { error } = await admin
+      .from("coupons")
+      .delete()
+      .eq("id", idParsed.data);
+
+    if (error) {
+      console.error("[adminDeleteCoupon] Delete error:", error.message);
       return { success: false, error: "Hiba a kupon törlésekor." };
     }
 
     await logAudit({
       actorId: profile.id,
       actorRole: profile.role,
-      action: "coupon.soft_delete",
+      action: "coupon.delete",
       entityType: "coupon",
       entityId: idParsed.data,
     });

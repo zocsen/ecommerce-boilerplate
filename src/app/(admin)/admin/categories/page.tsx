@@ -9,14 +9,15 @@ import {
   FolderTree,
   Save,
   X,
-  RotateCcw,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   adminListCategories,
   adminCreateCategory,
   adminUpdateCategory,
-  adminDeleteCategory,
-  adminRestoreCategory,
+  adminToggleCategory,
+  adminHardDeleteCategory,
 } from "@/lib/actions/categories";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +28,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -76,9 +76,10 @@ export default function AdminCategoriesPage() {
   const [editSortOrder, setEditSortOrder] = useState("0");
   const [saving, setSaving] = useState(false);
 
-  // Delete
+  // Toggle / delete state
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // General
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +111,6 @@ export default function AdminCategoriesPage() {
   }
 
   // ── Build hierarchy display ────────────────────────────────────
-  // Sort: top-level first, then children indented
   function getSortedCategories(): (CategoryRow & { depth: number })[] {
     const result: (CategoryRow & { depth: number })[] = [];
 
@@ -202,41 +202,44 @@ export default function AdminCategoriesPage() {
     fetchCategories();
   }
 
-  // ── Delete ─────────────────────────────────────────────────────
+  // ── Toggle active/inactive ─────────────────────────────────────
+  async function handleToggle(cat: CategoryRow) {
+    setTogglingId(cat.id);
+    setError(null);
+
+    const res = await adminToggleCategory(cat.id, !cat.is_active);
+
+    if (!res.success) {
+      setError(res.error ?? "Hiba a kategória státuszának módosításakor.");
+    } else {
+      fetchCategories();
+    }
+
+    setTogglingId(null);
+  }
+
+  // ── Hard delete ────────────────────────────────────────────────
   async function handleDelete(id: string) {
-    if (deletingId !== id) {
-      setDeletingId(id);
+    // First click: show confirmation
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
       return;
     }
 
+    // Second click: execute
+    setDeletingId(id);
+    setConfirmDeleteId(null);
     setError(null);
-    const res = await adminDeleteCategory(id);
+
+    const res = await adminHardDeleteCategory(id);
 
     if (!res.success) {
       setError(res.error ?? "Hiba a kategória törlésekor.");
-      setDeletingId(null);
-      return;
+    } else {
+      fetchCategories();
     }
 
     setDeletingId(null);
-    fetchCategories();
-  }
-
-  // ── Restore ────────────────────────────────────────────────────
-  async function handleRestore(id: string) {
-    setRestoringId(id);
-    setError(null);
-
-    const res = await adminRestoreCategory(id);
-
-    if (!res.success) {
-      setError(res.error ?? "Hiba a kategória visszaállításakor.");
-      setRestoringId(null);
-      return;
-    }
-
-    setRestoringId(null);
-    fetchCategories();
   }
 
   // ── Render ─────────────────────────────────────────────────────
@@ -449,7 +452,9 @@ export default function AdminCategoriesPage() {
                         {cat.depth > 0 && (
                           <span className="text-muted-foreground">└</span>
                         )}
-                        <span className="font-medium">{cat.name}</span>
+                        <span className={cat.is_active ? "font-medium" : "font-medium text-muted-foreground"}>
+                          {cat.name}
+                        </span>
                         {!cat.is_active && (
                           <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">
                             Inaktív
@@ -468,42 +473,52 @@ export default function AdminCategoriesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Edit */}
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-7"
+                          title="Szerkesztés"
                           onClick={() => startEdit(cat)}
                         >
                           <Pencil className="size-3.5" />
                         </Button>
-                        {!cat.is_active ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-emerald-600 hover:text-emerald-600"
-                            onClick={() => handleRestore(cat.id)}
-                            disabled={restoringId === cat.id}
-                          >
-                            {restoringId === cat.id ? (
-                              <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                              <RotateCcw className="size-3.5" />
-                            )}
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(cat.id)}
-                          >
-                            {deletingId === cat.id ? (
-                              <span className="text-xs">Megerősítés?</span>
-                            ) : (
-                              <Trash2 className="size-3.5" />
-                            )}
-                          </Button>
-                        )}
+
+                        {/* Toggle active / inactive */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-7 ${cat.is_active ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-emerald-600"}`}
+                          title={cat.is_active ? "Inaktiválás" : "Aktiválás"}
+                          onClick={() => handleToggle(cat)}
+                          disabled={togglingId === cat.id}
+                        >
+                          {togglingId === cat.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : cat.is_active ? (
+                            <EyeOff className="size-3.5" />
+                          ) : (
+                            <Eye className="size-3.5" />
+                          )}
+                        </Button>
+
+                        {/* Permanent delete */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-destructive hover:text-destructive"
+                          title="Végleges törlés"
+                          onClick={() => handleDelete(cat.id)}
+                          disabled={deletingId === cat.id}
+                        >
+                          {deletingId === cat.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : confirmDeleteId === cat.id ? (
+                            <span className="text-xs font-medium">Biztos?</span>
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
                       </div>
                     </TableCell>
                   </>
@@ -512,6 +527,13 @@ export default function AdminCategoriesPage() {
             ))}
           </TableBody>
         </Table>
+      )}
+
+      {/* Cancel delete confirmation on outside click hint */}
+      {confirmDeleteId && (
+        <p className="text-center text-xs text-muted-foreground">
+          Kattints újra a piros törlés gombra a megerősítéshez, vagy máshova kattintva megszakíthatod.
+        </p>
       )}
     </div>
   );

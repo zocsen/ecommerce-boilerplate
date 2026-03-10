@@ -124,7 +124,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             type="button"
             onClick={() => updateParams({ category: null })}
             className={cn(
-              "rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
+              "cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
               currentCategory === ""
                 ? "border-foreground bg-foreground text-background"
                 : "border-border text-foreground hover:border-foreground/40",
@@ -140,7 +140,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
                 type="button"
                 onClick={() => updateParams({ category: category.slug })}
                 className={cn(
-                  "rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
+                  "cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
                   currentCategory === category.slug
                     ? "border-foreground bg-foreground text-background"
                     : "border-border text-foreground hover:border-foreground/40",
@@ -200,7 +200,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             updateParams({ inStock: currentInStock ? null : "true" })
           }
           className={cn(
-            "rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
+            "cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
             currentInStock
               ? "border-foreground bg-foreground text-background"
               : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",

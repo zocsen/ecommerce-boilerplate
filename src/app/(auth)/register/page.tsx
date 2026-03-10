@@ -30,10 +30,10 @@ import { DevProfileSelector } from "@/components/auth/dev-profile-selector";
 
 const registerSchema = z
   .object({
-    fullName: z.string().min(1, "A nev megadasa kotelezo"),
-    email: z.string().email("Ervenytelen e-mail cim"),
-    password: z.string().min(6, "A jelszo legalabb 6 karakter kell legyen"),
-    confirmPassword: z.string().min(1, "A jelszo megerositese kotelezo"),
+    fullName: z.string().min(1, "A név megadása kötelező"),
+    email: z.string().email("Érvénytelen e-mail cím"),
+    password: z.string().min(6, "A jelszó legalább 6 karakter kell legyen"),
+    confirmPassword: z.string().min(1, "A jelszó megerősítése kötelező"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "A jelszavak nem egyeznek",
@@ -132,12 +132,12 @@ export default function RegisterPage() {
 
       if (error) {
         toast.error(
-          `A ${provider} regisztracio nem sikerult. Ellenorizd, hogy a provider konfiguralt-e.`,
+          `A ${provider} regisztráció nem sikerült. Ellenőrizd, hogy a provider konfigurált-e.`,
         );
         setOauthLoading(null);
       }
     } catch {
-      toast.error("Varatlan hiba tortent. Probald ujra.");
+      toast.error("Váratlan hiba történt. Próbáld újra.");
       setOauthLoading(null);
     }
   }, []);
@@ -166,7 +166,7 @@ export default function RegisterPage() {
 
       setIsSuccess(true);
     } catch {
-      toast.error("Varatlan hiba tortent. Kerlek, probald ujra.");
+      toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
       setIsLoading(false);
     }
   }, []);
@@ -180,17 +180,17 @@ export default function RegisterPage() {
           <CheckCircle2 className="size-7 text-emerald-600 dark:text-emerald-400" />
         </div>
         <h1 className="mt-4 text-xl font-semibold tracking-[-0.02em]">
-          Ellenorizd az e-mail fiokod
+          Ellenőrizd az e-mail fiókodat
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Kuldtunk egy megerosito e-mailt. Kerlek, kattints a linkre a
-          regisztracio befejezeesehez.
+          Küldtünk egy megerősítő e-mailt. Kérlek, kattints a linkre a
+          regisztráció befejezéséhez.
         </p>
         <Link
           href="/login"
           className="mt-6 text-sm font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
         >
-          Vissza a bejelentkezeshez
+          Vissza a bejelentkezéshez
         </Link>
       </div>
     );
@@ -201,10 +201,10 @@ export default function RegisterPage() {
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-[-0.02em]">
-        Regisztracio
+        Regisztráció
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Hozzon letre egy fiokot a vasarlashoz.
+        Hozzon létre egy fiókot a vásárláshoz.
       </p>
 
       {/* ── OAuth buttons ──────────────────────────────── */}
@@ -224,7 +224,7 @@ export default function RegisterPage() {
             ) : (
               icon
             )}
-            Tovabb ezzel: {label}
+            Tovább ezzel: {label}
           </Button>
         ))}
       </div>
@@ -240,10 +240,10 @@ export default function RegisterPage() {
       <button
         type="button"
         onClick={() => setShowEmailForm((prev) => !prev)}
-        className="flex w-full items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
+        className="flex w-full cursor-pointer items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
       >
         <Mail className="size-3.5" />
-        E-mail cimmel
+        E-mail címmel
         <ChevronDown
           className={`size-3.5 transition-transform duration-300 ${showEmailForm ? "rotate-180" : ""}`}
         />
@@ -263,11 +263,11 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-sm">
                 <User className="size-4" />
-                Teljes nev
+                Teljes név
               </Label>
               <Input
                 type="text"
-                placeholder="Kovacs Janos"
+                placeholder="Kovács János"
                 autoComplete="name"
                 {...register("fullName")}
                 aria-invalid={!!errors.fullName}
@@ -284,7 +284,7 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-sm">
                 <Mail className="size-4" />
-                E-mail cim
+                E-mail cím
               </Label>
               <Input
                 type="email"
@@ -305,11 +305,11 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-sm">
                 <Lock className="size-4" />
-                Jelszo
+                Jelszó
               </Label>
               <Input
                 type="password"
-                placeholder="Legalabb 6 karakter"
+                placeholder="Legalább 6 karakter"
                 autoComplete="new-password"
                 {...register("password")}
                 aria-invalid={!!errors.password}
@@ -326,11 +326,11 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-sm">
                 <Lock className="size-4" />
-                Jelszo megerositese
+                Jelszó megerősítése
               </Label>
               <Input
                 type="password"
-                placeholder="Jelszo ujra"
+                placeholder="Jelszó újra"
                 autoComplete="new-password"
                 {...register("confirmPassword")}
                 aria-invalid={!!errors.confirmPassword}
@@ -353,10 +353,10 @@ export default function RegisterPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-1.5 size-4 animate-spin" />
-                  Regisztracio...
+                  Regisztráció...
                 </>
               ) : (
-                "Fiok letrehozasa"
+                "Fiók létrehozása"
               )}
             </Button>
           </form>
@@ -365,12 +365,12 @@ export default function RegisterPage() {
 
       {/* ── Login link ─────────────────────────────────── */}
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Mar van fiokod?{" "}
+        Már van fiókod?{" "}
         <Link
           href="/login"
           className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
         >
-          Bejelentkezes
+          Bejelentkezés
         </Link>
       </p>
 

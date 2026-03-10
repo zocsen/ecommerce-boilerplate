@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { uuidSchema } from "@/lib/validators/uuid";
 import { startPayment as startBarionPayment } from "@/lib/integrations/barion/client";
 import type { OrderRow, OrderItemRow } from "@/lib/types/database";
 
@@ -33,9 +34,9 @@ export async function startPaymentAction(
   orderId: string,
 ): Promise<ActionResult<StartPaymentData>> {
   try {
-    const idParsed = z.string().uuid().safeParse(orderId);
+    const idParsed = uuidSchema.safeParse(orderId);
     if (!idParsed.success) {
-      return { success: false, error: "Ervenytelen rendeles azonosito." };
+      return { success: false, error: "Érvénytelen rendelés azonosító." };
     }
 
     const admin = createAdminClient();
@@ -48,14 +49,14 @@ export async function startPaymentAction(
       .single();
 
     if (orderError || !order) {
-      return { success: false, error: "A rendeles nem talalhato." };
+      return { success: false, error: "A rendelés nem található." };
     }
 
     // Validate order is in a payable state
     if (order.status !== "awaiting_payment" && order.status !== "draft") {
       return {
         success: false,
-        error: "Ez a rendeles mar nem fizetheto.",
+        error: "Ez a rendelés már nem fizethető.",
       };
     }
 
@@ -63,7 +64,7 @@ export async function startPaymentAction(
     if (order.barion_payment_id) {
       return {
         success: false,
-        error: "A fizetes mar elinditasra kerult ehhez a rendeleshez.",
+        error: "A fizetés már elindításra került ehhez a rendeléshez.",
       };
     }
 
@@ -75,7 +76,7 @@ export async function startPaymentAction(
       .order("id", { ascending: true });
 
     if (itemsError || !items || items.length === 0) {
-      return { success: false, error: "A rendelesi tetelek nem talalhatoak." };
+      return { success: false, error: "A rendelési tételek nem találhatóak." };
     }
 
     // Start Barion payment
@@ -115,7 +116,7 @@ export async function startPaymentAction(
     console.error("[startPaymentAction] Unexpected error:", message);
     return {
       success: false,
-      error: "Hiba tortent a fizetes inditasakor. Kerlek, probald ujra.",
+      error: "Hiba történt a fizetés indításakor. Kérlek, próbáld újra.",
     };
   }
 }

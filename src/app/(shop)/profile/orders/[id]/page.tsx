@@ -14,12 +14,12 @@ import type { OrderStatus, AddressJson } from "@/lib/types/database";
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   draft: "Piszkozat",
-  awaiting_payment: "Fizetesre var",
+  awaiting_payment: "Fizetésre vár",
   paid: "Fizetve",
-  processing: "Feldolgozas alatt",
-  shipped: "Kiszallitva",
+  processing: "Feldolgozás alatt",
+  shipped: "Kiszállítva",
   cancelled: "Lemondva",
-  refunded: "Visszateritve",
+  refunded: "Visszatérítve",
 };
 
 const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -65,8 +65,8 @@ export default async function ProfileOrderDetailPage({
     <div className="space-y-8">
       <Breadcrumbs
         items={[
-          { label: "Fiokom", href: "/profile" },
-          { label: "Rendeleseim", href: "/profile/orders" },
+          { label: "Fiókom", href: "/profile" },
+          { label: "Rendeléseim", href: "/profile/orders" },
           { label: `#${order.id.slice(0, 8).toUpperCase()}` },
         ]}
       />
@@ -79,7 +79,7 @@ export default async function ProfileOrderDetailPage({
             Vissza
           </Button>
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">
-            Rendeles #{order.id.slice(0, 8).toUpperCase()}
+            Rendelés #{order.id.slice(0, 8).toUpperCase()}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {formatDateTime(order.created_at)}
@@ -95,7 +95,7 @@ export default async function ProfileOrderDetailPage({
         <div className="space-y-6">
           <div className="rounded-xl border border-border">
             <div className="border-b border-border px-5 py-3">
-              <h2 className="text-sm font-semibold">Termekek</h2>
+              <h2 className="text-sm font-semibold">Termékek</h2>
             </div>
             <div className="divide-y divide-border">
               {items.map((item) => {
@@ -134,23 +134,23 @@ export default async function ProfileOrderDetailPage({
             {/* Totals */}
             <div className="border-t border-border px-5 py-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Reszosszeg</span>
+                <span className="text-muted-foreground">Részösszeg</span>
                 <span className="tabular-nums">{formatHUF(order.subtotal_amount)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Szallitas</span>
+                <span className="text-muted-foreground">Szállítás</span>
                 <span className="tabular-nums">{formatHUF(order.shipping_fee)}</span>
               </div>
               {order.discount_total > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Kedvezmeny{order.coupon_code ? ` (${order.coupon_code})` : ""}
+                    Kedvezmény{order.coupon_code ? ` (${order.coupon_code})` : ""}
                   </span>
                   <span className="tabular-nums text-green-600">-{formatHUF(order.discount_total)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-                <span>Osszesen</span>
+                <span>Összesen</span>
                 <span className="tabular-nums">{formatHUF(order.total_amount)}</span>
               </div>
             </div>
@@ -161,19 +161,19 @@ export default async function ProfileOrderDetailPage({
         <div className="space-y-4">
           {/* Shipping info */}
           <div className="rounded-xl border border-border p-5 space-y-3">
-            <h3 className="text-sm font-semibold">Szallitas</h3>
+            <h3 className="text-sm font-semibold">Szállítás</h3>
             <p className="text-sm">
-              {order.shipping_method === "home" ? "Hazhozszallitas" : "Csomagautomata"}
+              {order.shipping_method === "home" ? "Házhozszállítás" : "Csomagautomata"}
             </p>
             {order.shipping_method === "home" && order.shipping_address && (
               <AddressDisplay
                 address={order.shipping_address as unknown as AddressJson}
-                label="Szallitasi cim"
+                label="Szállítási cím"
               />
             )}
             {order.shipping_method === "pickup" && order.pickup_point_label && (
               <div>
-                <p className="text-xs text-muted-foreground">Atveteli pont</p>
+                <p className="text-xs text-muted-foreground">Átvételi pont</p>
                 <p className="mt-1 text-sm">
                   {order.pickup_point_provider && (
                     <span className="font-medium">{order.pickup_point_provider}: </span>
@@ -195,7 +195,7 @@ export default async function ProfileOrderDetailPage({
             <div className="rounded-xl border border-border p-5">
               <AddressDisplay
                 address={order.billing_address as unknown as AddressJson}
-                label="Szamlazasi cim"
+                label="Számlázási cím"
               />
             </div>
           )}
@@ -203,9 +203,9 @@ export default async function ProfileOrderDetailPage({
           {/* Payment info */}
           {order.barion_status && (
             <div className="rounded-xl border border-border p-5 space-y-2">
-              <h3 className="text-sm font-semibold">Fizetes</h3>
+              <h3 className="text-sm font-semibold">Fizetés</h3>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Allapot</span>
+                <span className="text-muted-foreground">Állapot</span>
                 <span>{order.barion_status}</span>
               </div>
               {order.paid_at && (
@@ -220,7 +220,7 @@ export default async function ProfileOrderDetailPage({
           {/* Invoice */}
           {order.invoice_number && (
             <div className="rounded-xl border border-border p-5 space-y-2">
-              <h3 className="text-sm font-semibold">Szamla</h3>
+              <h3 className="text-sm font-semibold">Számla</h3>
               <p className="text-sm">{order.invoice_number}</p>
               {order.invoice_url && (
                 <a
@@ -229,7 +229,7 @@ export default async function ProfileOrderDetailPage({
                   rel="noopener noreferrer"
                   className="text-sm underline underline-offset-2 transition-colors hover:text-foreground/70"
                 >
-                  Szamla megnyitasa
+                  Számla megnyitása
                 </a>
               )}
             </div>
@@ -238,7 +238,7 @@ export default async function ProfileOrderDetailPage({
           {/* Notes */}
           {order.notes && (
             <div className="rounded-xl border border-border p-5">
-              <h3 className="text-sm font-semibold">Megjegyzes</h3>
+              <h3 className="text-sm font-semibold">Megjegyzés</h3>
               <p className="mt-1 text-sm text-muted-foreground">{order.notes}</p>
             </div>
           )}

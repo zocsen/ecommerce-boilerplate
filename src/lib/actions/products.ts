@@ -10,6 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { productCreateSchema, productUpdateSchema } from "@/lib/validators/product";
+import { uuidSchema } from "@/lib/validators/uuid";
 import type { ProductRow, ProductVariantRow, CategoryRow } from "@/lib/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -275,7 +276,7 @@ interface AdminListProductsFilters {
 }
 
 interface AdminListProductsData {
-  products: ProductRow[];
+  products: (ProductRow & { categoryNames: string[] })[];
   total: number;
   page: number;
   totalPages: number;
@@ -352,11 +353,36 @@ export async function adminListProducts(
     }
 
     const total = count ?? 0;
+    const productList = products ?? [];
+
+    // Fetch category names for all products in one query
+    let categoryMap: Record<string, string[]> = {};
+    if (productList.length > 0) {
+      const productIds = productList.map((p) => p.id);
+      const { data: pcRows } = await admin
+        .from("product_categories")
+        .select("product_id, categories(id, name, parent_id)")
+        .in("product_id", productIds);
+
+      if (pcRows) {
+        for (const row of pcRows) {
+          const cat = row.categories as { id: string; name: string; parent_id: string | null } | null;
+          if (!cat) continue;
+          // Only include top-level (main) categories — parent_id is null
+          if (cat.parent_id !== null) continue;
+          if (!categoryMap[row.product_id]) categoryMap[row.product_id] = [];
+          categoryMap[row.product_id].push(cat.name);
+        }
+      }
+    }
 
     return {
       success: true,
       data: {
-        products: products ?? [],
+        products: productList.map((p) => ({
+          ...p,
+          categoryNames: categoryMap[p.id] ?? [],
+        })),
         total,
         page,
         totalPages: Math.ceil(total / perPage),
@@ -375,7 +401,7 @@ export async function adminGetProduct(
   try {
     await requireAdminOrViewer();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen termék azonosító." };
     }
@@ -580,7 +606,7 @@ export async function adminUpdateProduct(
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen termék azonosító." };
     }
@@ -736,7 +762,7 @@ export async function adminDeleteProduct(
   try {
     const profile = await requireAdmin();
 
-    const idParsed = z.string().uuid().safeParse(id);
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
       return { success: false, error: "Érvénytelen termék azonosító." };
     }
@@ -766,6 +792,85 @@ export async function adminDeleteProduct(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[adminDeleteProduct] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+export async function adminToggleProductActive(
+  id: string,
+  isActive: boolean,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin();
+
+    const idParsed = uuidSchema.safeParse(id);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen termék azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    const { error } = await admin
+      .from("products")
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq("id", idParsed.data);
+
+    if (error) {
+      console.error("[adminToggleProductActive] Update error:", error.message);
+      return { success: false, error: "Hiba a termék státuszának módosításakor." };
+    }
+
+    await logAudit({
+      actorId: profile.id,
+      actorRole: profile.role,
+      action: isActive ? "product.activate" : "product.deactivate",
+      entityType: "product",
+      entityId: idParsed.data,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminToggleProductActive] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+export async function adminHardDeleteProduct(
+  id: string,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin();
+
+    const idParsed = uuidSchema.safeParse(id);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen termék azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    const { error } = await admin
+      .from("products")
+      .delete()
+      .eq("id", idParsed.data);
+
+    if (error) {
+      console.error("[adminHardDeleteProduct] Delete error:", error.message);
+      return { success: false, error: "Hiba a termék törlésekor." };
+    }
+
+    await logAudit({
+      actorId: profile.id,
+      actorRole: profile.role,
+      action: "product.hard_delete",
+      entityType: "product",
+      entityId: idParsed.data,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminHardDeleteProduct] Unexpected error:", message);
     return { success: false, error: "Váratlan hiba történt." };
   }
 }

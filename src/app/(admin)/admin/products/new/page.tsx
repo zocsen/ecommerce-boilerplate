@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Plus,
   Trash2,
   Save,
@@ -222,23 +221,13 @@ export default function AdminProductNewPage() {
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link href="/admin/products" />}
-          >
-            <ArrowLeft className="mr-2 size-4" />
-            Vissza
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Új termék
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Töltse ki az alábbi mezőket az új termék létrehozásához.
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Új termék
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Töltse ki az alábbi mezőket az új termék létrehozásához.
+          </p>
         </div>
         <Button type="submit" size="sm" disabled={submitting}>
           {submitting ? (
@@ -280,7 +269,7 @@ export default function AdminProductNewPage() {
                   Slug *
                   <button
                     type="button"
-                    className="ml-2 text-xs text-muted-foreground underline"
+                    className="ml-2 cursor-pointer text-xs text-muted-foreground underline"
                     onClick={() => {
                       setSlugManual(!slugManual);
                       if (slugManual) setSlug(toSlug(title));
@@ -418,7 +407,7 @@ export default function AdminProductNewPage() {
                         <button
                           type="button"
                           onClick={() => removeImageUrl(i)}
-                          className="text-muted-foreground hover:text-destructive"
+                          className="cursor-pointer text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
@@ -465,7 +454,7 @@ export default function AdminProductNewPage() {
                       <button
                         type="button"
                         onClick={() => removeVariant(v.key)}
-                        className="text-muted-foreground hover:text-destructive"
+                        className="cursor-pointer text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="size-4" />
                       </button>

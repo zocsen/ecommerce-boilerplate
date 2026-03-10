@@ -23,8 +23,8 @@ import { DevProfileSelector } from "@/components/auth/dev-profile-selector";
 // ── Schema ─────────────────────────────────────────────────────────
 
 const loginSchema = z.object({
-  email: z.string().email("Ervenytelen e-mail cim"),
-  password: z.string().min(6, "A jelszo legalabb 6 karakter kell legyen"),
+  email: z.string().email("Érvénytelen e-mail cím"),
+  password: z.string().min(6, "A jelszó legalább 6 karakter kell legyen"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -102,13 +102,13 @@ export function LoginClient() {
 
         if (error) {
           toast.error(
-            `A ${provider} bejelentkezes nem sikerult. Ellenorizd, hogy a provider konfiguralt-e.`,
+            `A ${provider} bejelentkezés nem sikerült. Ellenőrizd, hogy a provider konfigurált-e.`,
           );
           setOauthLoading(null);
         }
         // On success, the browser redirects — no need to reset state
       } catch {
-        toast.error("Varatlan hiba tortent. Probald ujra.");
+        toast.error("Váratlan hiba történt. Próbáld újra.");
         setOauthLoading(null);
       }
     },
@@ -130,18 +130,18 @@ export function LoginClient() {
         if (error) {
           toast.error(
             error.message === "Invalid login credentials"
-              ? "Hibas e-mail cim vagy jelszo."
+              ? "Hibás e-mail cím vagy jelszó."
               : error.message,
           );
           setIsLoading(false);
           return;
         }
 
-        toast.success("Sikeres bejelentkezes!");
+        toast.success("Sikeres bejelentkezés!");
         router.push(redirectTo);
         router.refresh();
       } catch {
-        toast.error("Varatlan hiba tortent. Kerlek, probald ujra.");
+        toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
         setIsLoading(false);
       }
     },
@@ -151,10 +151,10 @@ export function LoginClient() {
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-[-0.02em]">
-        Bejelentkezes
+        Bejelentkezés
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Jelentkezzen be fiokjaba.
+        Jelentkezzen be fiókjába.
       </p>
 
       {/* ── OAuth buttons ──────────────────────────────── */}
@@ -174,7 +174,7 @@ export function LoginClient() {
             ) : (
               icon
             )}
-            Tovabb ezzel: {label}
+            Tovább ezzel: {label}
           </Button>
         ))}
       </div>
@@ -190,10 +190,10 @@ export function LoginClient() {
       <button
         type="button"
         onClick={() => setShowEmailForm((prev) => !prev)}
-        className="flex w-full items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
+        className="flex w-full cursor-pointer items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
       >
         <Mail className="size-3.5" />
-        E-mail cimmel
+        E-mail címmel
         <ChevronDown
           className={`size-3.5 transition-transform duration-300 ${showEmailForm ? "rotate-180" : ""}`}
         />
@@ -213,7 +213,7 @@ export function LoginClient() {
             <div className="space-y-1.5">
               <Label className="text-sm">
                 <Mail className="size-4" />
-                E-mail cim
+                E-mail cím
               </Label>
               <Input
                 type="email"
@@ -235,18 +235,18 @@ export function LoginClient() {
               <div className="flex items-center justify-between">
                 <Label className="text-sm">
                   <Lock className="size-4" />
-                  Jelszo
+                  Jelszó
                 </Label>
                 <Link
                   href="/reset-password"
                   className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  Elfelejtett jelszo?
+                  Elfelejtett jelszó?
                 </Link>
               </div>
               <Input
                 type="password"
-                placeholder="Jelszo"
+                placeholder="Jelszó"
                 autoComplete="current-password"
                 {...register("password")}
                 aria-invalid={!!errors.password}
@@ -269,10 +269,10 @@ export function LoginClient() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-1.5 size-4 animate-spin" />
-                  Bejelentkezes...
+                  Bejelentkezés...
                 </>
               ) : (
-                "Bejelentkezes"
+                "Bejelentkezés"
               )}
             </Button>
           </form>
@@ -281,12 +281,12 @@ export function LoginClient() {
 
       {/* ── Register link ──────────────────────────────── */}
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Meg nincs fiokod?{" "}
+        Még nincs fiókod?{" "}
         <Link
           href="/register"
           className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
         >
-          Regisztracio
+          Regisztráció
         </Link>
       </p>
 

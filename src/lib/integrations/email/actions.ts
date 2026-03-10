@@ -8,7 +8,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, sendBatchEmail } from "@/lib/integrations/email/provider";
+import { sendEmail } from "@/lib/integrations/email/provider";
 import {
   renderOrderReceiptEmail,
   renderShippingUpdateEmail,
@@ -16,6 +16,7 @@ import {
   renderNewsletterEmail,
 } from "@/lib/integrations/email/templates";
 import type { NewsletterContent } from "@/lib/integrations/email/templates";
+import { signUnsubscribeToken } from "@/lib/security/unsubscribe-token";
 
 // ── Result type ───────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ export async function sendReceipt(
   }
 
   // Render and send
-  const html = renderOrderReceiptEmail(order, items);
+  const html = await renderOrderReceiptEmail(order, items);
   const result = await sendEmail({
     to: order.email,
     subject: `Rendelés visszaigazolás – ${order.id.slice(0, 8).toUpperCase()}`,
@@ -103,7 +104,7 @@ export async function sendShippingUpdate(
     return { success: false, error: message };
   }
 
-  const html = renderShippingUpdateEmail(order, trackingCode);
+  const html = await renderShippingUpdateEmail(order, trackingCode);
   const result = await sendEmail({
     to: order.email,
     subject: `Csomagod úton van! – ${order.id.slice(0, 8).toUpperCase()}`,
@@ -178,7 +179,7 @@ export async function sendAbandonedCartEmail(
     };
   });
 
-  const html = renderAbandonedCartEmail(order.email, cartItems);
+  const html = await renderAbandonedCartEmail(order.email, cartItems);
   const result = await sendEmail({
     to: order.email,
     subject: "Termékek várnak a kosaradban!",
@@ -220,26 +221,39 @@ export async function sendNewsletterCampaign(
     return { totalSent: 0, totalFailed: 0, errors: [] };
   }
 
-  const html = renderNewsletterEmail(content);
-
-  const results = await sendBatchEmail({
-    to,
-    subject,
-    html,
-    tags: [{ name: "type", value: "newsletter" }],
-  });
+  // Generate a unique unsubscribe token per recipient and render individual HTML.
+  // This is required so each unsubscribe link carries a signed token for that specific email.
+  const sends = await Promise.allSettled(
+    to.map(async (email) => {
+      const token = await signUnsubscribeToken(email);
+      const html = await renderNewsletterEmail(content, token);
+      return sendEmail({
+        to: email,
+        subject,
+        html,
+        tags: [{ name: "type", value: "newsletter" }],
+      });
+    }),
+  );
 
   let totalSent = 0;
   let totalFailed = 0;
   const errors: string[] = [];
 
-  for (const result of results) {
-    if (result.success) {
+  for (const settled of sends) {
+    if (settled.status === "rejected") {
+      totalFailed++;
+      errors.push(
+        settled.reason instanceof Error
+          ? settled.reason.message
+          : String(settled.reason),
+      );
+    } else if (settled.value.success) {
       totalSent++;
     } else {
       totalFailed++;
-      if (result.error) {
-        errors.push(result.error);
+      if (settled.value.error) {
+        errors.push(settled.value.error);
       }
     }
   }

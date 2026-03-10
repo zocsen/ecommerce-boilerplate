@@ -58,7 +58,7 @@ export default function ProfileSettingsPage() {
     const result = await updateProfile({ fullName, phone });
 
     if (!result.success) {
-      setProfileError(result.error ?? "Hiba tortent.");
+      setProfileError(result.error ?? "Hiba történt.");
     } else {
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 3000);
@@ -73,12 +73,12 @@ export default function ProfileSettingsPage() {
     setPasswordSuccess(false);
 
     if (newPassword !== confirmPassword) {
-      setPasswordError("A ket jelszo nem egyezik.");
+      setPasswordError("A két jelszó nem egyezik.");
       return;
     }
 
     if (newPassword.length < 8) {
-      setPasswordError("A jelszonak legalabb 8 karakter hosszunak kell lennie.");
+      setPasswordError("A jelszónak legalább 8 karakter hosszúnak kell lennie.");
       return;
     }
 
@@ -87,7 +87,7 @@ export default function ProfileSettingsPage() {
     const result = await changePassword({ newPassword });
 
     if (!result.success) {
-      setPasswordError(result.error ?? "Hiba tortent.");
+      setPasswordError(result.error ?? "Hiba történt.");
     } else {
       setPasswordSuccess(true);
       setNewPassword("");
@@ -102,7 +102,7 @@ export default function ProfileSettingsPage() {
     return (
       <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
         <Loader2 className="mr-2 size-4 animate-spin" />
-        Betoltes...
+        Betöltés...
       </div>
     );
   }
@@ -110,32 +110,32 @@ export default function ProfileSettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Beallitasok</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Beállítások</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Szemelyes adatok es jelszo modositasa.
+          Személyes adatok és jelszó módosítása.
         </p>
       </div>
 
       {/* -- Profile info -- */}
       <Card>
         <CardHeader>
-          <CardTitle>Szemelyes adatok</CardTitle>
-          <CardDescription>A neved es telefonszamod frissitese.</CardDescription>
+          <CardTitle>Személyes adatok</CardTitle>
+          <CardDescription>A neved és telefonszámod frissítése.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Teljes nev</Label>
+              <Label htmlFor="fullName">Teljes név</Label>
               <Input
                 id="fullName"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Pelda Janos"
+                placeholder="Példa János"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefonszam</Label>
+              <Label htmlFor="phone">Telefonszám</Label>
               <Input
                 id="phone"
                 value={phone}
@@ -143,7 +143,7 @@ export default function ProfileSettingsPage() {
                 placeholder="+36 30 123 4567"
               />
               <p className="text-xs text-muted-foreground">
-                Magyar format: +36 XX XXX XXXX
+                Magyar formátum: +36 XX XXX XXXX
               </p>
             </div>
 
@@ -155,7 +155,7 @@ export default function ProfileSettingsPage() {
 
             {profileSuccess && (
               <div className="rounded-lg border border-green-500/50 bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-950/50 dark:text-green-400">
-                Profil sikeresen frissitve.
+                Profil sikeresen frissítve.
               </div>
             )}
 
@@ -165,7 +165,7 @@ export default function ProfileSettingsPage() {
               ) : (
                 <Save className="mr-2 size-4" />
               )}
-              Mentes
+              Mentés
             </Button>
           </form>
         </CardContent>
@@ -174,24 +174,24 @@ export default function ProfileSettingsPage() {
       {/* -- Password change -- */}
       <Card>
         <CardHeader>
-          <CardTitle>Jelszo modositasa</CardTitle>
-          <CardDescription>Valassz egy uj jelszot a fiokodhoz.</CardDescription>
+          <CardTitle>Jelszó módosítása</CardTitle>
+          <CardDescription>Válassz egy új jelszót a fiókodhoz.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Uj jelszo</Label>
+              <Label htmlFor="newPassword">Új jelszó</Label>
               <div className="relative">
                 <Input
                   id="newPassword"
                   type={showPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Legalabb 8 karakter"
+                  placeholder="Legalább 8 karakter"
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -200,13 +200,13 @@ export default function ProfileSettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Jelszo megerositese</Label>
+              <Label htmlFor="confirmPassword">Jelszó megerősítése</Label>
               <Input
                 id="confirmPassword"
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Jelszo ujra"
+                placeholder="Jelszó újra"
               />
             </div>
 
@@ -218,7 +218,7 @@ export default function ProfileSettingsPage() {
 
             {passwordSuccess && (
               <div className="rounded-lg border border-green-500/50 bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-950/50 dark:text-green-400">
-                Jelszo sikeresen megvaltoztatva.
+                Jelszó sikeresen megváltoztatva.
               </div>
             )}
 
@@ -228,7 +228,7 @@ export default function ProfileSettingsPage() {
               ) : (
                 <Save className="mr-2 size-4" />
               )}
-              Jelszo modositasa
+              Jelszó módosítása
             </Button>
           </form>
         </CardContent>

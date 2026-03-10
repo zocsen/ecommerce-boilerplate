@@ -155,7 +155,7 @@ export function VariantSelector({
                     }
                   }}
                   className={cn(
-                    "relative min-w-[3rem] rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
+                    "relative min-w-[3rem] cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     isSelected
                       ? "border-foreground bg-foreground text-background"

@@ -60,7 +60,7 @@ export function Gallery({ mainImage, images }: GalleryProps) {
               type="button"
               onClick={() => handleThumbnailClick(index)}
               className={cn(
-                "relative size-16 flex-shrink-0 overflow-hidden rounded-md bg-muted transition-all duration-300",
+                "relative size-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-md bg-muted transition-all duration-300",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 index === activeIndex
                   ? "ring-2 ring-foreground ring-offset-2"

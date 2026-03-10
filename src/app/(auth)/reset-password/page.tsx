@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 // ── Schema ─────────────────────────────────────────────────────────
 
 const resetSchema = z.object({
-  email: z.string().email("Ervenytelen e-mail cim"),
+  email: z.string().email("Érvénytelen e-mail cím"),
 });
 
 type ResetFormValues = z.infer<typeof resetSchema>;
@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
 
       setIsSuccess(true);
     } catch {
-      toast.error("Varatlan hiba tortent. Kerlek, probald ujra.");
+      toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
       setIsLoading(false);
     }
   }, []);
@@ -73,18 +73,18 @@ export default function ResetPasswordPage() {
           <CheckCircle2 className="size-7 text-emerald-600 dark:text-emerald-400" />
         </div>
         <h1 className="mt-4 text-xl font-semibold tracking-[-0.02em]">
-          E-mail elkuldve
+          E-mail elküldve
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Ha ez az e-mail cim regisztralt nalunk, hamarosan kapsz egy linket a
-          jelszo visszaallitasahoz.
+          Ha ez az e-mail cím regisztrált nálunk, hamarosan kapsz egy linket a
+          jelszó visszaállításához.
         </p>
         <Link
           href="/login"
           className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
         >
           <ArrowLeft className="size-3.5" />
-          Vissza a bejelentkezeshez
+          Vissza a bejelentkezéshez
         </Link>
       </div>
     );
@@ -95,11 +95,11 @@ export default function ResetPasswordPage() {
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-[-0.02em]">
-        Jelszo visszaallitasa
+        Jelszó visszaállítása
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Adja meg az e-mail cimet, es kuldunk egy linket a jelszo
-        visszaallitasahoz.
+        Adja meg az e-mail címét, és küldünk egy linket a jelszó
+        visszaállításához.
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
         <div className="space-y-1.5">
           <Label className="text-sm">
             <Mail className="size-4" />
-            E-mail cim
+            E-mail cím
           </Label>
           <Input
             type="email"
@@ -134,10 +134,10 @@ export default function ResetPasswordPage() {
           {isLoading ? (
             <>
               <Loader2 className="mr-1.5 size-4 animate-spin" />
-              Kuldes...
+              Küldés...
             </>
           ) : (
-            "Visszaallito link kuldese"
+            "Visszaállító link küldése"
           )}
         </Button>
       </form>
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
-          Vissza a bejelentkezeshez
+          Vissza a bejelentkezéshez
         </Link>
       </p>
     </div>

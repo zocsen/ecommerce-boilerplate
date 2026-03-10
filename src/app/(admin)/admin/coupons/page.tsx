@@ -12,12 +12,15 @@ import {
   Ticket,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   adminListCoupons,
   adminCreateCoupon,
   adminUpdateCoupon,
   adminDeleteCoupon,
+  adminToggleCoupon,
 } from "@/lib/actions/coupons";
 import { formatHUF, formatDate } from "@/lib/utils/format";
 import { Input } from "@/components/ui/input";
@@ -79,6 +82,9 @@ export default function AdminCouponsPage() {
 
   // Delete
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Toggle active
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Error
   const [error, setError] = useState<string | null>(null);
@@ -216,6 +222,19 @@ export default function AdminCouponsPage() {
 
     setDeletingId(null);
     fetchCoupons();
+  }
+
+  // ── Toggle active ──────────────────────────────────────────────
+  async function handleToggle(coupon: CouponRow) {
+    setTogglingId(coupon.id);
+    setError(null);
+    const res = await adminToggleCoupon(coupon.id, !coupon.is_active);
+    if (!res.success) {
+      setError(res.error ?? "Hiba a státusz módosításakor.");
+    } else {
+      fetchCoupons();
+    }
+    setTogglingId(null);
   }
 
   return (
@@ -442,19 +461,19 @@ export default function AdminCouponsPage() {
                         className="mx-auto h-8 w-16 text-center text-xs"
                       />
                     </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
+                    <TableCell className="w-[140px]">
+                      <div className="flex flex-col gap-1">
                         <Input
                           type="datetime-local"
                           value={editValidFrom}
                           onChange={(e) => setEditValidFrom(e.target.value)}
-                          className="h-7 text-xs"
+                          className="h-7 w-[130px] text-xs"
                         />
                         <Input
                           type="datetime-local"
                           value={editValidUntil}
                           onChange={(e) => setEditValidUntil(e.target.value)}
-                          className="h-7 text-xs"
+                          className="h-7 w-[130px] text-xs"
                         />
                       </div>
                     </TableCell>
@@ -541,6 +560,22 @@ export default function AdminCouponsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7"
+                          onClick={() => handleToggle(coupon)}
+                          disabled={togglingId === coupon.id}
+                          title={coupon.is_active ? "Inaktiválás" : "Aktiválás"}
+                        >
+                          {togglingId === coupon.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : coupon.is_active ? (
+                            <EyeOff className="size-3.5" />
+                          ) : (
+                            <Eye className="size-3.5" />
+                          )}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

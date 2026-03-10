@@ -47,20 +47,20 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <Breadcrumbs items={[{ label: "Kosar" }]} />
+        <Breadcrumbs items={[{ label: "Kosár" }]} />
 
         <div className="mt-20 flex flex-col items-center justify-center text-center">
           <div className="flex size-20 items-center justify-center rounded-full bg-muted">
             <ShoppingBag className="size-8 text-muted-foreground" />
           </div>
           <h1 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">
-            A kosarad ures
+            A kosarad üres
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Meg nem adtal hozza termeeket a kosaradhoz.
+            Még nem adtál hozzá termékeket a kosaradhoz.
           </p>
           <Button className="mt-8" size="lg" render={<Link href="/products" />}>
-            Termekek bongeszese
+            Termékek böngészése
             <ArrowRight className="ml-1.5 size-4" />
           </Button>
         </div>
@@ -72,13 +72,13 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-      <Breadcrumbs items={[{ label: "Kosar" }]} />
+      <Breadcrumbs items={[{ label: "Kosár" }]} />
 
       <h1 className="mt-8 text-3xl font-semibold tracking-[-0.03em]">
-        Kosar
+        Kosár
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {items.length} tetel a kosarban
+        {items.length} tétel a kosárban
       </p>
 
       <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_380px]">
@@ -98,7 +98,7 @@ export default function CartPage() {
             <div className="mt-8">
               <Separator className="mb-6" />
               <h2 className="mb-3 text-sm font-medium text-foreground">
-                Kuponkod
+                Kuponkód
               </h2>
               {couponCode ? (
                 <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/30">
@@ -107,7 +107,7 @@ export default function CartPage() {
                       {couponCode}
                     </span>
                     <span className="ml-2 text-muted-foreground">
-                      &mdash; {formatHUF(couponDiscount)} kedvezmeny
+                      &mdash; {formatHUF(couponDiscount)} kedvezmény
                     </span>
                   </div>
                   <Button
@@ -116,7 +116,7 @@ export default function CartPage() {
                     onClick={removeCoupon}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    Torles
+                    Törlés
                   </Button>
                 </div>
               ) : (
@@ -132,7 +132,7 @@ export default function CartPage() {
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
             >
               <ArrowLeft className="size-3.5" />
-              Vissza a vasarlashoz
+              Vissza a vásárláshoz
             </Link>
           </div>
         </div>
@@ -151,12 +151,12 @@ export default function CartPage() {
             size="lg"
             render={<Link href="/checkout" />}
           >
-            Tovabb a penztarhoz
+            Tovább a pénztárhoz
             <ArrowRight className="ml-1.5 size-4" />
           </Button>
 
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            A szallitasi koltseg a penztarnal keruel veglegesitesre.
+            A szállítási költség a pénztárnál kerül véglegesítésre.
           </p>
         </div>
       </div>

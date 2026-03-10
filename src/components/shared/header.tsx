@@ -20,8 +20,8 @@ import type { AppRole } from "@/lib/types/database";
 /* ------------------------------------------------------------------ */
 
 const navLinks = [
-  { label: "Termekek", href: "/products" },
-  { label: "Kategoriak", href: "/products?category=all" },
+  { label: "Termékek", href: "/products" },
+  { label: "Kategóriák", href: "/products?category=all" },
 ] as const;
 
 /* ------------------------------------------------------------------ */
@@ -35,9 +35,9 @@ function getAccountHref(role: AppRole | null): string {
 }
 
 function getAccountLabel(role: AppRole | null): string {
-  if (!role) return "Bejelentkezes";
+  if (!role) return "Bejelentkezés";
   if (role === "admin" || role === "agency_viewer") return "Admin";
-  return "Fiokom";
+  return "Fiókom";
 }
 
 /* ------------------------------------------------------------------ */
@@ -84,7 +84,7 @@ export async function Header() {
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingBag className="size-[18px]" />
               <CartCount />
-              <span className="sr-only">Kosar</span>
+              <span className="sr-only">Kosár</span>
             </Button>
           </Link>
 
@@ -140,7 +140,7 @@ function MobileNav({
         render={
           <Button variant="ghost" size="icon">
             <Menu className="size-[18px]" />
-            <span className="sr-only">Menu megnyitasa</span>
+            <span className="sr-only">Menü megnyitása</span>
           </Button>
         }
       />
@@ -179,7 +179,7 @@ function MobileNav({
             }
           >
             <ShoppingBag className="size-4" />
-            Kosar
+            Kosár
           </SheetClose>
 
           {enableAccounts && (

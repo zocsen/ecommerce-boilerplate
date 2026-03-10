@@ -8,6 +8,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { siteConfig } from "@/lib/config/site.config";
 import { couponApplySchema } from "@/lib/validators/coupon";
+import { uuidSchema } from "@/lib/validators/uuid";
 import type { CartItem } from "@/lib/types";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -47,8 +48,8 @@ interface CouponResult {
 // ── Validation schemas ─────────────────────────────────────────────
 
 const cartItemSchema = z.object({
-  productId: z.string().uuid(),
-  variantId: z.string().uuid().nullable(),
+  productId: uuidSchema,
+  variantId: uuidSchema.nullable(),
   title: z.string(),
   variantLabel: z.string(),
   price: z.number().int().min(0),

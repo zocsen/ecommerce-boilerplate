@@ -52,16 +52,43 @@ function getDefaultFrom(): string {
   return `${siteConfig.store.name} <orders@${new URL(siteConfig.urls.siteUrl).hostname}>`;
 }
 
+/**
+ * Sleep for the given number of milliseconds.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Determine if an HTTP status code is retryable.
+ * 429 (rate limit) and 5xx (server errors) are retryable.
+ */
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+// ── Retry configuration ──────────────────────────────────────────
+
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_BASE_DELAY_MS = 500; // 500ms, 1s, 2s
+const DEFAULT_MAX_DELAY_MS = 10_000;
+
 // ── Public API ────────────────────────────────────────────────────
 
 /**
- * Send an email via Resend.
+ * Send an email via Resend with automatic retry on transient failures.
  *
  * Uses the Resend REST API directly (no SDK) so we don't add a
  * runtime dependency. Works in both Node and Edge runtimes.
+ *
+ * Retries with exponential backoff on 429 (rate limit) and 5xx errors.
+ * Non-retryable errors (4xx except 429) fail immediately.
  */
 export async function sendEmail(
-  options: SendEmailOptions,
+  options: SendEmailOptions & {
+    maxRetries?: number;
+    baseDelayMs?: number;
+  },
 ): Promise<SendEmailResult> {
   let apiKey: string;
   try {
@@ -74,6 +101,8 @@ export async function sendEmail(
 
   const from = options.from ?? getDefaultFrom();
   const to = Array.isArray(options.to) ? options.to : [options.to];
+  const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+  const baseDelayMs = options.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
 
   const body: Record<string, unknown> = {
     from,
@@ -90,35 +119,69 @@ export async function sendEmail(
     body.tags = options.tags;
   }
 
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+  let lastError: string = "Unknown error";
 
-    if (!response.ok) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as ResendSuccessResponse;
+        return { success: true, messageId: data.id };
+      }
+
       const errorData = (await response.json()) as ResendErrorResponse;
-      const errorMessage = `Resend API error (${response.status}): ${errorData.message}`;
-      console.error("[email-provider]", errorMessage);
-      return { success: false, error: errorMessage };
+      lastError = `Resend API error (${response.status}): ${errorData.message}`;
+
+      // Only retry on transient errors
+      if (!isRetryableStatus(response.status)) {
+        console.error("[email-provider]", lastError);
+        return { success: false, error: lastError };
+      }
+
+      // If we have retries left, wait with exponential backoff
+      if (attempt < maxRetries) {
+        const delayMs = Math.min(
+          baseDelayMs * Math.pow(2, attempt),
+          DEFAULT_MAX_DELAY_MS,
+        );
+        console.warn(
+          `[email-provider] Retryable error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms:`,
+          lastError,
+        );
+        await sleep(delayMs);
+      }
+    } catch (error) {
+      lastError =
+        error instanceof Error ? error.message : "Unknown email sending error";
+
+      // Network errors are retryable
+      if (attempt < maxRetries) {
+        const delayMs = Math.min(
+          baseDelayMs * Math.pow(2, attempt),
+          DEFAULT_MAX_DELAY_MS,
+        );
+        console.warn(
+          `[email-provider] Network error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms:`,
+          lastError,
+        );
+        await sleep(delayMs);
+      }
     }
-
-    const data = (await response.json()) as ResendSuccessResponse;
-
-    return {
-      success: true,
-      messageId: data.id,
-    };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown email sending error";
-    console.error("[email-provider] Send failed:", message);
-    return { success: false, error: message };
   }
+
+  console.error(
+    `[email-provider] All ${maxRetries + 1} attempts failed:`,
+    lastError,
+  );
+  return { success: false, error: lastError };
 }
 
 /**

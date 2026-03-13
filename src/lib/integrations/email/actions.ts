@@ -10,6 +10,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/integrations/email/provider";
 import {
+  getFullFromAddress,
+  getRecipient,
+  getReplyToEmail,
+} from "@/lib/integrations/email/sender";
+import {
   renderOrderReceiptEmail,
   renderShippingUpdateEmail,
   renderAbandonedCartEmail,
@@ -17,6 +22,7 @@ import {
 } from "@/lib/integrations/email/templates";
 import type { NewsletterContent } from "@/lib/integrations/email/templates";
 import { signUnsubscribeToken } from "@/lib/security/unsubscribe-token";
+import { siteConfig } from "@/lib/config/site.config";
 
 // ── Result type ───────────────────────────────────────────────────
 
@@ -60,10 +66,13 @@ export async function sendReceipt(
 
   // Render and send
   const html = await renderOrderReceiptEmail(order, items);
+  const replyTo = getReplyToEmail();
   const result = await sendEmail({
-    to: order.email,
+    to: getRecipient(order.email),
+    from: getFullFromAddress("transactional", siteConfig.store.name),
     subject: `Rendelés visszaigazolás – ${order.id.slice(0, 8).toUpperCase()}`,
     html,
+    ...(replyTo ? { replyTo } : {}),
     tags: [
       { name: "type", value: "receipt" },
       { name: "order_id", value: orderId },
@@ -105,10 +114,13 @@ export async function sendShippingUpdate(
   }
 
   const html = await renderShippingUpdateEmail(order, trackingCode);
+  const replyTo = getReplyToEmail();
   const result = await sendEmail({
-    to: order.email,
+    to: getRecipient(order.email),
+    from: getFullFromAddress("transactional", siteConfig.store.name),
     subject: `Csomagod úton van! – ${order.id.slice(0, 8).toUpperCase()}`,
     html,
+    ...(replyTo ? { replyTo } : {}),
     tags: [
       { name: "type", value: "shipping" },
       { name: "order_id", value: orderId },
@@ -181,7 +193,8 @@ export async function sendAbandonedCartEmail(
 
   const html = await renderAbandonedCartEmail(order.email, cartItems);
   const result = await sendEmail({
-    to: order.email,
+    to: getRecipient(order.email),
+    from: getFullFromAddress("marketing", siteConfig.store.name),
     subject: "Termékek várnak a kosaradban!",
     html,
     tags: [
@@ -212,6 +225,23 @@ export interface NewsletterCampaignResult {
   errors: string[];
 }
 
+/**
+ * Render a newsletter email preview as HTML.
+ * Used by the admin campaign builder to show a live preview before sending.
+ */
+export async function renderNewsletterPreview(
+  content: NewsletterContent,
+): Promise<{ success: boolean; html?: string; error?: string }> {
+  try {
+    const html = await renderNewsletterEmail(content, "preview-token");
+    return { success: true, html };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[email-actions] renderNewsletterPreview failed:", message);
+    return { success: false, error: message };
+  }
+}
+
 export async function sendNewsletterCampaign(
   to: string[],
   subject: string,
@@ -223,12 +253,15 @@ export async function sendNewsletterCampaign(
 
   // Generate a unique unsubscribe token per recipient and render individual HTML.
   // This is required so each unsubscribe link carries a signed token for that specific email.
+  const marketingFrom = getFullFromAddress("marketing", siteConfig.store.name);
+
   const sends = await Promise.allSettled(
     to.map(async (email) => {
       const token = await signUnsubscribeToken(email);
       const html = await renderNewsletterEmail(content, token);
       return sendEmail({
-        to: email,
+        to: getRecipient(email),
+        from: marketingFrom,
         subject,
         html,
         tags: [{ name: "type", value: "newsletter" }],

@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/security/roles";
+import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { subscribeRateLimiter } from "@/lib/security/rate-limit";
 import { subscribeSchema, tagSchema } from "@/lib/validators/subscriber";
@@ -33,6 +33,7 @@ interface SubscriberListData {
 const adminListSchema = z.object({
   search: z.string().optional(),
   status: z.string().optional(),
+  tag: z.string().optional(),
   page: z.number().int().min(1).optional(),
   perPage: z.number().int().min(1).max(100).optional(),
 });
@@ -171,11 +172,12 @@ export async function unsubscribe(
 export async function adminListSubscribers(filters: {
   search?: string;
   status?: string;
+  tag?: string;
   page?: number;
   perPage?: number;
 } = {}): Promise<ActionResult<SubscriberListData>> {
   try {
-    await requireAdmin();
+    await requireAdminOrViewer();
 
     const parsed = adminListSchema.safeParse(filters);
     if (!parsed.success) {
@@ -185,6 +187,7 @@ export async function adminListSubscribers(filters: {
     const {
       search,
       status,
+      tag,
       page = 1,
       perPage = 20,
     } = parsed.data;
@@ -202,6 +205,10 @@ export async function adminListSubscribers(filters: {
 
     if (status) {
       query = query.eq("status", status as SubscriberRow["status"]);
+    }
+
+    if (tag) {
+      query = query.contains("tags", [tag]);
     }
 
     const from = (page - 1) * perPage;
@@ -291,6 +298,114 @@ export async function adminTagSubscriber(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[adminTagSubscriber] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+/**
+ * Fetch ALL active subscriber emails, paginating through every page.
+ * Used by the campaign builder to send to all subscribers (or filtered by tag).
+ * Returns up to 10,000 emails max as a safety limit.
+ */
+export async function adminGetAllActiveSubscriberEmails(
+  tag?: string,
+): Promise<ActionResult<{ emails: string[]; total: number }>> {
+  try {
+    await requireAdmin();
+
+    const admin = createAdminClient();
+    const PAGE_SIZE = 1000;
+    const MAX_EMAILS = 10000;
+    const allEmails: string[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore && allEmails.length < MAX_EMAILS) {
+      let query = admin
+        .from("subscribers")
+        .select("email")
+        .eq("status", "subscribed")
+        .range(offset, offset + PAGE_SIZE - 1);
+
+      if (tag) {
+        query = query.contains("tags", [tag]);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(
+          "[adminGetAllActiveSubscriberEmails] DB error:",
+          error.message,
+        );
+        return {
+          success: false,
+          error: "Hiba a feliratkozók lekérésekor.",
+        };
+      }
+
+      if (!data || data.length === 0) {
+        hasMore = false;
+      } else {
+        allEmails.push(...data.map((s) => s.email));
+        offset += PAGE_SIZE;
+        if (data.length < PAGE_SIZE) {
+          hasMore = false;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      data: { emails: allEmails, total: allEmails.length },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      "[adminGetAllActiveSubscriberEmails] Unexpected error:",
+      message,
+    );
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+/**
+ * Fetch all unique tags across all subscribers.
+ * Used by the campaign builder for segment selection.
+ */
+export async function adminGetAllTags(): Promise<ActionResult<string[]>> {
+  try {
+    await requireAdminOrViewer();
+
+    const admin = createAdminClient();
+
+    // Fetch all distinct tags — Supabase doesn't support DISTINCT on array
+    // elements directly, so we fetch all tags arrays and deduplicate in JS.
+    // For large subscriber counts this should be replaced with a DB function.
+    const { data, error } = await admin
+      .from("subscribers")
+      .select("tags")
+      .not("tags", "eq", "{}");
+
+    if (error) {
+      console.error("[adminGetAllTags] DB error:", error.message);
+      return { success: false, error: "Hiba a címkék lekérésekor." };
+    }
+
+    const allTags = new Set<string>();
+    for (const row of data ?? []) {
+      for (const tag of row.tags) {
+        allTags.add(tag);
+      }
+    }
+
+    return {
+      success: true,
+      data: [...allTags].sort(),
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminGetAllTags] Unexpected error:", message);
     return { success: false, error: "Váratlan hiba történt." };
   }
 }

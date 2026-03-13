@@ -368,15 +368,11 @@ port = 54337
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
 
-# ── Edge Function schedules ────────────────────────────────────────────────────
-# Abandoned cart reminder — fires every 30 minutes.
-# The function checks ENABLE_ABANDONED_CART env var before doing anything.
+# ── Edge Functions ────────────────────────────────────────────────────
+# Abandoned cart reminder function
+# Deploy to Supabase dashboard to set up cron schedules
 [functions.abandoned-cart]
 enabled = true
-
-[[functions.abandoned-cart.crons]]
-name = "abandoned-cart-every-30m"
-schedule = "*/30 * * * *"
 
 # Experimental features may be deprecated any time
 [experimental]

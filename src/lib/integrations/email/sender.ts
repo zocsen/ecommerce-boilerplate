@@ -77,7 +77,7 @@ export function getFullFromAddress(
   displayName?: string,
 ): string {
   const email = getSenderEmail(category);
-  const name = displayName || 'Agency Store'; // Fallback to site config
+  const name = displayName || process.env.STORE_NAME || 'Agency Store';
   
   // In development, optionally add [DEV] prefix for visibility
   if (process.env.NODE_ENV !== 'production') {

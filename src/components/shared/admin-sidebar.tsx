@@ -41,6 +41,7 @@ interface NavItem {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
+  featureFlag?: keyof typeof import('@/lib/config/site.config').siteConfig.features
 }
 
 const navItems: NavItem[] = [
@@ -48,9 +49,9 @@ const navItems: NavItem[] = [
   { label: 'Rendelések', href: '/admin/orders', icon: ShoppingCart },
   { label: 'Termékek', href: '/admin/products', icon: Package },
   { label: 'Kategóriák', href: '/admin/categories', icon: FolderTree },
-  { label: 'Kuponok', href: '/admin/coupons', icon: Ticket },
+  { label: 'Kuponok', href: '/admin/coupons', icon: Ticket, featureFlag: 'enableCoupons' },
   { label: 'Szállítás', href: '/admin/shipping', icon: Truck },
-  { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
+  { label: 'Marketing', href: '/admin/marketing', icon: Megaphone, featureFlag: 'enableMarketingModule' },
   { label: 'Beállítások', href: '/admin/settings', icon: Settings },
   { label: 'Audit log', href: '/admin/audit', icon: FileText },
 ]
@@ -62,15 +63,22 @@ const navItems: NavItem[] = [
 function NavLinks({
   pathname,
   isAgencyViewer,
+  enabledFeatures,
   onNavigate,
 }: {
   pathname: string
   isAgencyViewer: boolean
+  enabledFeatures?: Record<string, boolean>
   onNavigate?: () => void
 }) {
+  const visibleItems = navItems.filter((item) => {
+    if (!item.featureFlag) return true
+    return enabledFeatures?.[item.featureFlag] !== false
+  })
+
   return (
     <nav className="flex flex-col gap-1">
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const isActive =
           pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
 
@@ -113,9 +121,11 @@ function NavLinks({
 function DesktopSidebar({
   collapsed,
   isAgencyViewer,
+  enabledFeatures,
 }: {
   collapsed: boolean
   isAgencyViewer: boolean
+  enabledFeatures?: Record<string, boolean>
 }) {
   const pathname = usePathname()
 
@@ -135,7 +145,7 @@ function DesktopSidebar({
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        <NavLinks pathname={pathname} isAgencyViewer={isAgencyViewer} />
+        <NavLinks pathname={pathname} isAgencyViewer={isAgencyViewer} enabledFeatures={enabledFeatures} />
       </div>
 
       {/* Footer */}
@@ -163,7 +173,7 @@ function DesktopSidebar({
 /*  Mobile sidebar (Sheet)                                             */
 /* ------------------------------------------------------------------ */
 
-function MobileSidebar({ isAgencyViewer }: { isAgencyViewer: boolean }) {
+function MobileSidebar({ isAgencyViewer, enabledFeatures }: { isAgencyViewer: boolean; enabledFeatures?: Record<string, boolean> }) {
   const pathname = usePathname()
 
   return (
@@ -184,7 +194,7 @@ function MobileSidebar({ isAgencyViewer }: { isAgencyViewer: boolean }) {
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-3 py-4">
-          <NavLinks pathname={pathname} isAgencyViewer={isAgencyViewer} />
+          <NavLinks pathname={pathname} isAgencyViewer={isAgencyViewer} enabledFeatures={enabledFeatures} />
         </div>
 
         <div className="border-t border-border p-3 space-y-0.5">
@@ -224,16 +234,18 @@ function TopBar({
   collapsed,
   onToggleCollapse,
   isAgencyViewer,
+  enabledFeatures,
 }: {
   collapsed: boolean
   onToggleCollapse: () => void
   isAgencyViewer: boolean
+  enabledFeatures?: Record<string, boolean>
 }) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4 lg:px-6">
       <div className="flex items-center gap-3">
         {/* Mobile hamburger */}
-        <MobileSidebar isAgencyViewer={isAgencyViewer} />
+        <MobileSidebar isAgencyViewer={isAgencyViewer} enabledFeatures={enabledFeatures} />
 
         {/* Desktop collapse toggle */}
         <Button
@@ -273,21 +285,24 @@ function TopBar({
 export function AdminShell({
   children,
   isAgencyViewer = false,
+  enabledFeatures,
 }: {
   children: React.ReactNode
   isAgencyViewer?: boolean
+  enabledFeatures?: Record<string, boolean>
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30">
-      <DesktopSidebar collapsed={collapsed} isAgencyViewer={isAgencyViewer} />
+      <DesktopSidebar collapsed={collapsed} isAgencyViewer={isAgencyViewer} enabledFeatures={enabledFeatures} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar
           collapsed={collapsed}
           onToggleCollapse={() => setCollapsed((prev) => !prev)}
           isAgencyViewer={isAgencyViewer}
+          enabledFeatures={enabledFeatures}
         />
 
         <main className="flex-1 overflow-y-auto">

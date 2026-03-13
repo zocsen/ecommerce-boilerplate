@@ -17,7 +17,11 @@ export type OrderStatus =
   | "shipped"
   | "cancelled"
   | "refunded";
-export type SubscriberStatus = "subscribed" | "unsubscribed";
+export type SubscriberStatus =
+  | "subscribed"
+  | "unsubscribed"
+  | "bounced"
+  | "complained";
 
 // ── Helper aliases ─────────────────────────────────────────────────
 type Uuid = string;
@@ -406,6 +410,11 @@ export type SubscriberRow = {
   source: string | null;
   created_at: Timestamptz;
   unsubscribed_at: Timestamptz | null;
+  last_opened_at: Timestamptz | null;
+  last_clicked_at: Timestamptz | null;
+  open_count: number;
+  click_count: number;
+  bounce_count: number;
 };
 
 export type SubscriberInsert = {
@@ -416,6 +425,11 @@ export type SubscriberInsert = {
   source?: string | null;
   created_at?: Timestamptz;
   unsubscribed_at?: Timestamptz | null;
+  last_opened_at?: Timestamptz | null;
+  last_clicked_at?: Timestamptz | null;
+  open_count?: number;
+  click_count?: number;
+  bounce_count?: number;
 };
 
 export type SubscriberUpdate = {
@@ -426,6 +440,11 @@ export type SubscriberUpdate = {
   source?: string | null;
   created_at?: Timestamptz;
   unsubscribed_at?: Timestamptz | null;
+  last_opened_at?: Timestamptz | null;
+  last_clicked_at?: Timestamptz | null;
+  open_count?: number;
+  click_count?: number;
+  bounce_count?: number;
 };
 
 /* ---------- audit_logs ---------- */

@@ -8,23 +8,23 @@ This boilerplate provides everything needed to launch a Hungarian e-commerce sto
 
 ## Tech Stack
 
-| Technology | Version | Purpose |
-|---|---|---|
-| [Next.js](https://nextjs.org) | 16.1.x | App Router, React Server Components |
-| [React](https://react.dev) | 19.2.x | UI framework |
-| [TypeScript](https://typescriptlang.org) | 5.x | Strict typing |
-| [Tailwind CSS](https://tailwindcss.com) | 4.x | Utility-first CSS |
-| [shadcn/ui](https://ui.shadcn.com) | 4.x | UI component library (base-ui-react primitives) |
-| [Supabase](https://supabase.com) | 2.99.x | Postgres, Auth, Storage, Row-Level Security |
-| [Zustand](https://zustand.docs.pmnd.rs) | 5.x | Client-side cart state (localStorage persistence) |
-| [Zod](https://zod.dev) | 4.x | Schema validation (server + client) |
-| [React Hook Form](https://react-hook-form.com) | 7.x | Form handling |
-| [Resend](https://resend.com) | 6.x | Transactional + marketing email |
-| [React Email](https://react.email) | 1.x | Email templates |
-| [Framer Motion](https://motion.dev) | 12.x | Subtle animations |
-| [Recharts](https://recharts.org) | 2.x | Admin dashboard charts |
-| [Vitest](https://vitest.dev) | 4.x | Unit testing |
-| [Playwright](https://playwright.dev) | 1.58.x | End-to-end testing |
+| Technology                                     | Version | Purpose                                           |
+| ---------------------------------------------- | ------- | ------------------------------------------------- |
+| [Next.js](https://nextjs.org)                  | 16.1.x  | App Router, React Server Components               |
+| [React](https://react.dev)                     | 19.2.x  | UI framework                                      |
+| [TypeScript](https://typescriptlang.org)       | 5.x     | Strict typing                                     |
+| [Tailwind CSS](https://tailwindcss.com)        | 4.x     | Utility-first CSS                                 |
+| [shadcn/ui](https://ui.shadcn.com)             | 4.x     | UI component library (base-ui-react primitives)   |
+| [Supabase](https://supabase.com)               | 2.99.x  | Postgres, Auth, Storage, Row-Level Security       |
+| [Zustand](https://zustand.docs.pmnd.rs)        | 5.x     | Client-side cart state (localStorage persistence) |
+| [Zod](https://zod.dev)                         | 4.x     | Schema validation (server + client)               |
+| [React Hook Form](https://react-hook-form.com) | 7.x     | Form handling                                     |
+| [Resend](https://resend.com)                   | 6.x     | Transactional + marketing email                   |
+| [React Email](https://react.email)             | 1.x     | Email templates                                   |
+| [Framer Motion](https://motion.dev)            | 12.x    | Subtle animations                                 |
+| [Recharts](https://recharts.org)               | 2.x     | Admin dashboard charts                            |
+| [Vitest](https://vitest.dev)                   | 4.x     | Unit testing                                      |
+| [Playwright](https://playwright.dev)           | 1.58.x  | End-to-end testing                                |
 
 ## Prerequisites
 
@@ -92,21 +92,21 @@ Visit [http://localhost:3000/admin](http://localhost:3000/admin) for the admin d
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | — | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | — | Supabase anonymous (public) key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | — | Supabase service role key (server-only, never expose to client) |
-| `BARION_POS_KEY` | Yes | — | Barion POS key from your Barion shop |
-| `BARION_ENVIRONMENT` | No | `test` | `test` or `prod` — controls Barion API endpoint |
-| `RESEND_API_KEY` | Yes | — | Resend API key for sending email |
-| `RESEND_FROM_EMAIL` | Yes | — | Sender address for transactional emails (e.g. `orders@yourdomain.com`) |
-| `RESEND_MARKETING_FROM_EMAIL` | No | — | Sender address for newsletter/marketing emails (e.g. `marketing@yourdomain.com`) |
-| `INVOICING_PROVIDER` | No | `none` | `billingo`, `szamlazz`, or `none` |
-| `BILLINGO_API_KEY` | No | — | Billingo API key (required if `INVOICING_PROVIDER=billingo`) |
-| `SZAMLAZZ_AGENT_KEY` | No | — | Számlázz.hu agent key (required if `INVOICING_PROVIDER=szamlazz`) |
-| `NEXT_PUBLIC_SITE_URL` | No | `http://localhost:3000` | Public URL of the site (used for Barion redirects, emails, SEO) |
-| `CRON_SECRET` | No | — | Secret token for cron job endpoints (abandoned cart, etc.) |
+| Variable                        | Required | Default                 | Description                                                                      |
+| ------------------------------- | -------- | ----------------------- | -------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Yes      | —                       | Supabase project URL                                                             |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes      | —                       | Supabase anonymous (public) key                                                  |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Yes      | —                       | Supabase service role key (server-only, never expose to client)                  |
+| `BARION_POS_KEY`                | Yes      | —                       | Barion POS key from your Barion shop                                             |
+| `BARION_ENVIRONMENT`            | No       | `test`                  | `test` or `prod` — controls Barion API endpoint                                  |
+| `RESEND_API_KEY`                | Yes      | —                       | Resend API key for sending email                                                 |
+| `RESEND_FROM_EMAIL`             | Yes      | —                       | Sender address for transactional emails (e.g. `orders@yourdomain.com`)           |
+| `RESEND_MARKETING_FROM_EMAIL`   | No       | —                       | Sender address for newsletter/marketing emails (e.g. `marketing@yourdomain.com`) |
+| `INVOICING_PROVIDER`            | No       | `none`                  | `billingo`, `szamlazz`, or `none`                                                |
+| `BILLINGO_API_KEY`              | No       | —                       | Billingo API key (required if `INVOICING_PROVIDER=billingo`)                     |
+| `SZAMLAZZ_AGENT_KEY`            | No       | —                       | Számlázz.hu agent key (required if `INVOICING_PROVIDER=szamlazz`)                |
+| `NEXT_PUBLIC_SITE_URL`          | No       | `http://localhost:3000` | Public URL of the site (used for Barion redirects, emails, SEO)                  |
+| `CRON_SECRET`                   | No       | —                       | Secret token for cron job endpoints (abandoned cart, etc.)                       |
 
 > **Security note:** `SUPABASE_SERVICE_ROLE_KEY` bypasses Row-Level Security. Keep it server-side only and never expose it in client code or `NEXT_PUBLIC_` variables.
 
@@ -175,16 +175,16 @@ All store-level configuration lives in `src/lib/config/site.config.ts`. This fil
 
 ### Sections
 
-| Section | What it controls |
-|---|---|
-| `store` | Store name, legal name, email, phone, address, currency (always HUF) |
-| `urls` | Public site URL, support email |
-| `features` | Feature flags — toggle accounts, guest checkout, coupons, reviews, marketing, abandoned cart, B2B wholesale |
-| `payments` | Barion configuration — environment, POS key, payee email, redirect URLs |
-| `shipping` | Enabled methods (home delivery, pickup point), carrier lists, fee rules (base fee, free-over threshold, weight tiers) |
-| `invoicing` | Provider (`billingo`, `szamlazz`, `none`) and mode (`auto_on_paid`, `manual`) |
-| `admin` | Agency viewer toggle, read-only-by-default for agency role |
-| `branding` | Logo text/URL, neutral theme color tokens |
+| Section     | What it controls                                                                                                      |
+| ----------- | --------------------------------------------------------------------------------------------------------------------- |
+| `store`     | Store name, legal name, email, phone, address, currency (always HUF)                                                  |
+| `urls`      | Public site URL, support email                                                                                        |
+| `features`  | Feature flags — toggle accounts, guest checkout, coupons, reviews, marketing, abandoned cart, B2B wholesale           |
+| `payments`  | Barion configuration — environment, POS key, payee email, redirect URLs                                               |
+| `shipping`  | Enabled methods (home delivery, pickup point), carrier lists, fee rules (base fee, free-over threshold, weight tiers) |
+| `invoicing` | Provider (`billingo`, `szamlazz`, `none`) and mode (`auto_on_paid`, `manual`)                                         |
+| `admin`     | Agency viewer toggle, read-only-by-default for agency role                                                            |
+| `branding`  | Logo text/URL, neutral theme color tokens                                                                             |
 
 ### Feature Flags
 
@@ -215,7 +215,7 @@ See `hooks.ts` for usage examples with `overrideHooks()`.
 - **Product catalog with variants** — Products with multiple option combinations (size, color), per-variant SKU, stock, and price override
 - **Cart with localStorage persistence** — Zustand store persisted to localStorage; survives page refreshes and browser restarts
 - **Multi-step checkout** — Contact info, shipping method selection, order review, and payment
-  - **Home delivery** (Hazhozszallitas): GLS, MPL, Express One with full address + phone validation
+  - **Home delivery** (Házhozszállítás): GLS, MPL, Express One with full address + phone validation
   - **Pickup point** (Csomagautomata): Foxpost, GLS Automata, Packeta, MPL Automata, Easybox with map/selector integration hooks
 - **Barion payment integration** — Test and production modes, idempotent callback handling, stock decrement guards
 - **Guest checkout** — Configurable via feature flag; no account required
@@ -231,16 +231,16 @@ See `hooks.ts` for usage examples with `overrideHooks()`.
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start the development server (Next.js with hot reload) |
-| `pnpm build` | Create a production build |
-| `pnpm start` | Start the production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm test` | Run unit tests with Vitest |
-| `pnpm test:watch` | Run Vitest in watch mode |
-| `pnpm test:e2e` | Run Playwright end-to-end tests |
-| `pnpm test:e2e:ui` | Run Playwright tests with interactive UI |
+| Command            | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| `pnpm dev`         | Start the development server (Next.js with hot reload) |
+| `pnpm build`       | Create a production build                              |
+| `pnpm start`       | Start the production server                            |
+| `pnpm lint`        | Run ESLint                                             |
+| `pnpm test`        | Run unit tests with Vitest                             |
+| `pnpm test:watch`  | Run Vitest in watch mode                               |
+| `pnpm test:e2e`    | Run Playwright end-to-end tests                        |
+| `pnpm test:e2e:ui` | Run Playwright tests with interactive UI               |
 
 ## Testing
 

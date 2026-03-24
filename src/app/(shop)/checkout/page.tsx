@@ -1,12 +1,12 @@
-"use client";
+'use client'
 
 /* ------------------------------------------------------------------ */
 /*  Checkout page — multi-step form                                    */
 /* ------------------------------------------------------------------ */
 
-import { useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState, useCallback, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,99 +21,93 @@ import {
   Phone,
   FileText,
   ShoppingBag,
-} from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
+} from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { toast } from 'sonner'
 
-import { useCartStore } from "@/lib/store/cart";
-import { siteConfig } from "@/lib/config/site.config";
-import { createOrderFromCart } from "@/lib/actions/orders";
-import { startPaymentAction } from "@/lib/actions/payments";
-import { formatHUF } from "@/lib/utils/format";
-import {
-  getAvailableCarriers,
-  getCarrierFee,
-} from "@/lib/utils/shipping";
-import { cn } from "@/lib/utils";
+import { useCartStore } from '@/lib/store/cart'
+import { siteConfig } from '@/lib/config/site.config'
+import { createOrderFromCart } from '@/lib/actions/orders'
+import { startPaymentAction } from '@/lib/actions/payments'
+import { formatHUF } from '@/lib/utils/format'
+import { getAvailableCarriers, getCarrierFee } from '@/lib/utils/shipping'
+import { cn } from '@/lib/utils'
 import type {
   ShippingMethod,
   HomeDeliveryCarrier,
   PickupPointProvider,
   CheckoutFormData,
-} from "@/lib/types";
+} from '@/lib/types'
 
-import { CartLineItem } from "@/components/cart/cart-line-item";
-import { OrderSummary } from "@/components/cart/order-summary";
-import { PickupPointSelector } from "@/components/cart/pickup-point-selector";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { CartLineItem } from '@/components/cart/cart-line-item'
+import { OrderSummary } from '@/components/cart/order-summary'
+import { PickupPointSelector } from '@/components/cart/pickup-point-selector'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
 
 // ── Constants ──────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: 1, label: "Szállítás", icon: Truck },
-  { id: 2, label: "Kapcsolat és számlázás", icon: User },
-  { id: 3, label: "Összegzés és fizetés", icon: CreditCard },
-] as const;
+  { id: 1, label: 'Szállítás', icon: Truck },
+  { id: 2, label: 'Kapcsolat és számlázás', icon: User },
+  { id: 3, label: 'Összegzés és fizetés', icon: CreditCard },
+] as const
 
-const MOCK_PICKUP_POINTS: Record<
-  PickupPointProvider,
-  Array<{ id: string; label: string }>
-> = {
+const MOCK_PICKUP_POINTS: Record<PickupPointProvider, Array<{ id: string; label: string }>> = {
   foxpost: [
-    { id: "FP-BP-001", label: "Foxpost - Budapest, Westend" },
-    { id: "FP-BP-002", label: "Foxpost - Budapest, Arena Mall" },
-    { id: "FP-DEB-001", label: "Foxpost - Debrecen, Forum" },
+    { id: 'FP-BP-001', label: 'Foxpost - Budapest, Westend' },
+    { id: 'FP-BP-002', label: 'Foxpost - Budapest, Arena Mall' },
+    { id: 'FP-DEB-001', label: 'Foxpost - Debrecen, Forum' },
   ],
   gls_automata: [
-    { id: "GLS-BP-001", label: "GLS Automata - Budapest, Keleti pu." },
-    { id: "GLS-BP-002", label: "GLS Automata - Budapest, Déli pu." },
+    { id: 'GLS-BP-001', label: 'GLS Automata - Budapest, Keleti pu.' },
+    { id: 'GLS-BP-002', label: 'GLS Automata - Budapest, Déli pu.' },
   ],
   packeta: [
-    { id: "PKT-BP-001", label: "Packeta - Budapest, Blaha Lujza tér" },
-    { id: "PKT-GYR-001", label: "Packeta - Győr, Árkád" },
+    { id: 'PKT-BP-001', label: 'Packeta - Budapest, Blaha Lujza tér' },
+    { id: 'PKT-GYR-001', label: 'Packeta - Győr, Árkád' },
   ],
   mpl_automata: [
-    { id: "MPL-BP-001", label: "MPL Automata - Budapest, Corvin" },
-    { id: "MPL-SZG-001", label: "MPL Automata - Szeged, Auchan" },
+    { id: 'MPL-BP-001', label: 'MPL Automata - Budapest, Corvin' },
+    { id: 'MPL-SZG-001', label: 'MPL Automata - Szeged, Auchan' },
   ],
   easybox: [
-    { id: "EB-BP-001", label: "Easybox - Budapest, Mammut" },
-    { id: "EB-PCS-001", label: "Easybox - Pécs, Árkád" },
+    { id: 'EB-BP-001', label: 'Easybox - Budapest, Mammut' },
+    { id: 'EB-PCS-001', label: 'Easybox - Pécs, Árkád' },
   ],
-};
+}
 
 // ── Form schema ────────────────────────────────────────────────────
 
-const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/;
+const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/
 
 const addressSchema = z.object({
-  name: z.string().min(1, "A név megadása kötelező"),
-  street: z.string().min(1, "Az utca megadása kötelező"),
-  city: z.string().min(1, "A város megadása kötelező"),
-  zip: z.string().regex(/^\d{4}$/, "Az irányítószám 4 számjegyű kell legyen"),
-  country: z.string().min(1, "Az ország megadása kötelező"),
-});
+  name: z.string().min(1, 'A név megadása kötelező'),
+  street: z.string().min(1, 'Az utca megadása kötelező'),
+  city: z.string().min(1, 'A város megadása kötelező'),
+  zip: z.string().regex(/^\d{4}$/, 'Az irányítószám 4 számjegyű kell legyen'),
+  country: z.string().min(1, 'Az ország megadása kötelező'),
+})
 
 const checkoutFormSchema = z.object({
   // Step 1 — Shipping
-  shippingMethod: z.enum(["home", "pickup"]),
+  shippingMethod: z.enum(['home', 'pickup']),
   carrier: z.string().optional(),
   pickupPointProvider: z.string().optional(),
   pickupPointId: z.string().optional(),
   pickupPointLabel: z.string().optional(),
 
   // Step 2 — Contact & Billing
-  email: z.string().email("Érvénytelen e-mail cím"),
+  email: z.string().email('Érvénytelen e-mail cím'),
   phone: z
     .string()
-    .regex(hungarianPhoneRegex, "Érvénytelen magyar telefonszám (pl. +36 30 123 4567)"),
+    .regex(hungarianPhoneRegex, 'Érvénytelen magyar telefonszám (pl. +36 30 123 4567)'),
   billingAddress: addressSchema,
   sameAsBilling: z.boolean(),
   shippingAddressOverride: addressSchema.optional(),
@@ -121,25 +115,25 @@ const checkoutFormSchema = z.object({
   // Step 3 — Review & Pay
   notes: z.string().optional(),
   termsAccepted: z.boolean(),
-});
+})
 
-type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
+type CheckoutFormValues = z.infer<typeof checkoutFormSchema>
 
 // ── Component ──────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter()
+  const [currentStep, setCurrentStep] = useState(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const items = useCartStore((s) => s.items);
-  const subtotal = useCartStore((s) => s.subtotal());
-  const couponCode = useCartStore((s) => s.couponCode);
-  const couponDiscount = useCartStore((s) => s.couponDiscount);
-  const clearCart = useCartStore((s) => s.clearCart);
+  const items = useCartStore((s) => s.items)
+  const subtotal = useCartStore((s) => s.subtotal())
+  const couponCode = useCartStore((s) => s.couponCode)
+  const couponDiscount = useCartStore((s) => s.couponDiscount)
+  const clearCart = useCartStore((s) => s.clearCart)
 
-  const homeCarriers = useMemo(() => getAvailableCarriers("home"), []);
-  const pickupCarriers = useMemo(() => getAvailableCarriers("pickup"), []);
+  const homeCarriers = useMemo(() => getAvailableCarriers('home'), [])
+  const pickupCarriers = useMemo(() => getAvailableCarriers('pickup'), [])
 
   const {
     register,
@@ -152,52 +146,52 @@ export default function CheckoutPage() {
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
-      email: "",
-      phone: "",
+      email: '',
+      phone: '',
       billingAddress: {
-        name: "",
-        street: "",
-        city: "",
-        zip: "",
-        country: "Magyarország",
+        name: '',
+        street: '',
+        city: '',
+        zip: '',
+        country: 'Magyarország',
       },
       sameAsBilling: true,
       shippingAddressOverride: {
-        name: "",
-        street: "",
-        city: "",
-        zip: "",
-        country: "Magyarország",
+        name: '',
+        street: '',
+        city: '',
+        zip: '',
+        country: 'Magyarország',
       },
-      shippingMethod: "home",
-      carrier: homeCarriers[0]?.id ?? "",
-      pickupPointProvider: "",
-      pickupPointId: "",
-      pickupPointLabel: "",
-      notes: "",
+      shippingMethod: 'home',
+      carrier: homeCarriers[0]?.id ?? '',
+      pickupPointProvider: '',
+      pickupPointId: '',
+      pickupPointLabel: '',
+      notes: '',
       termsAccepted: false,
     },
-  });
+  })
 
-  const watchedValues = watch();
-  const sameAsBilling = watchedValues.sameAsBilling;
-  const shippingMethod = watchedValues.shippingMethod as ShippingMethod;
-  const selectedCarrier = watchedValues.carrier ?? "";
-  const selectedPickupProvider = watchedValues.pickupPointProvider ?? "";
-  const selectedPickupPointId = watchedValues.pickupPointId ?? "";
+  const watchedValues = watch()
+  const sameAsBilling = watchedValues.sameAsBilling
+  const shippingMethod = watchedValues.shippingMethod as ShippingMethod
+  const selectedCarrier = watchedValues.carrier ?? ''
+  const selectedPickupProvider = watchedValues.pickupPointProvider ?? ''
+  const selectedPickupPointId = watchedValues.pickupPointId ?? ''
 
   // Calculate shipping fee based on selections
   const shippingFee = useMemo(() => {
-    if (shippingMethod === "home" && selectedCarrier) {
-      return getCarrierFee("home", selectedCarrier, subtotal) ?? 0;
+    if (shippingMethod === 'home' && selectedCarrier) {
+      return getCarrierFee('home', selectedCarrier, subtotal) ?? 0
     }
-    if (shippingMethod === "pickup" && selectedPickupProvider) {
-      return getCarrierFee("pickup", selectedPickupProvider, subtotal) ?? 0;
+    if (shippingMethod === 'pickup' && selectedPickupProvider) {
+      return getCarrierFee('pickup', selectedPickupProvider, subtotal) ?? 0
     }
-    return 0;
-  }, [shippingMethod, selectedCarrier, selectedPickupProvider, subtotal]);
+    return 0
+  }, [shippingMethod, selectedCarrier, selectedPickupProvider, subtotal])
 
-  const total = Math.max(0, subtotal + shippingFee - couponDiscount);
+  const total = Math.max(0, subtotal + shippingFee - couponDiscount)
 
   // ── Step navigation ──────────────────────────────────────────────
 
@@ -205,59 +199,55 @@ export default function CheckoutPage() {
     async (target: number) => {
       if (target > currentStep) {
         // Validate current step fields before advancing
-        let fieldsToValidate: (keyof CheckoutFormValues)[] = [];
+        let fieldsToValidate: (keyof CheckoutFormValues)[] = []
 
         if (currentStep === 1) {
-          fieldsToValidate = ["shippingMethod"];
-          if (shippingMethod === "home") {
-            fieldsToValidate.push("carrier");
+          fieldsToValidate = ['shippingMethod']
+          if (shippingMethod === 'home') {
+            fieldsToValidate.push('carrier')
           } else {
-            fieldsToValidate.push(
-              "pickupPointProvider",
-              "pickupPointId",
-              "pickupPointLabel",
-            );
+            fieldsToValidate.push('pickupPointProvider', 'pickupPointId', 'pickupPointLabel')
           }
         } else if (currentStep === 2) {
-          fieldsToValidate = ["email", "phone"];
-          if (shippingMethod === "pickup") {
+          fieldsToValidate = ['email', 'phone']
+          if (shippingMethod === 'pickup') {
             // Pickup: only billing address required
-            fieldsToValidate.push("billingAddress");
+            fieldsToValidate.push('billingAddress')
           } else {
             // Home delivery: shipping address is the primary address
-            fieldsToValidate.push("shippingAddressOverride");
+            fieldsToValidate.push('shippingAddressOverride')
             if (!sameAsBilling) {
               // Separate billing address was provided
-              fieldsToValidate.push("billingAddress");
+              fieldsToValidate.push('billingAddress')
             }
           }
         }
 
-        const valid = await trigger(fieldsToValidate);
-        if (!valid) return;
+        const valid = await trigger(fieldsToValidate)
+        if (!valid) return
       }
 
-      setCurrentStep(target);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setCurrentStep(target)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     [currentStep, trigger, sameAsBilling, shippingMethod],
-  );
+  )
 
   // ── Submit handler ───────────────────────────────────────────────
 
   const onSubmit = useCallback(
     async (data: CheckoutFormValues) => {
       if (!data.termsAccepted) {
-        toast.error("Kérlek, fogadd el az Általános Szerződési Feltételeket.");
-        return;
+        toast.error('Kérlek, fogadd el az Általános Szerződési Feltételeket.')
+        return
       }
 
       if (items.length === 0) {
-        toast.error("A kosarad üres.");
-        return;
+        toast.error('A kosarad üres.')
+        return
       }
 
-      setIsSubmitting(true);
+      setIsSubmitting(true)
 
       try {
         // Build CheckoutFormData for the server action
@@ -265,14 +255,14 @@ export default function CheckoutPage() {
         //   billing copies from it when sameAsBilling is checked.
         // Pickup: no home address needed; billing is entered directly.
         const shippingAddress =
-          data.shippingMethod === "home"
-            ? data.shippingAddressOverride ?? data.billingAddress
-            : { name: "", street: "", city: "", zip: "", country: "HU" };
+          data.shippingMethod === 'home'
+            ? (data.shippingAddressOverride ?? data.billingAddress)
+            : { name: '', street: '', city: '', zip: '', country: 'HU' }
 
         const resolvedBillingAddress =
-          data.shippingMethod === "home" && data.sameAsBilling
-            ? data.shippingAddressOverride ?? data.billingAddress
-            : data.billingAddress;
+          data.shippingMethod === 'home' && data.sameAsBilling
+            ? (data.shippingAddressOverride ?? data.billingAddress)
+            : data.billingAddress
 
         const checkoutData: CheckoutFormData = {
           email: data.email,
@@ -280,72 +270,68 @@ export default function CheckoutPage() {
           shippingMethod: data.shippingMethod as ShippingMethod,
           shippingAddress: {
             ...shippingAddress,
-            country: shippingAddress.country === "Magyarország" ? "HU" : shippingAddress.country,
+            country: shippingAddress.country === 'Magyarország' ? 'HU' : shippingAddress.country,
           },
           billingAddress: {
             ...resolvedBillingAddress,
-            country: resolvedBillingAddress.country === "Magyarország" ? "HU" : resolvedBillingAddress.country,
+            country:
+              resolvedBillingAddress.country === 'Magyarország'
+                ? 'HU'
+                : resolvedBillingAddress.country,
           },
           sameAsBilling: data.sameAsBilling,
           pickupPointProvider:
-            data.shippingMethod === "pickup"
-              ? (data.pickupPointProvider as PickupPointProvider) ?? null
+            data.shippingMethod === 'pickup'
+              ? ((data.pickupPointProvider as PickupPointProvider) ?? null)
               : null,
-          pickupPointId:
-            data.shippingMethod === "pickup"
-              ? data.pickupPointId ?? null
-              : null,
+          pickupPointId: data.shippingMethod === 'pickup' ? (data.pickupPointId ?? null) : null,
           pickupPointLabel:
-            data.shippingMethod === "pickup"
-              ? data.pickupPointLabel ?? null
-              : null,
+            data.shippingMethod === 'pickup' ? (data.pickupPointLabel ?? null) : null,
           carrier:
-            data.shippingMethod === "home"
-              ? (data.carrier as HomeDeliveryCarrier) ?? null
-              : null,
-          notes: data.notes ?? "",
-          couponCode: couponCode ?? "",
-        };
+            data.shippingMethod === 'home' ? ((data.carrier as HomeDeliveryCarrier) ?? null) : null,
+          notes: data.notes ?? '',
+          couponCode: couponCode ?? '',
+        }
 
         // 1. Create order
         const orderResult = await createOrderFromCart({
           items,
           checkout: checkoutData,
-        });
+        })
 
         if (!orderResult.success || !orderResult.data) {
-          toast.error(orderResult.error ?? "Hiba történt a rendelés létrehozásakor.");
-          setIsSubmitting(false);
-          return;
+          toast.error(orderResult.error ?? 'Hiba történt a rendelés létrehozásakor.')
+          setIsSubmitting(false)
+          return
         }
 
-        const { orderId } = orderResult.data;
+        const { orderId } = orderResult.data
 
         // 2. Start Barion payment
-        const paymentResult = await startPaymentAction(orderId);
+        const paymentResult = await startPaymentAction(orderId)
 
         if (!paymentResult.success || !paymentResult.data) {
-          toast.error(paymentResult.error ?? "Hiba történt a fizetés indításakor.");
+          toast.error(paymentResult.error ?? 'Hiba történt a fizetés indításakor.')
           // Order was created — redirect to success with orderId
           // (payment can be retried from admin)
-          router.push(`/checkout/success?orderId=${orderId}`);
-          clearCart();
-          setIsSubmitting(false);
-          return;
+          router.push(`/checkout/success?orderId=${orderId}`)
+          clearCart()
+          setIsSubmitting(false)
+          return
         }
 
         // 3. Clear cart and redirect to Barion gateway
-        clearCart();
-        window.location.href = paymentResult.data.gatewayUrl;
+        clearCart()
+        window.location.href = paymentResult.data.gatewayUrl
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.error("[Checkout] Submit error:", message);
-        toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
-        setIsSubmitting(false);
+        const message = err instanceof Error ? err.message : String(err)
+        console.error('[Checkout] Submit error:', message)
+        toast.error('Váratlan hiba történt. Kérlek, próbáld újra.')
+        setIsSubmitting(false)
       }
     },
     [items, couponCode, router, clearCart],
-  );
+  )
 
   // ── Empty cart guard ─────────────────────────────────────────────
 
@@ -356,75 +342,60 @@ export default function CheckoutPage() {
           <div className="flex size-20 items-center justify-center rounded-full bg-muted">
             <ShoppingBag className="size-8 text-muted-foreground" />
           </div>
-          <h1 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">
-            A kosarad üres
-          </h1>
+          <h1 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">A kosarad üres</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Adj hozzá termékeket a kosaradhoz a fizetés előtt.
           </p>
-          <Button
-            className="mt-8"
-            size="lg"
-            render={<Link href="/products" />}
-          >
+          <Button className="mt-8" size="lg" render={<Link href="/products" />}>
             Termékek böngészése
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
   // ── Render ───────────────────────────────────────────────────────
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-      <h1 className="text-3xl font-semibold tracking-[-0.03em]">
-        Pénztár
-      </h1>
+      <h1 className="text-3xl font-semibold tracking-[-0.03em]">Pénztár</h1>
 
       {/* ── Step indicators ────────────────────────────── */}
       <div className="mt-8 flex items-center gap-0">
         {STEPS.map((step, idx) => {
-          const StepIcon = step.icon;
-          const isActive = currentStep === step.id;
-          const isCompleted = currentStep > step.id;
+          const StepIcon = step.icon
+          const isActive = currentStep === step.id
+          const isCompleted = currentStep > step.id
 
           return (
             <div key={step.id} className="flex items-center">
               {idx > 0 && (
                 <div
                   className={cn(
-                    "mx-3 h-px w-8 transition-colors duration-500 sm:w-16",
-                    isCompleted ? "bg-foreground" : "bg-border",
+                    'mx-3 h-px w-8 transition-colors duration-500 sm:w-16',
+                    isCompleted ? 'bg-foreground' : 'bg-border',
                   )}
                 />
               )}
               <button
                 type="button"
                 onClick={() => {
-                  if (isCompleted) void goToStep(step.id);
+                  if (isCompleted) void goToStep(step.id)
                 }}
                 disabled={!isCompleted && !isActive}
                 className={cn(
-                  "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-500",
-                  isActive && "cursor-pointer bg-foreground text-background",
-                  isCompleted &&
-                    "cursor-pointer bg-muted text-foreground hover:bg-muted/80",
-                  !isActive &&
-                    !isCompleted &&
-                    "cursor-default text-muted-foreground",
+                  'flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-500',
+                  isActive && 'cursor-pointer bg-foreground text-background',
+                  isCompleted && 'cursor-pointer bg-muted text-foreground hover:bg-muted/80',
+                  !isActive && !isCompleted && 'cursor-default text-muted-foreground',
                 )}
               >
-                {isCompleted ? (
-                  <Check className="size-4" />
-                ) : (
-                  <StepIcon className="size-4" />
-                )}
+                {isCompleted ? <Check className="size-4" /> : <StepIcon className="size-4" />}
                 <span className="hidden sm:inline">{step.label}</span>
                 <span className="sm:hidden">{step.id}</span>
               </button>
             </div>
-          );
+          )
         })}
       </div>
 
@@ -436,9 +407,7 @@ export default function CheckoutPage() {
             {currentStep === 1 && (
               <div className="space-y-8">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                    Szállítási mód
-                  </h2>
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">Szállítási mód</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Válasszon szállítási módot és futárszolgálatot.
                   </p>
@@ -451,23 +420,21 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setValue("shippingMethod", "home");
+                        setValue('shippingMethod', 'home')
                         if (!selectedCarrier && homeCarriers[0]) {
-                          setValue("carrier", homeCarriers[0].id);
+                          setValue('carrier', homeCarriers[0].id)
                         }
                       }}
                       className={cn(
-                        "flex cursor-pointer flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500",
-                        shippingMethod === "home"
-                          ? "border-foreground bg-foreground/[0.03]"
-                          : "border-border hover:border-foreground/30",
+                        'flex cursor-pointer flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500',
+                        shippingMethod === 'home'
+                          ? 'border-foreground bg-foreground/[0.03]'
+                          : 'border-border hover:border-foreground/30',
                       )}
                     >
                       <div className="flex items-center gap-2.5">
                         <Home className="size-5" />
-                         <span className="font-medium">
-                          Házhozszállítás
-                        </span>
+                        <span className="font-medium">Házhozszállítás</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Futárszolgálat által szállítva az Ön által megadott címre.
@@ -480,23 +447,21 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setValue("shippingMethod", "pickup");
+                        setValue('shippingMethod', 'pickup')
                         if (!selectedPickupProvider && pickupCarriers[0]) {
-                          setValue("pickupPointProvider", pickupCarriers[0].id);
+                          setValue('pickupPointProvider', pickupCarriers[0].id)
                         }
                       }}
                       className={cn(
-                        "flex cursor-pointer flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500",
-                        shippingMethod === "pickup"
-                          ? "border-foreground bg-foreground/[0.03]"
-                          : "border-border hover:border-foreground/30",
+                        'flex cursor-pointer flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all duration-500',
+                        shippingMethod === 'pickup'
+                          ? 'border-foreground bg-foreground/[0.03]'
+                          : 'border-border hover:border-foreground/30',
                       )}
                     >
                       <div className="flex items-center gap-2.5">
                         <Package className="size-5" />
-                        <span className="font-medium">
-                          Csomagautomata / Átvételi pont
-                        </span>
+                        <span className="font-medium">Csomagautomata / Átvételi pont</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Csomagautomatából vagy átvételi ponton vehető át.
@@ -508,51 +473,47 @@ export default function CheckoutPage() {
                 <Separator />
 
                 {/* ── Home delivery carriers ──────────── */}
-                {shippingMethod === "home" && (
+                {shippingMethod === 'home' && (
                   <div className="space-y-4">
-                    <h3 className="text-base font-medium">
-                      Futárszolgálat választása
-                    </h3>
+                    <h3 className="text-base font-medium">Futárszolgálat választása</h3>
                     <div className="space-y-3">
                       {homeCarriers.map((carrier) => {
-                        const fee = getCarrierFee("home", carrier.id, subtotal);
-                        const isSelected = selectedCarrier === carrier.id;
+                        const fee = getCarrierFee('home', carrier.id, subtotal)
+                        const isSelected = selectedCarrier === carrier.id
 
                         return (
                           <label
                             key={carrier.id}
                             className={cn(
-                              "flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3.5 transition-all duration-300",
+                              'flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3.5 transition-all duration-300',
                               isSelected
-                                ? "border-foreground bg-foreground/[0.03]"
-                                : "border-border hover:border-foreground/30",
+                                ? 'border-foreground bg-foreground/[0.03]'
+                                : 'border-border hover:border-foreground/30',
                             )}
                           >
                             <div className="flex items-center gap-3">
                               <input
                                 type="radio"
                                 value={carrier.id}
-                                {...register("carrier")}
+                                {...register('carrier')}
                                 className="size-4 accent-foreground"
                               />
                               <div>
-                                <span className="text-sm font-medium">
-                                  {carrier.name}
-                                </span>
+                                <span className="text-sm font-medium">{carrier.name}</span>
                               </div>
                             </div>
                             <span className="text-sm font-medium tabular-nums">
-                              {fee === 0 ? "Ingyenes" : formatHUF(fee ?? 0)}
+                              {fee === 0 ? 'Ingyenes' : formatHUF(fee ?? 0)}
                             </span>
                           </label>
-                        );
+                        )
                       })}
                     </div>
                   </div>
                 )}
 
                 {/* ── Pickup point providers ──────────── */}
-                {shippingMethod === "pickup" && (
+                {shippingMethod === 'pickup' && (
                   <PickupPointSelector
                     carriers={pickupCarriers}
                     pointsByProvider={MOCK_PICKUP_POINTS}
@@ -560,13 +521,13 @@ export default function CheckoutPage() {
                     selectedPointId={selectedPickupPointId}
                     subtotal={subtotal}
                     onProviderChange={(id) => {
-                      setValue("pickupPointProvider", id);
-                      setValue("pickupPointId", "");
-                      setValue("pickupPointLabel", "");
+                      setValue('pickupPointProvider', id)
+                      setValue('pickupPointId', '')
+                      setValue('pickupPointLabel', '')
                     }}
                     onPointChange={(id, label) => {
-                      setValue("pickupPointId", id);
-                      setValue("pickupPointLabel", label);
+                      setValue('pickupPointId', id)
+                      setValue('pickupPointLabel', label)
                     }}
                     pointError={errors.pickupPointId?.message}
                   />
@@ -578,13 +539,9 @@ export default function CheckoutPage() {
                     className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
                   >
                     <ArrowLeft className="size-3.5" />
-                    Vissza a kosarhoz
+                    Vissza a kosárhoz
                   </Link>
-                  <Button
-                    type="button"
-                    size="lg"
-                    onClick={() => void goToStep(2)}
-                  >
+                  <Button type="button" size="lg" onClick={() => void goToStep(2)}>
                     Tovább
                     <ArrowRight className="ml-1.5 size-4" />
                   </Button>
@@ -596,9 +553,7 @@ export default function CheckoutPage() {
             {currentStep === 2 && (
               <div className="space-y-8">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                    Kapcsolat
-                  </h2>
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">Kapcsolat</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Adja meg elérhetőségi adatait a rendeléshez.
                   </p>
@@ -612,7 +567,7 @@ export default function CheckoutPage() {
                       <Input
                         type="email"
                         placeholder="pelda@email.hu"
-                        {...register("email")}
+                        {...register('email')}
                         aria-invalid={!!errors.email}
                       />
                     </FormField>
@@ -625,7 +580,7 @@ export default function CheckoutPage() {
                       <Input
                         type="tel"
                         placeholder="+36 30 123 4567"
-                        {...register("phone")}
+                        {...register('phone')}
                         aria-invalid={!!errors.phone}
                       />
                     </FormField>
@@ -635,12 +590,10 @@ export default function CheckoutPage() {
                 <Separator />
 
                 {/* ── Address section — depends on shipping method ── */}
-                {shippingMethod === "pickup" ? (
+                {shippingMethod === 'pickup' ? (
                   /* ── Pickup: only billing/invoice address ────── */
                   <div>
-                    <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                      Számlázási cím
-                    </h2>
+                    <h2 className="text-lg font-semibold tracking-[-0.02em]">Számlázási cím</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                       A számla erre a címre kerül kiállításra.
                     </p>
@@ -648,16 +601,16 @@ export default function CheckoutPage() {
                     <AddressFields
                       prefix="billingAddress"
                       register={register}
-                      errors={errors.billingAddress as Record<string, { message?: string }> | undefined}
+                      errors={
+                        errors.billingAddress as Record<string, { message?: string }> | undefined
+                      }
                     />
                   </div>
                 ) : (
                   /* ── Home delivery: shipping address first, then optional separate billing ── */
                   <>
                     <div>
-                      <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                        Szállítási cím
-                      </h2>
+                      <h2 className="text-lg font-semibold tracking-[-0.02em]">Szállítási cím</h2>
                       <p className="mt-1 text-sm text-muted-foreground">
                         A csomag erre a címre kerül kiszállításra.
                       </p>
@@ -665,7 +618,11 @@ export default function CheckoutPage() {
                       <AddressFields
                         prefix="shippingAddressOverride"
                         register={register}
-                        errors={errors.shippingAddressOverride as Record<string, { message?: string }> | undefined}
+                        errors={
+                          errors.shippingAddressOverride as
+                            | Record<string, { message?: string }>
+                            | undefined
+                        }
                       />
                     </div>
 
@@ -679,9 +636,7 @@ export default function CheckoutPage() {
                           <div className="flex items-center gap-3">
                             <Checkbox
                               checked={field.value}
-                              onCheckedChange={(checked) =>
-                                field.onChange(checked === true)
-                              }
+                              onCheckedChange={(checked) => field.onChange(checked === true)}
                             />
                             <Label className="cursor-pointer text-sm">
                               Számlázási cím megegyezik a szállítási címmel
@@ -697,7 +652,11 @@ export default function CheckoutPage() {
                           <AddressFields
                             prefix="billingAddress"
                             register={register}
-                            errors={errors.billingAddress as Record<string, { message?: string }> | undefined}
+                            errors={
+                              errors.billingAddress as
+                                | Record<string, { message?: string }>
+                                | undefined
+                            }
                           />
                         </div>
                       )}
@@ -706,19 +665,11 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="flex items-center justify-between pt-4">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => void goToStep(1)}
-                  >
+                  <Button type="button" variant="ghost" onClick={() => void goToStep(1)}>
                     <ArrowLeft className="mr-1.5 size-4" />
                     Vissza
                   </Button>
-                  <Button
-                    type="button"
-                    size="lg"
-                    onClick={() => void goToStep(3)}
-                  >
+                  <Button type="button" size="lg" onClick={() => void goToStep(3)}>
                     Tovább
                     <ArrowRight className="ml-1.5 size-4" />
                   </Button>
@@ -730,9 +681,7 @@ export default function CheckoutPage() {
             {currentStep === 3 && (
               <div className="space-y-8">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                    Rendelés összegzése
-                  </h2>
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">Rendelés összegzése</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Ellenőrizze a rendelés részleteit a fizetés előtt.
                   </p>
@@ -743,7 +692,7 @@ export default function CheckoutPage() {
                   <div className="divide-y divide-border px-4">
                     {items.map((item) => (
                       <div
-                        key={`${item.productId}-${item.variantId ?? "none"}`}
+                        key={`${item.productId}-${item.variantId ?? 'none'}`}
                         className="flex items-center justify-between py-3"
                       >
                         <div className="flex items-center gap-3">
@@ -753,9 +702,7 @@ export default function CheckoutPage() {
                           <div>
                             <p className="text-sm font-medium">{item.title}</p>
                             {item.variantLabel && (
-                              <p className="text-xs text-muted-foreground">
-                                {item.variantLabel}
-                              </p>
+                              <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
                             )}
                           </div>
                         </div>
@@ -775,31 +722,26 @@ export default function CheckoutPage() {
                   </ReviewSection>
 
                   <ReviewSection title="Szállítás">
-                    {shippingMethod === "home" ? (
+                    {shippingMethod === 'home' ? (
                       <>
                         <p className="font-medium">
-                          Házhozszállítás —{" "}
-                          {homeCarriers.find((c) => c.id === selectedCarrier)
-                            ?.name ?? selectedCarrier}
+                          Házhozszállítás —{' '}
+                          {homeCarriers.find((c) => c.id === selectedCarrier)?.name ??
+                            selectedCarrier}
                         </p>
+                        <p>{watchedValues.shippingAddressOverride?.name}</p>
+                        <p>{watchedValues.shippingAddressOverride?.street}</p>
                         <p>
-                          {watchedValues.shippingAddressOverride?.name}
-                        </p>
-                        <p>
-                          {watchedValues.shippingAddressOverride?.street}
-                        </p>
-                        <p>
-                          {watchedValues.shippingAddressOverride?.zip}{" "}
+                          {watchedValues.shippingAddressOverride?.zip}{' '}
                           {watchedValues.shippingAddressOverride?.city}
                         </p>
                       </>
                     ) : (
                       <>
                         <p className="font-medium">
-                          Csomagautomata &mdash;{" "}
-                          {pickupCarriers.find(
-                            (c) => c.id === selectedPickupProvider,
-                          )?.name ?? selectedPickupProvider}
+                          Csomagautomata &mdash;{' '}
+                          {pickupCarriers.find((c) => c.id === selectedPickupProvider)?.name ??
+                            selectedPickupProvider}
                         </p>
                         <p>{watchedValues.pickupPointLabel}</p>
                         <p className="text-xs text-muted-foreground">
@@ -810,17 +752,14 @@ export default function CheckoutPage() {
                   </ReviewSection>
 
                   <ReviewSection title="Számlázási cím">
-                    {shippingMethod === "home" && sameAsBilling ? (
-                      <p className="text-muted-foreground">
-                        Megegyezik a szállítási címmel
-                      </p>
+                    {shippingMethod === 'home' && sameAsBilling ? (
+                      <p className="text-muted-foreground">Megegyezik a szállítási címmel</p>
                     ) : (
                       <>
                         <p>{watchedValues.billingAddress.name}</p>
                         <p>{watchedValues.billingAddress.street}</p>
                         <p>
-                          {watchedValues.billingAddress.zip}{" "}
-                          {watchedValues.billingAddress.city}
+                          {watchedValues.billingAddress.zip} {watchedValues.billingAddress.city}
                         </p>
                         <p>{watchedValues.billingAddress.country}</p>
                       </>
@@ -842,7 +781,7 @@ export default function CheckoutPage() {
                   </Label>
                   <Textarea
                     placeholder="Megjegyzés a rendeléshez..."
-                    {...register("notes")}
+                    {...register('notes')}
                     className="min-h-[80px]"
                   />
                 </div>
@@ -857,27 +796,25 @@ export default function CheckoutPage() {
                     <div className="flex items-start gap-3">
                       <Checkbox
                         checked={field.value}
-                        onCheckedChange={(checked) =>
-                          field.onChange(checked === true)
-                        }
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
                         className="mt-0.5"
                       />
                       <Label className="cursor-pointer text-sm leading-relaxed">
-                        Elfogadom az{" "}
+                        Elfogadom az{' '}
                         <Link
                           href="/terms"
                           target="_blank"
                           className="underline underline-offset-2 transition-colors hover:text-foreground/70"
                         >
-                         Általános Szerződési Feltételeket
-                        </Link>{" "}
-                        es az{" "}
+                          Általános Szerződési Feltételeket
+                        </Link>{' '}
+                        es az{' '}
                         <Link
                           href="/privacy"
                           target="_blank"
                           className="underline underline-offset-2 transition-colors hover:text-foreground/70"
                         >
-                         Adatkezelési Tájékoztatót
+                          Adatkezelési Tájékoztatót
                         </Link>
                         .
                       </Label>
@@ -886,11 +823,7 @@ export default function CheckoutPage() {
                 />
 
                 <div className="flex items-center justify-between pt-4">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => void goToStep(2)}
-                  >
+                  <Button type="button" variant="ghost" onClick={() => void goToStep(2)}>
                     <ArrowLeft className="mr-1.5 size-4" />
                     Vissza
                   </Button>
@@ -931,7 +864,7 @@ export default function CheckoutPage() {
         </div>
       </form>
     </div>
-  );
+  )
 }
 
 /* ================================================================== */
@@ -944,10 +877,10 @@ function FormField({
   icon,
   children,
 }: {
-  label: string;
-  error?: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
+  label: string
+  error?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
 }) {
   return (
     <div className="space-y-1.5">
@@ -956,11 +889,9 @@ function FormField({
         {label}
       </Label>
       {children}
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
-  );
+  )
 }
 
 function AddressFields({
@@ -968,17 +899,14 @@ function AddressFields({
   register,
   errors,
 }: {
-  prefix: "billingAddress" | "shippingAddressOverride";
-  register: ReturnType<typeof useForm<CheckoutFormValues>>["register"];
-  errors?: Record<string, { message?: string }>;
+  prefix: 'billingAddress' | 'shippingAddressOverride'
+  register: ReturnType<typeof useForm<CheckoutFormValues>>['register']
+  errors?: Record<string, { message?: string }>
 }) {
   return (
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <FormField
-          label="Teljes név"
-          error={errors?.name?.message}
-        >
+        <FormField label="Teljes név" error={errors?.name?.message}>
           <Input
             placeholder="Kovács János"
             {...register(`${prefix}.name`)}
@@ -988,10 +916,7 @@ function AddressFields({
       </div>
 
       <div className="sm:col-span-2">
-        <FormField
-          label="Utca, házszám"
-          error={errors?.street?.message}
-        >
+        <FormField label="Utca, házszám" error={errors?.street?.message}>
           <Input
             placeholder="Váci utca 1."
             {...register(`${prefix}.street`)}
@@ -1008,10 +933,7 @@ function AddressFields({
         />
       </FormField>
 
-      <FormField
-        label="Irányítószám"
-        error={errors?.zip?.message}
-      >
+      <FormField label="Irányítószám" error={errors?.zip?.message}>
         <Input
           placeholder="1052"
           maxLength={4}
@@ -1030,16 +952,10 @@ function AddressFields({
         </FormField>
       </div>
     </div>
-  );
+  )
 }
 
-function ReviewSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-border p-4">
       <h4 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -1047,5 +963,5 @@ function ReviewSection({
       </h4>
       <div className="space-y-0.5 text-sm">{children}</div>
     </div>
-  );
+  )
 }

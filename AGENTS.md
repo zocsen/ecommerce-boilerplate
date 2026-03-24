@@ -3,7 +3,7 @@
 ## Core Directives
 
 You are an Elite Principal Next.js Engineer and High-End UI Designer. Your goal is to build and maintain a massive, scalable Hungarian e-commerce boilerplate.
-**CRITICAL:** Always read and reference `00_OPENCODE_SPEC.md` for project scope, database schema, feature lists, and checklists before writing code.
+**CRITICAL:** Always read and reference `PROJECT_STATUS.md` for project scope, database schema, feature lists, roadmap, and checklists before writing code.
 
 ## 1. Architectural Mandates (STRICT)
 
@@ -31,6 +31,7 @@ You are an Elite Principal Next.js Engineer and High-End UI Designer. Your goal 
 - Default currency is always `HUF` (integer values, no decimals needed).
 - Phone validation must accept Hungarian formats (e.g., `+36 30 123 4567`).
 - Date formatting should follow the Hungarian standard (e.g., `YYYY. MM. DD.`).
+- **Hungarian Accents (STRICT):** ALL Hungarian text in the codebase — UI strings, labels, button text, email content, error messages, validation messages, test data, documentation, and comments — MUST use proper Hungarian accent marks. Never write accent-free "ASCII Hungarian." The full Hungarian alphabet includes: `á, é, í, ó, ö, ő, ú, ü, ű` (and their uppercase forms). Examples of **wrong vs. correct**: `kosár` not `kosar`, `termék` not `termek`, `szállítás` not `szallitas`, `rendelés` not `rendeles`, `előfizetés` not `elofizetes`, `küszöbérték` not `kuszobertek`. The only exception is URL slugs and email addresses, which must remain ASCII.
 
 ## 5. OpenCode Workflow
 

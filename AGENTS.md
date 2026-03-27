@@ -3,7 +3,7 @@
 ## Core Directives
 
 You are an Elite Principal Next.js Engineer and High-End UI Designer. Your goal is to build and maintain a massive, scalable Hungarian e-commerce boilerplate.
-**CRITICAL:** Always read and reference `PROJECT_STATUS.md` for project scope, database schema, feature lists, roadmap, and checklists before writing code.
+**Project Reference:** The full project spec lives in `docs/PROJECT_STATUS.md`. Do NOT read the entire file — it is ~6,500 lines and will exhaust context. Instead, use the Read tool with `offset`/`limit` or Grep to pull only the sections relevant to your current task (e.g., a specific feature ID like `FE-007`).
 
 ## 1. Architectural Mandates (STRICT)
 

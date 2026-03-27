@@ -2,6 +2,7 @@ import Link from "next/link";
 import { siteConfig } from "@/lib/config/site.config";
 import { Separator } from "@/components/ui/separator";
 import { NewsletterForm } from "@/components/shared/newsletter-form";
+import { CookieSettingsButton } from "@/components/shared/cookie-settings-button";
 
 /* ------------------------------------------------------------------ */
 /*  Column data                                                        */
@@ -17,6 +18,7 @@ const legalLinks = [
   { label: "ÁSZF", href: "/terms" },
   { label: "Adatvédelem", href: "/privacy" },
   { label: "Szállítás és visszaküldés", href: "/shipping-and-returns" },
+  { label: "Cookie szabályzat", href: "/cookie-policy" },
 ] as const;
 
 /* ------------------------------------------------------------------ */
@@ -34,10 +36,7 @@ export function Footer() {
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand column */}
           <div className="lg:col-span-1">
-            <Link
-              href="/"
-              className="text-xl font-semibold tracking-[-0.04em]"
-            >
+            <Link href="/" className="text-xl font-semibold tracking-[-0.04em]">
               {siteConfig.branding.logoText}
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -80,6 +79,9 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <CookieSettingsButton />
+              </li>
             </ul>
           </div>
 

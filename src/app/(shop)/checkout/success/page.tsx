@@ -27,9 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
   refunded: "Visszatérítve",
 };
 
-export default async function CheckoutSuccessPage({
-  searchParams,
-}: SuccessPageProps) {
+export default async function CheckoutSuccessPage({ searchParams }: SuccessPageProps) {
   const params = await searchParams;
   const orderId = params.orderId;
   const user = await getCurrentUser();
@@ -58,9 +56,7 @@ export default async function CheckoutSuccessPage({
           <CheckCircle2 className="size-10 text-emerald-600 dark:text-emerald-400" />
         </div>
 
-        <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">
-          Sikeres fizetés!
-        </h1>
+        <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">Sikeres fizetés!</h1>
         <p className="mt-2 text-muted-foreground">
           Köszönjük a rendelését. Hamarosan e-mailben küldjük a visszaigazolást.
         </p>
@@ -73,28 +69,16 @@ export default async function CheckoutSuccessPage({
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
               Rendelés részletei
             </h2>
-            <Badge variant="secondary">
-              {STATUS_LABELS[orderData.status] ?? orderData.status}
-            </Badge>
+            <Badge variant="secondary">{STATUS_LABELS[orderData.status] ?? orderData.status}</Badge>
           </div>
 
           <Separator className="my-4" />
 
           <dl className="space-y-3">
-            <DetailRow
-              label="Rendelés azonosító"
-              value={orderData.id.slice(0, 8).toUpperCase()}
-            />
-            <DetailRow
-              label="Dátum"
-              value={formatDate(orderData.created_at)}
-            />
+            <DetailRow label="Rendelés azonosító" value={orderData.id.slice(0, 8).toUpperCase()} />
+            <DetailRow label="Dátum" value={formatDate(orderData.created_at)} />
             <DetailRow label="E-mail" value={orderData.email} />
-            <DetailRow
-              label="Végösszeg"
-              value={formatHUF(orderData.total_amount)}
-              bold
-            />
+            <DetailRow label="Végösszeg" value={formatHUF(orderData.total_amount)} bold />
           </dl>
         </div>
       )}
@@ -114,7 +98,7 @@ export default async function CheckoutSuccessPage({
       {/* ── CTAs ────────────────────────────────────────── */}
       <div className="mt-8 flex flex-col items-center gap-3">
         {user && siteConfig.features.enableAccounts ? (
-          <Button size="lg" render={<Link href="/account/orders" />}>
+          <Button size="lg" render={<Link href="/profile/orders" />}>
             Rendeléseim
             <ArrowRight className="ml-1.5 size-4" />
           </Button>
@@ -150,9 +134,7 @@ function DetailRow({
   return (
     <div className="flex items-baseline justify-between text-sm">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={bold ? "text-base font-semibold tabular-nums" : "font-medium"}>
-        {value}
-      </dd>
+      <dd className={bold ? "text-base font-semibold tabular-nums" : "font-medium"}>{value}</dd>
     </div>
   );
 }

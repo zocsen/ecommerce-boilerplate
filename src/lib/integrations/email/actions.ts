@@ -9,16 +9,15 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/integrations/email/provider";
-import {
-  getFullFromAddress,
-  getRecipient,
-  getReplyToEmail,
-} from "@/lib/integrations/email/sender";
+import { getFullFromAddress, getRecipient, getReplyToEmail } from "@/lib/integrations/email/sender";
 import {
   renderOrderReceiptEmail,
   renderShippingUpdateEmail,
   renderAbandonedCartEmail,
   renderNewsletterEmail,
+  renderSignupConfirmationEmail,
+  renderWelcomeEmail,
+  renderAdminOrderNotificationEmail,
 } from "@/lib/integrations/email/templates";
 import type { NewsletterContent } from "@/lib/integrations/email/templates";
 import { signUnsubscribeToken } from "@/lib/security/unsubscribe-token";
@@ -34,9 +33,7 @@ export interface EmailActionResult {
 
 // ── 1. Send Order Receipt ─────────────────────────────────────────
 
-export async function sendReceipt(
-  orderId: string,
-): Promise<EmailActionResult> {
+export async function sendReceipt(orderId: string): Promise<EmailActionResult> {
   const supabase = createAdminClient();
 
   // Fetch order
@@ -106,10 +103,7 @@ export async function sendShippingUpdate(
 
   if (orderError || !order) {
     const message = orderError?.message ?? "Order not found";
-    console.error(
-      "[email-actions] sendShippingUpdate – order fetch failed:",
-      message,
-    );
+    console.error("[email-actions] sendShippingUpdate – order fetch failed:", message);
     return { success: false, error: message };
   }
 
@@ -128,10 +122,7 @@ export async function sendShippingUpdate(
   });
 
   if (!result.success) {
-    console.error(
-      "[email-actions] sendShippingUpdate – send failed:",
-      result.error,
-    );
+    console.error("[email-actions] sendShippingUpdate – send failed:", result.error);
   }
 
   return {
@@ -143,9 +134,7 @@ export async function sendShippingUpdate(
 
 // ── 3. Send Abandoned Cart Email ─────────────────────────────────
 
-export async function sendAbandonedCartEmail(
-  orderId: string,
-): Promise<EmailActionResult> {
+export async function sendAbandonedCartEmail(orderId: string): Promise<EmailActionResult> {
   const supabase = createAdminClient();
 
   // Fetch the draft/awaiting_payment order
@@ -158,10 +147,7 @@ export async function sendAbandonedCartEmail(
 
   if (orderError || !order) {
     const message = orderError?.message ?? "Abandoned order not found";
-    console.error(
-      "[email-actions] sendAbandonedCartEmail – order fetch failed:",
-      message,
-    );
+    console.error("[email-actions] sendAbandonedCartEmail – order fetch failed:", message);
     return { success: false, error: message };
   }
 
@@ -173,10 +159,7 @@ export async function sendAbandonedCartEmail(
 
   if (itemsError || !items) {
     const message = itemsError?.message ?? "Order items not found";
-    console.error(
-      "[email-actions] sendAbandonedCartEmail – items fetch failed:",
-      message,
-    );
+    console.error("[email-actions] sendAbandonedCartEmail – items fetch failed:", message);
     return { success: false, error: message };
   }
 
@@ -204,10 +187,7 @@ export async function sendAbandonedCartEmail(
   });
 
   if (!result.success) {
-    console.error(
-      "[email-actions] sendAbandonedCartEmail – send failed:",
-      result.error,
-    );
+    console.error("[email-actions] sendAbandonedCartEmail – send failed:", result.error);
   }
 
   return {
@@ -277,9 +257,7 @@ export async function sendNewsletterCampaign(
     if (settled.status === "rejected") {
       totalFailed++;
       errors.push(
-        settled.reason instanceof Error
-          ? settled.reason.message
-          : String(settled.reason),
+        settled.reason instanceof Error ? settled.reason.message : String(settled.reason),
       );
     } else if (settled.value.success) {
       totalSent++;
@@ -292,10 +270,118 @@ export async function sendNewsletterCampaign(
   }
 
   if (totalFailed > 0) {
-    console.warn(
-      `[email-actions] Newsletter campaign: ${totalSent} sent, ${totalFailed} failed.`,
-    );
+    console.warn(`[email-actions] Newsletter campaign: ${totalSent} sent, ${totalFailed} failed.`);
   }
 
   return { totalSent, totalFailed, errors };
+}
+
+// ── 5. Send Signup Confirmation ───────────────────────────────────
+
+export async function sendSignupConfirmationEmail(params: {
+  to: string;
+  name: string;
+}): Promise<EmailActionResult> {
+  if (!siteConfig.email.sendSignupConfirmation) {
+    return { success: true };
+  }
+
+  try {
+    const html = await renderSignupConfirmationEmail(params.name);
+    const result = await sendEmail({
+      to: getRecipient(params.to),
+      from: getFullFromAddress("transactional", siteConfig.store.name),
+      subject: `Sikeres regisztráció – ${siteConfig.store.name}`,
+      html,
+      tags: [{ name: "type", value: "signup_confirmation" }],
+    });
+
+    if (!result.success) {
+      console.error("[email-actions] sendSignupConfirmationEmail – send failed:", result.error);
+    }
+
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[email-actions] sendSignupConfirmationEmail – error:", message);
+    return { success: false, error: message };
+  }
+}
+
+// ── 6. Send Welcome Email ─────────────────────────────────────────
+
+export async function sendWelcomeEmail(params: {
+  to: string;
+  name: string;
+}): Promise<EmailActionResult> {
+  if (!siteConfig.email.sendWelcomeEmail) {
+    return { success: true };
+  }
+
+  try {
+    const html = await renderWelcomeEmail(params.name);
+    const result = await sendEmail({
+      to: getRecipient(params.to),
+      from: getFullFromAddress("transactional", siteConfig.store.name),
+      subject: `Üdvözlünk a ${siteConfig.store.name} webáruházban!`,
+      html,
+      tags: [{ name: "type", value: "welcome" }],
+    });
+
+    if (!result.success) {
+      console.error("[email-actions] sendWelcomeEmail – send failed:", result.error);
+    }
+
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[email-actions] sendWelcomeEmail – error:", message);
+    return { success: false, error: message };
+  }
+}
+
+// ── 7. Send Admin Order Notification ─────────────────────────────
+
+export async function sendAdminOrderNotification(params: {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  itemCount: number;
+  total: number;
+  shippingMethod: string;
+}): Promise<EmailActionResult> {
+  if (!siteConfig.email.sendAdminOrderNotification) {
+    return { success: true };
+  }
+
+  const recipients = siteConfig.email.adminNotificationRecipients;
+  if (recipients.length === 0) {
+    console.warn("[email-actions] sendAdminOrderNotification – no recipients configured.");
+    return { success: true };
+  }
+
+  try {
+    const html = await renderAdminOrderNotificationEmail(params);
+    const result = await sendEmail({
+      to: recipients,
+      from: getFullFromAddress("transactional", siteConfig.store.name),
+      subject: `Új rendelés: ${params.orderNumber} — ${params.customerName}`,
+      html,
+      tags: [
+        { name: "type", value: "admin_order_notification" },
+        { name: "order_id", value: params.orderId },
+      ],
+    });
+
+    if (!result.success) {
+      console.error("[email-actions] sendAdminOrderNotification – send failed:", result.error);
+    }
+
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[email-actions] sendAdminOrderNotification – error:", message);
+    return { success: false, error: message };
+  }
 }

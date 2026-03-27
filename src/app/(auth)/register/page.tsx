@@ -6,20 +6,14 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import {
-  Loader2,
-  Mail,
-  Lock,
-  User,
-  CheckCircle2,
-  ChevronDown,
-} from "lucide-react";
+import { Loader2, Mail, Lock, User, CheckCircle2, ChevronDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { sendSignupConfirmationEmail } from "@/lib/integrations/email/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -164,6 +158,9 @@ export default function RegisterPage() {
         return;
       }
 
+      // Non-blocking: send signup confirmation email
+      void sendSignupConfirmationEmail({ to: data.email, name: data.fullName });
+
       setIsSuccess(true);
     } catch {
       toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
@@ -183,8 +180,7 @@ export default function RegisterPage() {
           Ellenőrizd az e-mail fiókodat
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Küldtünk egy megerősítő e-mailt. Kérlek, kattints a linkre a
-          regisztráció befejezéséhez.
+          Küldtünk egy megerősítő e-mailt. Kérlek, kattints a linkre a regisztráció befejezéséhez.
         </p>
         <Link
           href="/login"
@@ -200,12 +196,8 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold tracking-[-0.02em]">
-        Regisztráció
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Hozzon létre egy fiókot a vásárláshoz.
-      </p>
+      <h1 className="text-xl font-semibold tracking-[-0.02em]">Regisztráció</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Hozzon létre egy fiókot a vásárláshoz.</p>
 
       {/* ── OAuth buttons ──────────────────────────────── */}
       <div className="mt-6 space-y-2.5">
@@ -219,11 +211,7 @@ export default function RegisterPage() {
             disabled={oauthLoading !== null || isLoading}
             onClick={() => handleOAuth(id)}
           >
-            {oauthLoading === id ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              icon
-            )}
+            {oauthLoading === id ? <Loader2 className="size-5 animate-spin" /> : icon}
             Tovább ezzel: {label}
           </Button>
         ))}
@@ -252,9 +240,7 @@ export default function RegisterPage() {
       {/* ── Collapsible email form ─────────────────────── */}
       <div
         className={`grid transition-all duration-300 ease-out ${
-          showEmailForm
-            ? "mt-4 grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
+          showEmailForm ? "mt-4 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="overflow-hidden">
@@ -274,9 +260,7 @@ export default function RegisterPage() {
                 disabled={isLoading}
               />
               {errors.fullName && (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {errors.fullName.message}
-                </p>
+                <p className="text-xs text-red-600 dark:text-red-400">{errors.fullName.message}</p>
               )}
             </div>
 
@@ -295,9 +279,7 @@ export default function RegisterPage() {
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {errors.email.message}
-                </p>
+                <p className="text-xs text-red-600 dark:text-red-400">{errors.email.message}</p>
               )}
             </div>
 
@@ -316,9 +298,7 @@ export default function RegisterPage() {
                 disabled={isLoading}
               />
               {errors.password && (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {errors.password.message}
-                </p>
+                <p className="text-xs text-red-600 dark:text-red-400">{errors.password.message}</p>
               )}
             </div>
 

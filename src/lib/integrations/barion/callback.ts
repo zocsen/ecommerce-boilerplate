@@ -8,6 +8,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyPayment } from "@/lib/integrations/barion/client";
+import { sendAdminOrderNotification } from "@/lib/integrations/email/actions";
 
 export interface CallbackResult {
   success: boolean;
@@ -28,9 +29,7 @@ export interface CallbackResult {
  * - The order status transition and paid_at timestamp are written
  *   only after stock decrement succeeds.
  */
-export async function handleBarionCallback(
-  paymentId: string,
-): Promise<CallbackResult> {
+export async function handleBarionCallback(paymentId: string): Promise<CallbackResult> {
   const supabase = createAdminClient();
 
   // ── 1. Verify payment with Barion ─────────────────────────────
@@ -38,8 +37,7 @@ export async function handleBarionCallback(
   try {
     verification = await verifyPayment(paymentId);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown Barion verification error";
+    const message = error instanceof Error ? error.message : "Unknown Barion verification error";
     console.error("[barion-callback] Verification failed:", message);
     return {
       success: false,
@@ -65,10 +63,7 @@ export async function handleBarionCallback(
       .single();
 
     if (fallbackError || !fallbackOrder) {
-      console.error(
-        "[barion-callback] Order not found for paymentId:",
-        paymentId,
-      );
+      console.error("[barion-callback] Order not found for paymentId:", paymentId);
       return {
         success: false,
         action: "error",
@@ -109,9 +104,7 @@ async function processOrder(
 
   // ── 3. Idempotency: already in terminal state → no-op ────────
   if (terminalStatuses.includes(order.status)) {
-    console.info(
-      `[barion-callback] Order ${order.id} already in state "${order.status}" – no-op.`,
-    );
+    console.info(`[barion-callback] Order ${order.id} already in state "${order.status}" – no-op.`);
     return {
       success: true,
       action: "no_op",
@@ -126,9 +119,7 @@ async function processOrder(
   }
 
   // ── 5. Payment failed / cancelled ─────────────────────────────
-  if (
-    verification.orderStatus === "cancelled"
-  ) {
+  if (verification.orderStatus === "cancelled") {
     const { error: updateError } = await supabase
       .from("orders")
       .update({
@@ -140,10 +131,7 @@ async function processOrder(
       .in("status", ["draft", "awaiting_payment"]);
 
     if (updateError) {
-      console.error(
-        "[barion-callback] Failed to cancel order:",
-        updateError.message,
-      );
+      console.error("[barion-callback] Failed to cancel order:", updateError.message);
       return {
         success: false,
         action: "error",
@@ -187,10 +175,7 @@ async function handlePaymentSucceeded(
     .eq("order_id", orderId);
 
   if (itemsError) {
-    console.error(
-      "[barion-callback] Failed to fetch order items:",
-      itemsError.message,
-    );
+    console.error("[barion-callback] Failed to fetch order items:", itemsError.message);
     return {
       success: false,
       action: "error",
@@ -263,10 +248,7 @@ async function handlePaymentSucceeded(
   const count = updatedRows?.length ?? 0;
 
   if (updateError) {
-    console.error(
-      "[barion-callback] Failed to mark order as paid:",
-      updateError.message,
-    );
+    console.error("[barion-callback] Failed to mark order as paid:", updateError.message);
     return {
       success: false,
       action: "error",
@@ -287,6 +269,41 @@ async function handlePaymentSucceeded(
       message: "Order already updated by concurrent callback.",
     };
   }
+
+  // ── Non-blocking admin notification ────────────────────────────
+  // Fetch just enough data for the notification. We re-query the
+  // order here so we don't need to change the OrderData interface.
+  void (async () => {
+    try {
+      const { data: paidOrder } = await supabase
+        .from("orders")
+        .select("id, email, total_amount, shipping_method, shipping_address")
+        .eq("id", orderId)
+        .single();
+
+      const { data: orderItems } = await supabase
+        .from("order_items")
+        .select("id")
+        .eq("order_id", orderId);
+
+      if (paidOrder) {
+        const addr = paidOrder.shipping_address as Record<string, string> | null;
+        const customerName = addr?.full_name ?? addr?.name ?? paidOrder.email;
+
+        void sendAdminOrderNotification({
+          orderId: paidOrder.id,
+          orderNumber: paidOrder.id.slice(0, 8).toUpperCase(),
+          customerName,
+          customerEmail: paidOrder.email,
+          itemCount: orderItems?.length ?? 0,
+          total: paidOrder.total_amount,
+          shippingMethod: paidOrder.shipping_method ?? "—",
+        });
+      }
+    } catch (err) {
+      console.error("[barion-callback] Admin notification failed:", err);
+    }
+  })();
 
   console.info(`[barion-callback] Order ${orderId} marked as paid.`);
   return {

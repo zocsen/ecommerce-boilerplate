@@ -18,6 +18,11 @@ export interface UrlsConfig {
   supportEmail: string;
 }
 
+export interface CookieConsentConfig {
+  enabled: boolean;
+  categories: readonly ["necessary", "analytics", "marketing"];
+}
+
 export interface FeaturesConfig {
   enableAccounts: boolean;
   enableGuestCheckout: boolean;
@@ -85,6 +90,17 @@ export interface AdminConfig {
   readonlyByDefaultForAgency: boolean;
 }
 
+export interface EmailConfig {
+  /** Recipients for admin order notification emails */
+  adminNotificationRecipients: string[];
+  /** Send a confirmation email after email+password signup */
+  sendSignupConfirmation: boolean;
+  /** Send a welcome email on the user's first sign-in */
+  sendWelcomeEmail: boolean;
+  /** Send an admin notification when an order is paid */
+  sendAdminOrderNotification: boolean;
+}
+
 export interface BrandingConfig {
   logoText: string;
   logoUrl: string | null;
@@ -103,10 +119,12 @@ export interface SiteConfig {
   store: StoreConfig;
   urls: UrlsConfig;
   features: FeaturesConfig;
+  cookieConsent: CookieConsentConfig;
   payments: PaymentsConfig;
   shipping: ShippingConfig;
   invoicing: InvoicingConfig;
   admin: AdminConfig;
+  email: EmailConfig;
   branding: BrandingConfig;
 }
 
@@ -116,11 +134,7 @@ function env(key: string, fallback: string = ""): string {
   return process.env[key] ?? fallback;
 }
 
-function envAs<T extends string>(
-  key: string,
-  allowed: readonly T[],
-  fallback: T,
-): T {
+function envAs<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   const raw = process.env[key] as T | undefined;
   if (raw && (allowed as readonly string[]).includes(raw)) return raw;
   return fallback;
@@ -158,6 +172,12 @@ export const siteConfig: SiteConfig = {
     enableB2BWholesaleMode: false,
   },
 
+  /* ── cookie consent ──────────────────────────────────── */
+  cookieConsent: {
+    enabled: true,
+    categories: ["necessary", "analytics", "marketing"] as const,
+  },
+
   /* ── payments ─────────────────────────────────────────── */
   payments: {
     provider: "barion",
@@ -180,13 +200,7 @@ export const siteConfig: SiteConfig = {
       pickupPoint: true,
     },
     homeDeliveryCarriers: ["gls", "mpl", "express_one"],
-    pickupPointCarriers: [
-      "foxpost",
-      "gls_automata",
-      "packeta",
-      "mpl_automata",
-      "easybox",
-    ],
+    pickupPointCarriers: ["foxpost", "gls_automata", "packeta", "mpl_automata", "easybox"],
     rules: {
       baseFee: 1490,
       freeOver: 15000,
@@ -203,11 +217,7 @@ export const siteConfig: SiteConfig = {
 
   /* ── invoicing ────────────────────────────────────────── */
   invoicing: {
-    provider: envAs(
-      "INVOICING_PROVIDER",
-      ["billingo", "szamlazz", "none"] as const,
-      "none",
-    ),
+    provider: envAs("INVOICING_PROVIDER", ["billingo", "szamlazz", "none"] as const, "none"),
     mode: "manual",
   },
 
@@ -215,6 +225,14 @@ export const siteConfig: SiteConfig = {
   admin: {
     agencyViewerEnabled: true,
     readonlyByDefaultForAgency: true,
+  },
+
+  /* ── email ────────────────────────────────────────────── */
+  email: {
+    adminNotificationRecipients: [env("ADMIN_EMAIL", "admin@agency.hu")],
+    sendSignupConfirmation: true,
+    sendWelcomeEmail: true,
+    sendAdminOrderNotification: true,
   },
 
   /* ── branding ─────────────────────────────────────────── */

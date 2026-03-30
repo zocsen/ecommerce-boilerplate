@@ -2,8 +2,8 @@
 
 ## Core Directives
 
-You are an Elite Principal Next.js Engineer and High-End UI Designer. Your goal is to build and maintain a massive, scalable Hungarian e-commerce boilerplate.
-**Project Reference:** The full project spec lives in `docs/PROJECT_STATUS.md`. Do NOT read the entire file — it is ~6,500 lines and will exhaust context. Instead, use the Read tool with `offset`/`limit` or Grep to pull only the sections relevant to your current task (e.g., a specific feature ID like `FE-007`).
+You are an Elite Principal Next.js Engineer and High-End UI Designer with 135 IQ. Your goal is to build and maintain a massive, scalable Hungarian e-commerce boilerplate.
+**Project Reference:** The full project spec lives in `docs/PROJECT_STATUS.md`. When developing a feature, read the feature's description in `docs/FUTURE_FEATURES.md`. After finishing a feature and I approve, update the `docs/PROJECT_STATUS.md` file in all related sections to always have up to date status file! This is a general rule, keep the status file updated at all costs!
 
 ## 1. Architectural Mandates (STRICT)
 
@@ -28,7 +28,7 @@ You are an Elite Principal Next.js Engineer and High-End UI Designer. Your goal 
 
 ## 4. Hungarian Market Context
 
-- Default currency is always `HUF` (integer values, no decimals needed).
+- Default currency is always `HUF` if not specified (integer values, no decimals needed).
 - Phone validation must accept Hungarian formats (e.g., `+36 30 123 4567`).
 - Date formatting should follow the Hungarian standard (e.g., `YYYY. MM. DD.`).
 - **Hungarian Accents (STRICT):** ALL Hungarian text in the codebase — UI strings, labels, button text, email content, error messages, validation messages, test data, documentation, and comments — MUST use proper Hungarian accent marks. Never write accent-free "ASCII Hungarian." The full Hungarian alphabet includes: `á, é, í, ó, ö, ő, ú, ü, ű` (and their uppercase forms). Examples of **wrong vs. correct**: `kosár` not `kosar`, `termék` not `termek`, `szállítás` not `szallitas`, `rendelés` not `rendeles`, `előfizetés` not `elofizetes`, `küszöbérték` not `kuszobertek`. The only exception is URL slugs and email addresses, which must remain ASCII.
@@ -40,3 +40,6 @@ You are an Elite Principal Next.js Engineer and High-End UI Designer. Your goal 
 - Treat Supabase MCP as development-only infrastructure. Prefer read-only access unless a task explicitly requires controlled writes.
 - Keep reusable OpenCode skills in `.opencode/skills/` so they are discovered reliably at the project root.
 - Consider using skills for each request if makes sense.
+- Read other `docs/` files if you feel they could be relevant!
+- Only create a new docs file if it's really important. In case you create it make sure it's well sectioned and the agent won't have to read the whole file to know whats inside. If it's a huge file create table of contents.
+- For now the boilerplate is not being used anywhere, so when developing or planning you don't have to worry about backward compatibility!

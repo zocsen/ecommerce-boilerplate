@@ -1,42 +1,43 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save, Loader2, Search, GripVertical } from "lucide-react";
-import Link from "next/link";
-import { adminCreateProduct, adminListProducts } from "@/lib/actions/products";
-import { listCategories } from "@/lib/actions/categories";
-import { SingleImageUpload, GalleryImageUpload } from "@/components/admin/image-upload";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import { Plus, Trash2, Save, Loader2, Search, GripVertical } from "lucide-react"
+import Link from "next/link"
+import { adminCreateProduct, adminListProducts } from "@/lib/actions/products"
+import { listCategories } from "@/lib/actions/categories"
+import { SingleImageUpload, GalleryImageUpload } from "@/components/admin/image-upload"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { siteConfig } from "@/lib/config/site.config";
-import type { CategoryRow } from "@/lib/types/database";
+} from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { siteConfig } from "@/lib/config/site.config"
+import { toSlug } from "@/lib/utils/slug"
+import type { CategoryRow } from "@/lib/types/database"
 
 /* ------------------------------------------------------------------ */
 /*  Variant row type (client-side)                                     */
 /* ------------------------------------------------------------------ */
 
 interface VariantRow {
-  key: string;
-  sku: string;
-  option1Name: string;
-  option1Value: string;
-  option2Name: string;
-  option2Value: string;
-  priceOverride: string;
-  stockQuantity: string;
-  isActive: boolean;
-  weightGrams: string;
+  key: string
+  sku: string
+  option1Name: string
+  option1Value: string
+  option2Name: string
+  option2Value: string
+  priceOverride: string
+  stockQuantity: string
+  isActive: boolean
+  weightGrams: string
 }
 
 function emptyVariant(): VariantRow {
@@ -51,7 +52,7 @@ function emptyVariant(): VariantRow {
     stockQuantity: "0",
     isActive: true,
     weightGrams: "",
-  };
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -59,26 +60,13 @@ function emptyVariant(): VariantRow {
 /* ------------------------------------------------------------------ */
 
 interface ExtraRow {
-  key: string;
-  extraProductId: string;
-  extraVariantId: string | null;
-  extraProductTitle: string;
-  label: string;
-  isDefaultChecked: boolean;
-  sortOrder: number;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Slug generation                                                    */
-/* ------------------------------------------------------------------ */
-
-function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  key: string
+  extraProductId: string
+  extraVariantId: string | null
+  extraProductTitle: string
+  label: string
+  isDefaultChecked: boolean
+  sortOrder: number
 }
 
 /* ------------------------------------------------------------------ */
@@ -86,103 +74,103 @@ function toSlug(text: string): string {
 /* ------------------------------------------------------------------ */
 
 export default function AdminProductNewPage() {
-  const router = useRouter();
+  const router = useRouter()
 
   // Form state
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugManual, setSlugManual] = useState(false);
-  const [description, setDescription] = useState("");
-  const [basePrice, setBasePrice] = useState("");
-  const [compareAtPrice, setCompareAtPrice] = useState("");
-  const [vatRate, setVatRate] = useState(String(siteConfig.tax.defaultVatRate));
-  const [weightGrams, setWeightGrams] = useState("");
-  const [mainImageUrl, setMainImageUrl] = useState("");
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [isActive, setIsActive] = useState(true);
-  const [publishedAt, setPublishedAt] = useState("");
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [variants, setVariants] = useState<VariantRow[]>([]);
+  const [title, setTitle] = useState("")
+  const [slug, setSlug] = useState("")
+  const [slugManual, setSlugManual] = useState(false)
+  const [description, setDescription] = useState("")
+  const [basePrice, setBasePrice] = useState("")
+  const [compareAtPrice, setCompareAtPrice] = useState("")
+  const [vatRate, setVatRate] = useState(String(siteConfig.tax.defaultVatRate))
+  const [weightGrams, setWeightGrams] = useState("")
+  const [mainImageUrl, setMainImageUrl] = useState("")
+  const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [isActive, setIsActive] = useState(true)
+  const [publishedAt, setPublishedAt] = useState("")
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
+  const [variants, setVariants] = useState<VariantRow[]>([])
 
   // Extras
-  const [extras, setExtras] = useState<ExtraRow[]>([]);
-  const [extraSearch, setExtraSearch] = useState("");
+  const [extras, setExtras] = useState<ExtraRow[]>([])
+  const [extraSearch, setExtraSearch] = useState("")
   const [extraSearchResults, setExtraSearchResults] = useState<
     Array<{ id: string; title: string; slug: string; base_price: number }>
-  >([]);
-  const [extraSearching, setExtraSearching] = useState(false);
+  >([])
+  const [extraSearching, setExtraSearching] = useState(false)
 
   // Categories
-  const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [categories, setCategories] = useState<CategoryRow[]>([])
 
   // Submit
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Fetch categories
   useEffect(() => {
     listCategories().then((res) => {
       if (res.success && res.data) {
-        setCategories(res.data);
+        setCategories(res.data)
       }
-    });
-  }, []);
+    })
+  }, [])
 
   // Auto-generate slug from title
   useEffect(() => {
     if (!slugManual && title) {
-      setSlug(toSlug(title));
+      setSlug(toSlug(title))
     }
-  }, [title, slugManual]);
+  }, [title, slugManual])
 
   // ── Category toggle ────────────────────────────────────────────
   function toggleCategory(id: string) {
     setSelectedCategoryIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
-    );
+    )
   }
 
   // ── Variant management ─────────────────────────────────────────
   function addVariant() {
-    setVariants((prev) => [...prev, emptyVariant()]);
+    setVariants((prev) => [...prev, emptyVariant()])
   }
 
   function removeVariant(key: string) {
-    setVariants((prev) => prev.filter((v) => v.key !== key));
+    setVariants((prev) => prev.filter((v) => v.key !== key))
   }
 
   function updateVariant(key: string, field: keyof VariantRow, value: string | boolean) {
-    setVariants((prev) => prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)));
+    setVariants((prev) => prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)))
   }
 
   // ── Extras management ──────────────────────────────────────────
   async function searchExtraProducts(query: string) {
-    setExtraSearch(query);
+    setExtraSearch(query)
     if (query.trim().length < 2) {
-      setExtraSearchResults([]);
-      return;
+      setExtraSearchResults([])
+      return
     }
-    setExtraSearching(true);
+    setExtraSearching(true)
     try {
-      const result = await adminListProducts({ search: query.trim(), perPage: 10 });
+      const result = await adminListProducts({ search: query.trim(), perPage: 10 })
       if (result.success && result.data) {
-        const existingIds = new Set(extras.map((e) => e.extraProductId));
+        const existingIds = new Set(extras.map((e) => e.extraProductId))
         setExtraSearchResults(
           result.data.products
             .filter((p) => !existingIds.has(p.id))
             .map((p) => ({ id: p.id, title: p.title, slug: p.slug, base_price: p.base_price })),
-        );
+        )
       }
     } finally {
-      setExtraSearching(false);
+      setExtraSearching(false)
     }
   }
 
   function addExtra(productResult: {
-    id: string;
-    title: string;
-    slug: string;
-    base_price: number;
+    id: string
+    title: string
+    slug: string
+    base_price: number
   }) {
     const newExtra: ExtraRow = {
       key: crypto.randomUUID(),
@@ -192,66 +180,66 @@ export default function AdminProductNewPage() {
       label: `${productResult.title} (+${Math.round(productResult.base_price).toLocaleString("hu-HU")} Ft)`,
       isDefaultChecked: false,
       sortOrder: extras.length,
-    };
-    setExtras((prev) => [...prev, newExtra]);
-    setExtraSearch("");
-    setExtraSearchResults([]);
+    }
+    setExtras((prev) => [...prev, newExtra])
+    setExtraSearch("")
+    setExtraSearchResults([])
   }
 
   function removeExtra(key: string) {
-    setExtras((prev) => prev.filter((e) => e.key !== key));
+    setExtras((prev) => prev.filter((e) => e.key !== key))
   }
 
   function updateExtra(key: string, field: keyof ExtraRow, value: string | boolean | number) {
-    setExtras((prev) => prev.map((e) => (e.key === key ? { ...e, [field]: value } : e)));
+    setExtras((prev) => prev.map((e) => (e.key === key ? { ...e, [field]: value } : e)))
   }
 
   // ── Submit ─────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
 
     // Client-side basic validation
     if (!title.trim()) {
-      setError("A termék neve kötelező.");
-      return;
+      setError("A termék neve kötelező.")
+      return
     }
     if (!slug.trim()) {
-      setError("A slug kötelező.");
-      return;
+      setError("A slug kötelező.")
+      return
     }
     if (!basePrice || Number(basePrice) < 0) {
-      setError("Érvényes alapár szükséges.");
-      return;
+      setError("Érvényes alapár szükséges.")
+      return
     }
 
-    setSubmitting(true);
+    setSubmitting(true)
 
     try {
-      const formData = new FormData();
-      formData.set("title", title.trim());
-      formData.set("slug", slug.trim());
-      formData.set("description", description);
-      formData.set("basePrice", String(Math.round(Number(basePrice))));
+      const formData = new FormData()
+      formData.set("title", title.trim())
+      formData.set("slug", slug.trim())
+      formData.set("description", description)
+      formData.set("basePrice", String(Math.round(Number(basePrice))))
 
       if (compareAtPrice) {
-        formData.set("compareAtPrice", String(Math.round(Number(compareAtPrice))));
+        formData.set("compareAtPrice", String(Math.round(Number(compareAtPrice))))
       }
 
-      formData.set("vatRate", vatRate);
+      formData.set("vatRate", vatRate)
 
       if (weightGrams) {
-        formData.set("weightGrams", weightGrams);
+        formData.set("weightGrams", weightGrams)
       }
 
       if (mainImageUrl.trim()) {
-        formData.set("mainImageUrl", mainImageUrl.trim());
+        formData.set("mainImageUrl", mainImageUrl.trim())
       }
 
-      formData.set("imageUrls", JSON.stringify(imageUrls));
-      formData.set("isActive", String(isActive));
-      formData.set("publishedAt", publishedAt ? new Date(publishedAt).toISOString() : "");
-      formData.set("categoryIds", JSON.stringify(selectedCategoryIds));
+      formData.set("imageUrls", JSON.stringify(imageUrls))
+      formData.set("isActive", String(isActive))
+      formData.set("publishedAt", publishedAt ? new Date(publishedAt).toISOString() : "")
+      formData.set("categoryIds", JSON.stringify(selectedCategoryIds))
 
       // Build variants payload
       if (variants.length > 0) {
@@ -265,8 +253,8 @@ export default function AdminProductNewPage() {
           stockQuantity: Number(v.stockQuantity) || 0,
           isActive: v.isActive,
           weightGrams: v.weightGrams ? Number(v.weightGrams) : undefined,
-        }));
-        formData.set("variants", JSON.stringify(variantsPayload));
+        }))
+        formData.set("variants", JSON.stringify(variantsPayload))
       }
 
       // Extras
@@ -277,22 +265,22 @@ export default function AdminProductNewPage() {
           label: e.label,
           isDefaultChecked: e.isDefaultChecked,
           sortOrder: e.sortOrder,
-        }));
-        formData.set("extras", JSON.stringify(extrasPayload));
+        }))
+        formData.set("extras", JSON.stringify(extrasPayload))
       }
 
-      const result = await adminCreateProduct(formData);
+      const result = await adminCreateProduct(formData)
 
       if (!result.success) {
-        setError(result.error ?? "Hiba a termék létrehozásakor.");
-        return;
+        setError(result.error ?? "Hiba a termék létrehozásakor.")
+        return
       }
 
-      router.push(`/admin/products/${result.data?.id}`);
+      router.push(`/admin/products/${result.data?.id}`)
     } catch {
-      setError("Váratlan hiba történt.");
+      setError("Váratlan hiba történt.")
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
   }
 
@@ -348,8 +336,8 @@ export default function AdminProductNewPage() {
                     type="button"
                     className="ml-2 cursor-pointer text-xs text-muted-foreground underline"
                     onClick={() => {
-                      setSlugManual(!slugManual);
-                      if (slugManual) setSlug(toSlug(title));
+                      setSlugManual(!slugManual)
+                      if (slugManual) setSlug(toSlug(title))
                     }}
                   >
                     {slugManual ? "Auto-generálás" : "Kézi szerkesztés"}
@@ -359,8 +347,8 @@ export default function AdminProductNewPage() {
                   id="slug"
                   value={slug}
                   onChange={(e) => {
-                    setSlugManual(true);
-                    setSlug(e.target.value);
+                    setSlugManual(true)
+                    setSlug(e.target.value)
                   }}
                   placeholder="premium-polo"
                   className="font-mono text-sm"
@@ -802,5 +790,5 @@ export default function AdminProductNewPage() {
         </div>
       </div>
     </form>
-  );
+  )
 }

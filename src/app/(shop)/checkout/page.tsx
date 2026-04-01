@@ -1,16 +1,15 @@
-"use client";
+"use client"
 
 /* ------------------------------------------------------------------ */
 /*  Checkout page — multi-step form                                    */
 /* ------------------------------------------------------------------ */
 
-import { useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState, useCallback, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
   Loader2,
   CreditCard,
   Truck,
@@ -22,35 +21,37 @@ import {
   FileText,
   ShoppingBag,
   Wallet,
-} from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { toast } from "sonner"
 
-import { useCartStore } from "@/lib/store/cart";
-import { siteConfig } from "@/lib/config/site.config";
-import { createOrderFromCart } from "@/lib/actions/orders";
-import { startPaymentAction } from "@/lib/actions/payments";
-import { formatHUF } from "@/lib/utils/format";
-import { getAvailableCarriers, getCarrierFee } from "@/lib/utils/shipping";
-import { cn } from "@/lib/utils";
+import { useCartStore } from "@/lib/store/cart"
+import { siteConfig } from "@/lib/config/site.config"
+import { createOrderFromCart } from "@/lib/actions/orders"
+import { startPaymentAction } from "@/lib/actions/payments"
+import { formatHUF } from "@/lib/utils/format"
+import { getAvailableCarriers, getCarrierFee } from "@/lib/utils/shipping"
+import { cn } from "@/lib/utils"
 import type {
   ShippingMethod,
   HomeDeliveryCarrier,
   PickupPointProvider,
   CheckoutFormData,
-} from "@/lib/types";
+} from "@/lib/types"
 
-import { CartLineItem } from "@/components/cart/cart-line-item";
-import { OrderSummary } from "@/components/cart/order-summary";
-import { PickupPointSelector } from "@/components/cart/pickup-point-selector";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { CartLineItem } from "@/components/cart/cart-line-item"
+import { OrderSummary } from "@/components/cart/order-summary"
+import { PickupPointSelector } from "@/components/cart/pickup-point-selector"
+import { CheckoutStepper } from "@/components/checkout/checkout-stepper"
+import { AddressFields, FormField, ReviewSection } from "@/components/checkout/address-form"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ const STEPS = [
   { id: 1, label: "Szállítás", icon: Truck },
   { id: 2, label: "Kapcsolat és számlázás", icon: User },
   { id: 3, label: "Összegzés és fizetés", icon: CreditCard },
-] as const;
+] as const
 
 const MOCK_PICKUP_POINTS: Record<PickupPointProvider, Array<{ id: string; label: string }>> = {
   foxpost: [
@@ -82,11 +83,11 @@ const MOCK_PICKUP_POINTS: Record<PickupPointProvider, Array<{ id: string; label:
     { id: "EB-BP-001", label: "Easybox - Budapest, Mammut" },
     { id: "EB-PCS-001", label: "Easybox - Pécs, Árkád" },
   ],
-};
+}
 
 // ── Form schema ────────────────────────────────────────────────────
 
-const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/;
+const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/
 
 const checkoutFormSchema = z
   .object({
@@ -135,84 +136,84 @@ const checkoutFormSchema = z
           code: z.ZodIssueCode.custom,
           message: "A név megadása kötelező",
           path: [prefix, "name"],
-        });
+        })
       }
       if (!addr.street || addr.street.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Az utca megadása kötelező",
           path: [prefix, "street"],
-        });
+        })
       }
       if (!addr.city || addr.city.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "A város megadása kötelező",
           path: [prefix, "city"],
-        });
+        })
       }
       if (!addr.zip || !/^\d{4}$/.test(addr.zip)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Az irányítószám 4 számjegyű kell legyen",
           path: [prefix, "zip"],
-        });
+        })
       }
       if (!addr.country || addr.country.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Az ország megadása kötelező",
           path: [prefix, "country"],
-        });
+        })
       }
-    };
+    }
 
     if (data.shippingMethod === "home") {
       // Home delivery: shippingAddressOverride is the primary address
       if (data.shippingAddressOverride) {
-        addAddressErrors(data.shippingAddressOverride, "shippingAddressOverride");
+        addAddressErrors(data.shippingAddressOverride, "shippingAddressOverride")
       } else {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "A szállítási cím megadása kötelező",
           path: ["shippingAddressOverride"],
-        });
+        })
       }
 
       // billingAddress only validated when NOT same as shipping
       if (!data.sameAsBilling) {
-        addAddressErrors(data.billingAddress, "billingAddress");
+        addAddressErrors(data.billingAddress, "billingAddress")
       }
     } else {
       // Pickup: only billingAddress required
-      addAddressErrors(data.billingAddress, "billingAddress");
+      addAddressErrors(data.billingAddress, "billingAddress")
       // shippingAddressOverride is irrelevant — skip validation
     }
-  });
+  })
 
-type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
+type CheckoutFormValues = z.infer<typeof checkoutFormSchema>
 
 // ── Component ──────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter()
+  const [currentStep, setCurrentStep] = useState(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const items = useCartStore((s) => s.items);
-  const subtotal = useCartStore((s) => s.subtotal());
-  const couponCode = useCartStore((s) => s.couponCode);
-  const couponDiscount = useCartStore((s) => s.couponDiscount);
-  const clearCart = useCartStore((s) => s.clearCart);
+  const items = useCartStore((s) => s.items)
+  const subtotal = useCartStore((s) => s.subtotal())
+  const couponCode = useCartStore((s) => s.couponCode)
+  const couponDiscount = useCartStore((s) => s.couponDiscount)
+  const clearCart = useCartStore((s) => s.clearCart)
 
-  const homeCarriers = useMemo(() => getAvailableCarriers("home"), []);
-  const pickupCarriers = useMemo(() => getAvailableCarriers("pickup"), []);
+  const homeCarriers = useMemo(() => getAvailableCarriers("home"), [])
+  const pickupCarriers = useMemo(() => getAvailableCarriers("pickup"), [])
 
   // Compute total cart weight for weight-based shipping
   const totalWeightGrams = useMemo(
     () => items.reduce((sum, item) => sum + item.weightGrams * item.quantity, 0),
     [items],
-  );
+  )
 
   const {
     register,
@@ -251,43 +252,43 @@ export default function CheckoutPage() {
       notes: "",
       termsAccepted: false,
     },
-  });
+  })
 
-  const watchedValues = watch();
-  const sameAsBilling = watchedValues.sameAsBilling;
-  const shippingMethod = watchedValues.shippingMethod as ShippingMethod;
-  const selectedCarrier = watchedValues.carrier ?? "";
-  const selectedPickupProvider = watchedValues.pickupPointProvider ?? "";
-  const selectedPickupPointId = watchedValues.pickupPointId ?? "";
+  const watchedValues = watch()
+  const sameAsBilling = watchedValues.sameAsBilling
+  const shippingMethod = watchedValues.shippingMethod as ShippingMethod
+  const selectedCarrier = watchedValues.carrier ?? ""
+  const selectedPickupProvider = watchedValues.pickupPointProvider ?? ""
+  const selectedPickupPointId = watchedValues.pickupPointId ?? ""
 
   // Calculate shipping fee based on selections
   const shippingFee = useMemo(() => {
     if (shippingMethod === "home" && selectedCarrier) {
-      return getCarrierFee("home", selectedCarrier, subtotal, totalWeightGrams) ?? 0;
+      return getCarrierFee("home", selectedCarrier, subtotal, totalWeightGrams) ?? 0
     }
     if (shippingMethod === "pickup" && selectedPickupProvider) {
-      return getCarrierFee("pickup", selectedPickupProvider, subtotal, totalWeightGrams) ?? 0;
+      return getCarrierFee("pickup", selectedPickupProvider, subtotal, totalWeightGrams) ?? 0
     }
-    return 0;
-  }, [shippingMethod, selectedCarrier, selectedPickupProvider, subtotal, totalWeightGrams]);
+    return 0
+  }, [shippingMethod, selectedCarrier, selectedPickupProvider, subtotal, totalWeightGrams])
 
   // ── COD (utánvét) configuration ─────────────────────────────────
-  const codConfig = siteConfig.payments.cod;
-  const selectedPaymentMethod = watchedValues.paymentMethod ?? "barion";
+  const codConfig = siteConfig.payments.cod
+  const selectedPaymentMethod = watchedValues.paymentMethod ?? "barion"
 
   const codAvailable = useMemo(() => {
-    if (!codConfig.enabled) return false;
-    if (!codConfig.allowedShippingMethods.includes(shippingMethod)) return false;
+    if (!codConfig.enabled) return false
+    if (!codConfig.allowedShippingMethods.includes(shippingMethod)) return false
     // Check order total limit (subtotal + shipping, before COD fee)
-    const preTotal = subtotal + shippingFee - couponDiscount;
-    if (codConfig.maxOrderAmount > 0 && preTotal > codConfig.maxOrderAmount) return false;
-    return true;
-  }, [codConfig, shippingMethod, subtotal, shippingFee, couponDiscount]);
+    const preTotal = subtotal + shippingFee - couponDiscount
+    if (codConfig.maxOrderAmount > 0 && preTotal > codConfig.maxOrderAmount) return false
+    return true
+  }, [codConfig, shippingMethod, subtotal, shippingFee, couponDiscount])
 
   // If COD becomes unavailable (e.g. total changed), reset to barion
-  const effectiveCodFee = selectedPaymentMethod === "cod" && codAvailable ? codConfig.fee : 0;
+  const effectiveCodFee = selectedPaymentMethod === "cod" && codAvailable ? codConfig.fee : 0
 
-  const total = Math.max(0, subtotal + shippingFee + effectiveCodFee - couponDiscount);
+  const total = Math.max(0, subtotal + shippingFee + effectiveCodFee - couponDiscount)
 
   // ── Step navigation ──────────────────────────────────────────────
 
@@ -295,55 +296,55 @@ export default function CheckoutPage() {
     async (target: number) => {
       if (target > currentStep) {
         // Validate current step fields before advancing
-        let fieldsToValidate: (keyof CheckoutFormValues)[] = [];
+        let fieldsToValidate: (keyof CheckoutFormValues)[] = []
 
         if (currentStep === 1) {
-          fieldsToValidate = ["shippingMethod"];
+          fieldsToValidate = ["shippingMethod"]
           if (shippingMethod === "home") {
-            fieldsToValidate.push("carrier");
+            fieldsToValidate.push("carrier")
           } else {
-            fieldsToValidate.push("pickupPointProvider", "pickupPointId", "pickupPointLabel");
+            fieldsToValidate.push("pickupPointProvider", "pickupPointId", "pickupPointLabel")
           }
         } else if (currentStep === 2) {
-          fieldsToValidate = ["email", "phone"];
+          fieldsToValidate = ["email", "phone"]
           if (shippingMethod === "pickup") {
             // Pickup: only billing address required
-            fieldsToValidate.push("billingAddress");
+            fieldsToValidate.push("billingAddress")
           } else {
             // Home delivery: shipping address is the primary address
-            fieldsToValidate.push("shippingAddressOverride");
+            fieldsToValidate.push("shippingAddressOverride")
             if (!sameAsBilling) {
               // Separate billing address was provided
-              fieldsToValidate.push("billingAddress");
+              fieldsToValidate.push("billingAddress")
             }
           }
         }
 
-        const valid = await trigger(fieldsToValidate);
-        if (!valid) return;
+        const valid = await trigger(fieldsToValidate)
+        if (!valid) return
       }
 
-      setCurrentStep(target);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setCurrentStep(target)
+      window.scrollTo({ top: 0, behavior: "smooth" })
     },
     [currentStep, trigger, sameAsBilling, shippingMethod],
-  );
+  )
 
   // ── Submit handler ───────────────────────────────────────────────
 
   const onSubmit = useCallback(
     async (data: CheckoutFormValues) => {
       if (!data.termsAccepted) {
-        toast.error("Kérlek, fogadd el az Általános Szerződési Feltételeket.");
-        return;
+        toast.error("Kérlek, fogadd el az Általános Szerződési Feltételeket.")
+        return
       }
 
       if (items.length === 0) {
-        toast.error("A kosarad üres.");
-        return;
+        toast.error("A kosarad üres.")
+        return
       }
 
-      setIsSubmitting(true);
+      setIsSubmitting(true)
 
       try {
         // Build CheckoutFormData for the server action
@@ -353,12 +354,12 @@ export default function CheckoutPage() {
         const shippingAddress =
           data.shippingMethod === "home"
             ? (data.shippingAddressOverride ?? data.billingAddress)
-            : { name: "", street: "", city: "", zip: "", country: "HU" };
+            : { name: "", street: "", city: "", zip: "", country: "HU" }
 
         const resolvedBillingAddress =
           data.shippingMethod === "home" && data.sameAsBilling
             ? (data.shippingAddressOverride ?? data.billingAddress)
-            : data.billingAddress;
+            : data.billingAddress
 
         const checkoutData: CheckoutFormData = {
           email: data.email,
@@ -388,54 +389,54 @@ export default function CheckoutPage() {
           paymentMethod: data.paymentMethod === "cod" && codAvailable ? "cod" : "barion",
           notes: data.notes ?? "",
           couponCode: couponCode ?? "",
-        };
+        }
 
         // 1. Create order
         const orderResult = await createOrderFromCart({
           items,
           checkout: checkoutData,
-        });
+        })
 
         if (!orderResult.success || !orderResult.data) {
-          toast.error(orderResult.error ?? "Hiba történt a rendelés létrehozásakor.");
-          setIsSubmitting(false);
-          return;
+          toast.error(orderResult.error ?? "Hiba történt a rendelés létrehozásakor.")
+          setIsSubmitting(false)
+          return
         }
 
-        const { orderId } = orderResult.data;
+        const { orderId } = orderResult.data
 
         // 2. Payment method branching
         if (checkoutData.paymentMethod === "cod") {
           // COD: order is already in 'processing' status — no Barion payment needed
-          clearCart();
-          router.push(`/checkout/success?orderId=${orderId}&method=cod`);
+          clearCart()
+          router.push(`/checkout/success?orderId=${orderId}&method=cod`)
         } else {
           // Barion: start online payment
-          const paymentResult = await startPaymentAction(orderId);
+          const paymentResult = await startPaymentAction(orderId)
 
           if (!paymentResult.success || !paymentResult.data) {
-            toast.error(paymentResult.error ?? "Hiba történt a fizetés indításakor.");
+            toast.error(paymentResult.error ?? "Hiba történt a fizetés indításakor.")
             // Order was created — redirect to success with orderId
             // (payment can be retried from admin)
-            router.push(`/checkout/success?orderId=${orderId}`);
-            clearCart();
-            setIsSubmitting(false);
-            return;
+            router.push(`/checkout/success?orderId=${orderId}`)
+            clearCart()
+            setIsSubmitting(false)
+            return
           }
 
           // 3. Clear cart and redirect to Barion gateway
-          clearCart();
-          window.location.href = paymentResult.data.gatewayUrl;
+          clearCart()
+          window.location.href = paymentResult.data.gatewayUrl
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.error("[Checkout] Submit error:", message);
-        toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
-        setIsSubmitting(false);
+        const message = err instanceof Error ? err.message : String(err)
+        console.error("[Checkout] Submit error:", message)
+        toast.error("Váratlan hiba történt. Kérlek, próbáld újra.")
+        setIsSubmitting(false)
       }
     },
     [items, couponCode, router, clearCart, codAvailable],
-  );
+  )
 
   // ── Empty cart guard ─────────────────────────────────────────────
 
@@ -455,7 +456,7 @@ export default function CheckoutPage() {
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
   // ── Render ───────────────────────────────────────────────────────
@@ -465,43 +466,11 @@ export default function CheckoutPage() {
       <h1 className="text-3xl font-semibold tracking-[-0.03em]">Pénztár</h1>
 
       {/* ── Step indicators ────────────────────────────── */}
-      <div className="mt-8 flex items-center gap-0">
-        {STEPS.map((step, idx) => {
-          const StepIcon = step.icon;
-          const isActive = currentStep === step.id;
-          const isCompleted = currentStep > step.id;
-
-          return (
-            <div key={step.id} className="flex items-center">
-              {idx > 0 && (
-                <div
-                  className={cn(
-                    "mx-3 h-px w-8 transition-colors duration-500 sm:w-16",
-                    isCompleted ? "bg-foreground" : "bg-border",
-                  )}
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (isCompleted) void goToStep(step.id);
-                }}
-                disabled={!isCompleted && !isActive}
-                className={cn(
-                  "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-500",
-                  isActive && "cursor-pointer bg-foreground text-background",
-                  isCompleted && "cursor-pointer bg-muted text-foreground hover:bg-muted/80",
-                  !isActive && !isCompleted && "cursor-default text-muted-foreground",
-                )}
-              >
-                {isCompleted ? <Check className="size-4" /> : <StepIcon className="size-4" />}
-                <span className="hidden sm:inline">{step.label}</span>
-                <span className="sm:hidden">{step.id}</span>
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <CheckoutStepper
+        steps={STEPS}
+        currentStep={currentStep}
+        onStepClick={(id) => void goToStep(id)}
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-10">
         <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
@@ -524,9 +493,9 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setValue("shippingMethod", "home");
+                        setValue("shippingMethod", "home")
                         if (!selectedCarrier && homeCarriers[0]) {
-                          setValue("carrier", homeCarriers[0].id);
+                          setValue("carrier", homeCarriers[0].id)
                         }
                       }}
                       className={cn(
@@ -551,9 +520,9 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setValue("shippingMethod", "pickup");
+                        setValue("shippingMethod", "pickup")
                         if (!selectedPickupProvider && pickupCarriers[0]) {
-                          setValue("pickupPointProvider", pickupCarriers[0].id);
+                          setValue("pickupPointProvider", pickupCarriers[0].id)
                         }
                       }}
                       className={cn(
@@ -582,8 +551,8 @@ export default function CheckoutPage() {
                     <h3 className="text-base font-medium">Futárszolgálat választása</h3>
                     <div className="space-y-3">
                       {homeCarriers.map((carrier) => {
-                        const fee = getCarrierFee("home", carrier.id, subtotal);
-                        const isSelected = selectedCarrier === carrier.id;
+                        const fee = getCarrierFee("home", carrier.id, subtotal)
+                        const isSelected = selectedCarrier === carrier.id
 
                         return (
                           <label
@@ -610,7 +579,7 @@ export default function CheckoutPage() {
                               {fee === 0 ? "Ingyenes" : formatHUF(fee ?? 0)}
                             </span>
                           </label>
-                        );
+                        )
                       })}
                     </div>
                   </div>
@@ -625,13 +594,13 @@ export default function CheckoutPage() {
                     selectedPointId={selectedPickupPointId}
                     subtotal={subtotal}
                     onProviderChange={(id) => {
-                      setValue("pickupPointProvider", id);
-                      setValue("pickupPointId", "");
-                      setValue("pickupPointLabel", "");
+                      setValue("pickupPointProvider", id)
+                      setValue("pickupPointId", "")
+                      setValue("pickupPointLabel", "")
                     }}
                     onPointChange={(id, label) => {
-                      setValue("pickupPointId", id);
-                      setValue("pickupPointLabel", label);
+                      setValue("pickupPointId", id)
+                      setValue("pickupPointLabel", label)
                     }}
                     pointError={errors.pickupPointId?.message}
                   />
@@ -920,7 +889,7 @@ export default function CheckoutPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (codAvailable) field.onChange("cod");
+                              if (codAvailable) field.onChange("cod")
                             }}
                             disabled={!codAvailable}
                             className={cn(
@@ -1058,104 +1027,5 @@ export default function CheckoutPage() {
         </div>
       </form>
     </div>
-  );
-}
-
-/* ================================================================== */
-/*  Sub-components                                                     */
-/* ================================================================== */
-
-function FormField({
-  label,
-  error,
-  icon,
-  children,
-}: {
-  label: string;
-  error?: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-sm">
-        {icon}
-        {label}
-      </Label>
-      {children}
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-    </div>
-  );
-}
-
-function AddressFields({
-  prefix,
-  register,
-  errors,
-}: {
-  prefix: "billingAddress" | "shippingAddressOverride";
-  register: ReturnType<typeof useForm<CheckoutFormValues>>["register"];
-  errors?: Record<string, { message?: string }>;
-}) {
-  return (
-    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <FormField label="Teljes név" error={errors?.name?.message}>
-          <Input
-            placeholder="Kovács János"
-            {...register(`${prefix}.name`)}
-            aria-invalid={!!errors?.name}
-          />
-        </FormField>
-      </div>
-
-      <div className="sm:col-span-2">
-        <FormField label="Utca, házszám" error={errors?.street?.message}>
-          <Input
-            placeholder="Váci utca 1."
-            {...register(`${prefix}.street`)}
-            aria-invalid={!!errors?.street}
-          />
-        </FormField>
-      </div>
-
-      <FormField label="Város" error={errors?.city?.message}>
-        <Input
-          placeholder="Budapest"
-          {...register(`${prefix}.city`)}
-          aria-invalid={!!errors?.city}
-        />
-      </FormField>
-
-      <FormField label="Irányítószám" error={errors?.zip?.message}>
-        <Input
-          placeholder="1052"
-          maxLength={4}
-          {...register(`${prefix}.zip`)}
-          aria-invalid={!!errors?.zip}
-        />
-      </FormField>
-
-      <div className="sm:col-span-2">
-        <FormField label="Ország" error={errors?.country?.message}>
-          <Input
-            defaultValue="Magyarország"
-            {...register(`${prefix}.country`)}
-            aria-invalid={!!errors?.country}
-          />
-        </FormField>
-      </div>
-    </div>
-  );
-}
-
-function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border p-4">
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        {title}
-      </h4>
-      <div className="space-y-0.5 text-sm">{children}</div>
-    </div>
-  );
+  )
 }

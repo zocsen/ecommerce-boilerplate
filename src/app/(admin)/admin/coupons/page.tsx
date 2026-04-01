@@ -1,38 +1,21 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  Search,
-  X,
-  Save,
-  Ticket,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { useState, useEffect, useCallback } from "react"
+import { Plus, Pencil, Trash2, Loader2, Search, X, Save, Ticket, Eye, EyeOff } from "lucide-react"
+import { AdminPagination } from "@/components/admin/pagination"
 import {
   adminListCoupons,
   adminCreateCoupon,
   adminUpdateCoupon,
   adminDeleteCoupon,
   adminToggleCoupon,
-} from "@/lib/actions/coupons";
-import { formatHUF, formatDate } from "@/lib/utils/format";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+} from "@/lib/actions/coupons"
+import { formatHUF, formatDate } from "@/lib/utils/format"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -40,103 +23,103 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import type { CouponRow } from "@/lib/types/database";
+} from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import type { CouponRow } from "@/lib/types/database"
 
 /* ------------------------------------------------------------------ */
 /*  Admin Coupons Page                                                 */
 /* ------------------------------------------------------------------ */
 
 export default function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<CouponRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [coupons, setCoupons] = useState<CouponRow[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState("")
+  const [loading, setLoading] = useState(true)
 
   // Create form
-  const [showCreate, setShowCreate] = useState(false);
-  const [createCode, setCreateCode] = useState("");
-  const [createDiscountType, setCreateDiscountType] = useState<"percentage" | "fixed">("percentage");
-  const [createValue, setCreateValue] = useState("");
-  const [createMinOrderAmount, setCreateMinOrderAmount] = useState("");
-  const [createMaxUses, setCreateMaxUses] = useState("");
-  const [createValidFrom, setCreateValidFrom] = useState("");
-  const [createValidUntil, setCreateValidUntil] = useState("");
-  const [createIsActive, setCreateIsActive] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [showCreate, setShowCreate] = useState(false)
+  const [createCode, setCreateCode] = useState("")
+  const [createDiscountType, setCreateDiscountType] = useState<"percentage" | "fixed">("percentage")
+  const [createValue, setCreateValue] = useState("")
+  const [createMinOrderAmount, setCreateMinOrderAmount] = useState("")
+  const [createMaxUses, setCreateMaxUses] = useState("")
+  const [createValidFrom, setCreateValidFrom] = useState("")
+  const [createValidUntil, setCreateValidUntil] = useState("")
+  const [createIsActive, setCreateIsActive] = useState(true)
+  const [creating, setCreating] = useState(false)
 
   // Edit
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editCode, setEditCode] = useState("");
-  const [editDiscountType, setEditDiscountType] = useState<"percentage" | "fixed">("percentage");
-  const [editValue, setEditValue] = useState("");
-  const [editMinOrderAmount, setEditMinOrderAmount] = useState("");
-  const [editMaxUses, setEditMaxUses] = useState("");
-  const [editValidFrom, setEditValidFrom] = useState("");
-  const [editValidUntil, setEditValidUntil] = useState("");
-  const [editIsActive, setEditIsActive] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editCode, setEditCode] = useState("")
+  const [editDiscountType, setEditDiscountType] = useState<"percentage" | "fixed">("percentage")
+  const [editValue, setEditValue] = useState("")
+  const [editMinOrderAmount, setEditMinOrderAmount] = useState("")
+  const [editMaxUses, setEditMaxUses] = useState("")
+  const [editValidFrom, setEditValidFrom] = useState("")
+  const [editValidUntil, setEditValidUntil] = useState("")
+  const [editIsActive, setEditIsActive] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   // Delete
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Toggle active
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   // Error
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null)
 
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchCoupons = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     const res = await adminListCoupons({
       page,
       perPage: 20,
       search: search || undefined,
-    });
+    })
     if (res.success && res.data) {
-      setCoupons(res.data.coupons);
-      setTotal(res.data.total);
-      setTotalPages(res.data.totalPages);
+      setCoupons(res.data.coupons)
+      setTotal(res.data.total)
+      setTotalPages(res.data.totalPages)
     }
-    setLoading(false);
-  }, [page, search]);
+    setLoading(false)
+  }, [page, search])
 
   useEffect(() => {
-    fetchCoupons();
-  }, [fetchCoupons]);
+    fetchCoupons()
+  }, [fetchCoupons])
 
   // ── Helpers ────────────────────────────────────────────────────
   function formatDiscount(coupon: CouponRow): string {
     if (coupon.discount_type === "percentage") {
-      return `${coupon.value}%`;
+      return `${coupon.value}%`
     }
-    return formatHUF(coupon.value);
+    return formatHUF(coupon.value)
   }
 
   function resetCreateForm() {
-    setCreateCode("");
-    setCreateDiscountType("percentage");
-    setCreateValue("");
-    setCreateMinOrderAmount("");
-    setCreateMaxUses("");
-    setCreateValidFrom("");
-    setCreateValidUntil("");
-    setCreateIsActive(true);
+    setCreateCode("")
+    setCreateDiscountType("percentage")
+    setCreateValue("")
+    setCreateMinOrderAmount("")
+    setCreateMaxUses("")
+    setCreateValidFrom("")
+    setCreateValidUntil("")
+    setCreateIsActive(true)
   }
 
   // ── Create ─────────────────────────────────────────────────────
   async function handleCreate() {
     if (!createCode.trim() || !createValue) {
-      setError("A kuponkód és az érték kötelező.");
-      return;
+      setError("A kuponkód és az érték kötelező.")
+      return
     }
 
-    setCreating(true);
-    setError(null);
+    setCreating(true)
+    setError(null)
 
     const res = await adminCreateCoupon({
       code: createCode.trim(),
@@ -147,40 +130,40 @@ export default function AdminCouponsPage() {
       validFrom: createValidFrom || undefined,
       validUntil: createValidUntil || undefined,
       isActive: createIsActive,
-    });
+    })
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a kupon létrehozásakor.");
-      setCreating(false);
-      return;
+      setError(res.error ?? "Hiba a kupon létrehozásakor.")
+      setCreating(false)
+      return
     }
 
-    resetCreateForm();
-    setShowCreate(false);
-    setCreating(false);
-    fetchCoupons();
+    resetCreateForm()
+    setShowCreate(false)
+    setCreating(false)
+    fetchCoupons()
   }
 
   // ── Start edit ─────────────────────────────────────────────────
   function startEdit(coupon: CouponRow) {
-    setEditId(coupon.id);
-    setEditCode(coupon.code);
-    setEditDiscountType(coupon.discount_type);
-    setEditValue(String(coupon.value));
-    setEditMinOrderAmount(coupon.min_order_amount != null ? String(coupon.min_order_amount) : "");
-    setEditMaxUses(coupon.max_uses != null ? String(coupon.max_uses) : "");
-    setEditValidFrom(coupon.valid_from ? coupon.valid_from.slice(0, 16) : "");
-    setEditValidUntil(coupon.valid_until ? coupon.valid_until.slice(0, 16) : "");
-    setEditIsActive(coupon.is_active);
-    setError(null);
+    setEditId(coupon.id)
+    setEditCode(coupon.code)
+    setEditDiscountType(coupon.discount_type)
+    setEditValue(String(coupon.value))
+    setEditMinOrderAmount(coupon.min_order_amount != null ? String(coupon.min_order_amount) : "")
+    setEditMaxUses(coupon.max_uses != null ? String(coupon.max_uses) : "")
+    setEditValidFrom(coupon.valid_from ? coupon.valid_from.slice(0, 16) : "")
+    setEditValidUntil(coupon.valid_until ? coupon.valid_until.slice(0, 16) : "")
+    setEditIsActive(coupon.is_active)
+    setError(null)
   }
 
   // ── Save edit ──────────────────────────────────────────────────
   async function handleSave() {
-    if (!editId) return;
+    if (!editId) return
 
-    setSaving(true);
-    setError(null);
+    setSaving(true)
+    setError(null)
 
     const res = await adminUpdateCoupon(editId, {
       code: editCode.trim(),
@@ -191,50 +174,50 @@ export default function AdminCouponsPage() {
       validFrom: editValidFrom || null,
       validUntil: editValidUntil || null,
       isActive: editIsActive,
-    });
+    })
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a kupon frissítésekor.");
-      setSaving(false);
-      return;
+      setError(res.error ?? "Hiba a kupon frissítésekor.")
+      setSaving(false)
+      return
     }
 
-    setEditId(null);
-    setSaving(false);
-    fetchCoupons();
+    setEditId(null)
+    setSaving(false)
+    fetchCoupons()
   }
 
   // ── Delete ─────────────────────────────────────────────────────
   async function handleDelete(id: string) {
     if (deletingId !== id) {
-      setDeletingId(id);
-      return;
+      setDeletingId(id)
+      return
     }
 
-    setError(null);
-    const res = await adminDeleteCoupon(id);
+    setError(null)
+    const res = await adminDeleteCoupon(id)
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a kupon törlésekor.");
-      setDeletingId(null);
-      return;
+      setError(res.error ?? "Hiba a kupon törlésekor.")
+      setDeletingId(null)
+      return
     }
 
-    setDeletingId(null);
-    fetchCoupons();
+    setDeletingId(null)
+    fetchCoupons()
   }
 
   // ── Toggle active ──────────────────────────────────────────────
   async function handleToggle(coupon: CouponRow) {
-    setTogglingId(coupon.id);
-    setError(null);
-    const res = await adminToggleCoupon(coupon.id, !coupon.is_active);
+    setTogglingId(coupon.id)
+    setError(null)
+    const res = await adminToggleCoupon(coupon.id, !coupon.is_active)
     if (!res.success) {
-      setError(res.error ?? "Hiba a státusz módosításakor.");
+      setError(res.error ?? "Hiba a státusz módosításakor.")
     } else {
-      fetchCoupons();
+      fetchCoupons()
     }
-    setTogglingId(null);
+    setTogglingId(null)
   }
 
   return (
@@ -242,16 +225,14 @@ export default function AdminCouponsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Kuponok</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {total} kupon összesen
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{total} kupon összesen</p>
         </div>
         <Button
           size="sm"
           onClick={() => {
-            setShowCreate(!showCreate);
-            setError(null);
-            if (showCreate) resetCreateForm();
+            setShowCreate(!showCreate)
+            setError(null)
+            if (showCreate) resetCreateForm()
           }}
         >
           {showCreate ? (
@@ -280,8 +261,8 @@ export default function AdminCouponsPage() {
         <Input
           value={search}
           onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
+            setSearch(e.target.value)
+            setPage(1)
           }}
           placeholder="Keresés kód alapján..."
           className="pl-9"
@@ -309,9 +290,7 @@ export default function AdminCouponsPage() {
                 <Label>Típus *</Label>
                 <select
                   value={createDiscountType}
-                  onChange={(e) =>
-                    setCreateDiscountType(e.target.value as "percentage" | "fixed")
-                  }
+                  onChange={(e) => setCreateDiscountType(e.target.value as "percentage" | "fixed")}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="percentage">Százalékos (%)</option>
@@ -375,11 +354,7 @@ export default function AdminCouponsPage() {
                 />
                 <Label>Aktív</Label>
                 <div className="ml-auto">
-                  <Button
-                    size="sm"
-                    onClick={handleCreate}
-                    disabled={creating}
-                  >
+                  <Button size="sm" onClick={handleCreate} disabled={creating}>
                     {creating ? (
                       <Loader2 className="mr-2 size-4 animate-spin" />
                     ) : (
@@ -433,9 +408,7 @@ export default function AdminCouponsPage() {
                         <select
                           value={editDiscountType}
                           onChange={(e) =>
-                            setEditDiscountType(
-                              e.target.value as "percentage" | "fixed",
-                            )
+                            setEditDiscountType(e.target.value as "percentage" | "fixed")
                           }
                           className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                         >
@@ -481,9 +454,7 @@ export default function AdminCouponsPage() {
                       <div className="flex items-center gap-2">
                         <Checkbox
                           checked={editIsActive}
-                          onCheckedChange={(checked) =>
-                            setEditIsActive(!!checked)
-                          }
+                          onCheckedChange={(checked) => setEditIsActive(!!checked)}
                         />
                         <span className="text-xs">Aktív</span>
                       </div>
@@ -516,36 +487,24 @@ export default function AdminCouponsPage() {
                   </>
                 ) : (
                   <>
-                    <TableCell className="font-mono font-medium">
-                      {coupon.code}
-                    </TableCell>
+                    <TableCell className="font-mono font-medium">{coupon.code}</TableCell>
                     <TableCell>
-                      <span className="font-medium">
-                        {formatDiscount(coupon)}
-                      </span>
-                      {coupon.min_order_amount != null &&
-                        coupon.min_order_amount > 0 && (
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            (min. {formatHUF(coupon.min_order_amount)})
-                          </span>
-                        )}
+                      <span className="font-medium">{formatDiscount(coupon)}</span>
+                      {coupon.min_order_amount != null && coupon.min_order_amount > 0 && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          (min. {formatHUF(coupon.min_order_amount)})
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-center tabular-nums">
                       {coupon.used_count}
                       {coupon.max_uses != null && (
-                        <span className="text-muted-foreground">
-                          /{coupon.max_uses}
-                        </span>
+                        <span className="text-muted-foreground">/{coupon.max_uses}</span>
                       )}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {coupon.valid_from
-                        ? formatDate(coupon.valid_from)
-                        : "—"}{" "}
-                      →{" "}
-                      {coupon.valid_until
-                        ? formatDate(coupon.valid_until)
-                        : "—"}
+                      {coupon.valid_from ? formatDate(coupon.valid_from) : "—"} →{" "}
+                      {coupon.valid_until ? formatDate(coupon.valid_until) : "—"}
                     </TableCell>
                     <TableCell>
                       {coupon.is_active ? (
@@ -607,31 +566,7 @@ export default function AdminCouponsPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {page}. / {totalPages}. oldal
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <AdminPagination page={page} totalPages={totalPages} onPageChange={(n) => setPage(n)} />
     </div>
-  );
+  )
 }

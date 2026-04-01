@@ -1,17 +1,13 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Filter,
-} from "lucide-react";
-import { adminListAuditLogs } from "@/lib/actions/audit";
-import { formatDateTime } from "@/lib/utils/format";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect, useCallback } from "react"
+import { FileText, Filter } from "lucide-react"
+import { AdminPagination } from "@/components/admin/pagination"
+import { adminListAuditLogs } from "@/lib/actions/audit"
+import { formatDateTime } from "@/lib/utils/format"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -19,21 +15,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import type { AuditLogRow } from "@/lib/types/database";
+} from "@/components/ui/table"
+import type { AuditLogRow } from "@/lib/types/database"
 
 /* ------------------------------------------------------------------ */
 /*  Action → color mapping                                             */
 /* ------------------------------------------------------------------ */
 
-function actionVariant(
-  action: string,
-): "default" | "secondary" | "destructive" | "outline" {
-  if (action.includes("create")) return "default";
-  if (action.includes("update") || action.includes("tag")) return "secondary";
-  if (action.includes("delete") || action.includes("soft_delete"))
-    return "destructive";
-  return "outline";
+function actionVariant(action: string): "default" | "secondary" | "destructive" | "outline" {
+  if (action.includes("create")) return "default"
+  if (action.includes("update") || action.includes("tag")) return "secondary"
+  if (action.includes("delete") || action.includes("soft_delete")) return "destructive"
+  return "outline"
 }
 
 /* ------------------------------------------------------------------ */
@@ -41,51 +34,43 @@ function actionVariant(
 /* ------------------------------------------------------------------ */
 
 export default function AdminAuditPage() {
-  const [logs, setLogs] = useState<AuditLogRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [page, setPage] = useState(1);
-  const [entityType, setEntityType] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState<AuditLogRow[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [page, setPage] = useState(1)
+  const [entityType, setEntityType] = useState("")
+  const [actionFilter, setActionFilter] = useState("")
+  const [loading, setLoading] = useState(true)
 
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchLogs = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     const res = await adminListAuditLogs({
       page,
       perPage: 30,
       entityType: entityType || undefined,
       action: actionFilter || undefined,
-    });
+    })
     if (res.success && res.data) {
-      setLogs(res.data.logs);
-      setTotal(res.data.total);
-      setTotalPages(res.data.totalPages);
+      setLogs(res.data.logs)
+      setTotal(res.data.total)
+      setTotalPages(res.data.totalPages)
     }
-    setLoading(false);
-  }, [page, entityType, actionFilter]);
+    setLoading(false)
+  }, [page, entityType, actionFilter])
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    fetchLogs()
+  }, [fetchLogs])
 
   // ── Unique entity types + actions (from current page) ──────────
-  const entityTypes = [
-    "product",
-    "category",
-    "coupon",
-    "order",
-    "subscriber",
-  ];
+  const entityTypes = ["product", "category", "coupon", "order", "subscriber"]
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Audit napló</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {total} bejegyzés összesen
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{total} bejegyzés összesen</p>
       </div>
 
       {/* Filters */}
@@ -99,8 +84,8 @@ export default function AdminAuditPage() {
               size="sm"
               className="h-7 text-xs"
               onClick={() => {
-                setEntityType("");
-                setPage(1);
+                setEntityType("")
+                setPage(1)
               }}
             >
               Mind
@@ -112,8 +97,8 @@ export default function AdminAuditPage() {
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => {
-                  setEntityType(type);
-                  setPage(1);
+                  setEntityType(type)
+                  setPage(1)
                 }}
               >
                 {type}
@@ -153,10 +138,7 @@ export default function AdminAuditPage() {
                   {formatDateTime(log.created_at)}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={actionVariant(log.action)}
-                    className="text-xs font-mono"
-                  >
+                  <Badge variant={actionVariant(log.action)} className="text-xs font-mono">
                     {log.action}
                   </Badge>
                 </TableCell>
@@ -192,31 +174,7 @@ export default function AdminAuditPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {page}. / {totalPages}. oldal
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <AdminPagination page={page} totalPages={totalPages} onPageChange={(n) => setPage(n)} />
     </div>
-  );
+  )
 }

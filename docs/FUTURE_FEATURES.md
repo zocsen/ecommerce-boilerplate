@@ -767,7 +767,7 @@ export async function getDashboardProfitKPIs(days: number): Promise<{
 | Field            | Value                                            |
 | ---------------- | ------------------------------------------------ |
 | **Priority**     | P0                                               |
-| **Status**       | NOT STARTED                                      |
+| **Status**       | DONE                                             |
 | **Plan Tier**    | N/A (internal, DX improvement)                   |
 | **Complexity**   | M (3-5 days)                                     |
 | **Dependencies** | None                                             |

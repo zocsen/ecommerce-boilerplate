@@ -1,13 +1,14 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, ChevronLeft, ChevronRight, Eye, EyeOff, Clock } from "lucide-react";
-import { adminListProducts } from "@/lib/actions/products";
-import { formatHUF, formatDate } from "@/lib/utils/format";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Plus, Eye, EyeOff, Clock } from "lucide-react"
+import { AdminPagination } from "@/components/admin/pagination"
+import { adminListProducts } from "@/lib/actions/products"
+import { formatHUF, formatDate } from "@/lib/utils/format"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -15,55 +16,55 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import type { ProductRow } from "@/lib/types/database";
+} from "@/components/ui/table"
+import type { ProductRow } from "@/lib/types/database"
 
-type ProductWithCategories = ProductRow & { categoryNames: string[] };
+type ProductWithCategories = ProductRow & { categoryNames: string[] }
 
 /* ------------------------------------------------------------------ */
 /*  Admin Products List (client component)                              */
 /* ------------------------------------------------------------------ */
 
 export function AdminProductsClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
-  const [products, setProducts] = useState<ProductWithCategories[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<ProductWithCategories[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [loading, setLoading] = useState(true)
 
-  const page = Number(searchParams.get("page") ?? "1");
-  const sort = searchParams.get("sort") ?? "newest";
+  const page = Number(searchParams.get("page") ?? "1")
+  const sort = searchParams.get("sort") ?? "newest"
 
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     const result = await adminListProducts({
       page,
       perPage: 20,
       sort,
-    });
+    })
     if (result.success && result.data) {
-      setProducts(result.data.products);
-      setTotal(result.data.total);
-      setTotalPages(result.data.totalPages);
+      setProducts(result.data.products)
+      setTotal(result.data.total)
+      setTotalPages(result.data.totalPages)
     }
-    setLoading(false);
-  }, [page, sort]);
+    setLoading(false)
+  }, [page, sort])
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    fetchProducts()
+  }, [fetchProducts])
 
   function updateParam(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams.toString())
     if (value) {
-      params.set(key, value);
+      params.set(key, value)
     } else {
-      params.delete(key);
+      params.delete(key)
     }
-    if (key !== "page") params.delete("page");
-    router.push(`/admin/products?${params.toString()}`);
+    if (key !== "page") params.delete("page")
+    router.push(`/admin/products?${params.toString()}`)
   }
 
   return (
@@ -209,31 +210,11 @@ export function AdminProductsClient() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {page}. / {totalPages}. oldal
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => updateParam("page", String(page - 1))}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => updateParam("page", String(page + 1))}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={(n) => updateParam("page", String(n))}
+      />
     </div>
-  );
+  )
 }

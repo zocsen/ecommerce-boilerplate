@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import {
   ORDER_STATUS_LABELS,
   TRANSITION_META,
-  getStatusTransitions,
   getTransitionDescription,
   getStepOrder,
 } from "@/lib/constants/order-status";

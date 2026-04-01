@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, Eye, EyeOff, Clock } from "lucide-react";
 import { AdminPagination } from "@/components/admin/pagination";
@@ -134,9 +135,11 @@ export function AdminProductsClient() {
                   <div className="flex items-center gap-3">
                     {product.main_image_url ? (
                       <div className="bg-muted size-10 shrink-0 overflow-hidden rounded-md">
-                        <img
+                        <Image
                           src={product.main_image_url}
                           alt=""
+                          width={40}
+                          height={40}
                           className="size-full object-cover"
                         />
                       </div>

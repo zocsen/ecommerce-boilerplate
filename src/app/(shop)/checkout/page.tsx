@@ -22,7 +22,7 @@ import {
   ShoppingBag,
   Wallet,
 } from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -41,7 +41,6 @@ import type {
   CheckoutFormData,
 } from "@/lib/types";
 
-import { CartLineItem } from "@/components/cart/cart-line-item";
 import { OrderSummary } from "@/components/cart/order-summary";
 import { PickupPointSelector } from "@/components/cart/pickup-point-selector";
 import { CheckoutStepper } from "@/components/checkout/checkout-stepper";
@@ -218,7 +217,6 @@ export default function CheckoutPage() {
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
     control,
     trigger,
@@ -254,7 +252,7 @@ export default function CheckoutPage() {
     },
   });
 
-  const watchedValues = watch();
+  const watchedValues = useWatch({ control });
   const sameAsBilling = watchedValues.sameAsBilling;
   const shippingMethod = watchedValues.shippingMethod as ShippingMethod;
   const selectedCarrier = watchedValues.carrier ?? "";
@@ -829,12 +827,12 @@ export default function CheckoutPage() {
                       <p className="text-muted-foreground">Megegyezik a szállítási címmel</p>
                     ) : (
                       <>
-                        <p>{watchedValues.billingAddress.name}</p>
-                        <p>{watchedValues.billingAddress.street}</p>
+                        <p>{watchedValues.billingAddress?.name}</p>
+                        <p>{watchedValues.billingAddress?.street}</p>
                         <p>
-                          {watchedValues.billingAddress.zip} {watchedValues.billingAddress.city}
+                          {watchedValues.billingAddress?.zip} {watchedValues.billingAddress?.city}
                         </p>
-                        <p>{watchedValues.billingAddress.country}</p>
+                        <p>{watchedValues.billingAddress?.country}</p>
                       </>
                     )}
                   </ReviewSection>

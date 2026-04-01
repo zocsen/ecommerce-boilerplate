@@ -118,7 +118,6 @@ describe("getOrderNotes", () => {
 
     // First from() call: order_notes.select()
     // Second from() call: profiles.select()
-    let callCount = 0;
     mockAdminFrom.mockImplementation((table: string) => {
       if (table === "order_notes") {
         return {

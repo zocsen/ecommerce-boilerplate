@@ -7,7 +7,6 @@
 /*  Shop-owner actions use requireAdminOrViewer().                      */
 /* ------------------------------------------------------------------ */
 
-import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAgencyOwner, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
@@ -23,7 +22,6 @@ import {
 import { uuidSchema } from "@/lib/validators/uuid";
 import type {
   ShopPlanRow,
-  ShopSubscriptionRow,
   ShopSubscriptionWithPlan,
   SubscriptionInvoiceRow,
 } from "@/lib/types/database";

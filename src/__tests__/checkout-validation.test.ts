@@ -57,6 +57,7 @@ function validCheckoutData() {
     homeDelivery: validHomeDelivery(),
     billingAddress: validAddress(),
     sameAsBilling: true,
+    paymentMethod: "barion",
     notes: "",
     couponCode: "",
   };
@@ -248,6 +249,7 @@ describe("checkoutSchema: valid inputs", () => {
       pickupPoint: validPickupPoint(),
       billingAddress: validAddress(), // always required for invoicing
       sameAsBilling: false,
+      paymentMethod: "barion",
     };
 
     const result = checkoutSchema.safeParse(data);
@@ -271,6 +273,7 @@ describe("checkoutSchema: valid inputs", () => {
       shippingMethod: "home",
       billingAddress: validAddress(),
       sameAsBilling: true,
+      paymentMethod: "barion",
     };
 
     const result = checkoutSchema.safeParse(data);

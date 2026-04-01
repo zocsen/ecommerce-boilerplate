@@ -866,7 +866,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
               {/* Extras list */}
               {extras.length > 0 && (
                 <div className="space-y-3">
-                  {extras.map((extra, idx) => (
+                  {extras.map((extra, _idx) => (
                     <div key={extra.key} className="bg-muted/30 space-y-3 rounded-lg border p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">

@@ -15,7 +15,6 @@ import {
   Settings,
   FileText,
   Menu,
-  X,
   LogOut,
   ArrowLeft,
   PanelLeftClose,

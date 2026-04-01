@@ -6,7 +6,6 @@ import { listPlans, getMySubscription } from "@/lib/actions/subscriptions";
 import { formatHUF } from "@/lib/utils/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ShopPlanRow, PlanFeaturesJson, ShopSubscriptionWithPlan } from "@/lib/types/database";
 

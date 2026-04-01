@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { listProducts } from "@/lib/actions/products";
 import { listCategories } from "@/lib/actions/categories";

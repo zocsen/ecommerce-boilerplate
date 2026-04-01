@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -138,7 +138,6 @@ function invoiceStatusBadge(status: string) {
 
 export default function ClientSubscriptionDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const id = params.id;
 
   const [subscription, setSubscription] = useState<ShopSubscriptionWithPlan | null>(null);

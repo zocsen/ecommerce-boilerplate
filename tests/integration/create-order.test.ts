@@ -347,7 +347,6 @@ describe("createOrderFromCart – integration", () => {
       if (table === "coupons") return makeChain({ data: coupon, error: null });
       if (table === "orders") {
         const chain = makeChain({ data: { id: insertedOrderId }, error: null });
-        const origInsert = chain.insert.getMockImplementation();
         chain.insert = vi.fn().mockImplementation((data: Record<string, unknown>) => {
           capturedInsert = data;
           return {

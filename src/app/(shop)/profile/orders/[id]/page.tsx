@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getUserOrder } from "@/lib/actions/profile";
-import { formatHUF, formatDate, formatDateTime } from "@/lib/utils/format";
+import { formatHUF, formatDateTime } from "@/lib/utils/format";
 import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { notFound } from "next/navigation";
-import type { OrderStatus, AddressJson } from "@/lib/types/database";
+import type { AddressJson } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Profile order detail page                                          */

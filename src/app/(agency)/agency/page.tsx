@@ -9,13 +9,11 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  XCircle,
   ChevronRight,
 } from "lucide-react";
 import { listSubscriptions, listPlans } from "@/lib/actions/subscriptions";
 import { formatHUF } from "@/lib/utils/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import type { ShopSubscriptionWithPlan, ShopPlanRow } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */

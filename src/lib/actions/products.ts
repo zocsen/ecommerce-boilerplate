@@ -356,7 +356,7 @@ export async function adminListProducts(
     const productList = products ?? [];
 
     // Fetch category names for all products in one query
-    let categoryMap: Record<string, string[]> = {};
+    const categoryMap: Record<string, string[]> = {};
     if (productList.length > 0) {
       const productIds = productList.map((p) => p.id);
       const { data: pcRows } = await admin

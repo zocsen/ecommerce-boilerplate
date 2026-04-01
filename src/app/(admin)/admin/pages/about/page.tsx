@@ -10,7 +10,6 @@ import {
   Save,
   Eye,
   EyeOff,
-  ArrowLeft,
   Loader2,
   ExternalLink,
 } from "lucide-react";
@@ -764,7 +763,7 @@ export default function AdminAboutPage() {
 function CollapsibleSection({
   title,
   description,
-  section,
+  section: _section,
   expanded,
   onToggle,
   children,

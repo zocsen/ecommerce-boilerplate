@@ -5,7 +5,6 @@ import { FileText, Filter } from "lucide-react";
 import { AdminPagination } from "@/components/admin/pagination";
 import { adminListAuditLogs } from "@/lib/actions/audit";
 import { formatDateTime } from "@/lib/utils/format";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,7 +38,7 @@ export default function AdminAuditPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(1);
   const [entityType, setEntityType] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
+  const [actionFilter, _setActionFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
   // ── Fetch ──────────────────────────────────────────────────────

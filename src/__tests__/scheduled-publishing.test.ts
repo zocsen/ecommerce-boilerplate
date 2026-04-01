@@ -460,7 +460,6 @@ describe("Scheduled Publishing — listProducts filter", () => {
     // Track the query chain to verify .or() is called
     const chainCalls: string[] = [];
 
-    const chainObj: Record<string, unknown> = {};
     const createChain = (): Record<string, unknown> => {
       const proxy: Record<string, unknown> = {};
       for (const method of ["select", "eq", "or", "in", "gte", "lte", "order", "range"]) {

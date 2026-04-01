@@ -12,7 +12,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
-import type { AboutUsContent, ShopPageRow } from "@/lib/types/database";
+import type { AboutUsContent } from "@/lib/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────
 

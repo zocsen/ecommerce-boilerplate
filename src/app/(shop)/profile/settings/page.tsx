@@ -14,7 +14,7 @@ import type { ProfileRow } from "@/lib/types/database";
 /* ------------------------------------------------------------------ */
 
 export default function ProfileSettingsPage() {
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [_profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Profile form

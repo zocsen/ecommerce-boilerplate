@@ -15,7 +15,6 @@ import {
   getCurrentUser,
 } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
-import { checkoutSchema } from "@/lib/validators/checkout";
 import { uuidSchema } from "@/lib/validators/uuid";
 import { siteConfig } from "@/lib/config/site.config";
 import { getHooks } from "@/lib/config/hooks";
@@ -81,11 +80,6 @@ const cartItemSchema = z.object({
   weightGrams: z.number().int().min(0),
 });
 
-const createOrderInputSchema = z.object({
-  items: z.array(cartItemSchema).min(1, "A kosár nem lehet üres."),
-  checkout: checkoutSchema,
-});
-
 const adminFiltersSchema = z.object({
   status: z.string().optional(),
   search: z.string().optional(),
@@ -115,36 +109,6 @@ export async function createOrderFromCart(input: {
     // Validate input structure
     // We do a manual mapping since CheckoutFormData and checkoutSchema
     // have different shapes (the schema uses nested contact/homeDelivery/pickupPoint)
-    const checkoutForValidation = {
-      contact: {
-        email: input.checkout.email,
-        phone: input.checkout.phone,
-      },
-      shippingMethod: input.checkout.shippingMethod,
-      homeDelivery:
-        input.checkout.shippingMethod === "home"
-          ? {
-              carrier: input.checkout.carrier,
-              address: input.checkout.shippingAddress,
-              phone: input.checkout.phone,
-            }
-          : undefined,
-      pickupPoint:
-        input.checkout.shippingMethod === "pickup"
-          ? {
-              provider: input.checkout.pickupPointProvider,
-              pointId: input.checkout.pickupPointId,
-              pointLabel: input.checkout.pickupPointLabel,
-              phone: input.checkout.phone,
-            }
-          : undefined,
-      billingAddress: input.checkout.billingAddress,
-      sameAsBilling: input.checkout.sameAsBilling,
-      notes: input.checkout.notes || undefined,
-      couponCode: input.checkout.couponCode || undefined,
-      paymentMethod: input.checkout.paymentMethod || "barion",
-    };
-
     const itemsParsed = z.array(cartItemSchema).min(1).safeParse(input.items);
     if (!itemsParsed.success) {
       return { success: false, error: "Érvénytelen kosár adatok." };
@@ -962,7 +926,7 @@ export async function getOrderNotes(orderId: string): Promise<ActionResult<Order
     // Resolve author names from profiles
     const authorIds = [...new Set((data ?? []).map((n) => n.author_id))];
 
-    let profileMap: Record<string, string | null> = {};
+    const profileMap: Record<string, string | null> = {};
     if (authorIds.length > 0) {
       const { data: profiles } = await admin
         .from("profiles")
@@ -1231,7 +1195,7 @@ export async function exportOrdersCsv(
     const rows: string[] = [csvRow(orderHeaders)];
 
     // If we need line item counts, batch fetch order_items
-    let itemCountMap: Record<string, number> = {};
+    const itemCountMap: Record<string, number> = {};
     const orderIds = orderList.map((o) => o.id);
 
     if (orderIds.length > 0) {

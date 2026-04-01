@@ -74,7 +74,7 @@ export function AdminProductsClient() {
           <h1 className="text-2xl font-semibold tracking-tight">Termékek</h1>
           <p className="mt-1 text-sm text-muted-foreground">{total} termék összesen</p>
         </div>
-        <Button size="sm" render={<Link href="/admin/products/new" />}>
+        <Button size="sm" nativeButton={false} render={<Link href="/admin/products/new" />}>
           <Plus className="mr-2 size-4" />
           Új termék
         </Button>
@@ -107,7 +107,7 @@ export function AdminProductsClient() {
       ) : products.length === 0 ? (
         <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
           <p>Nincs termék.</p>
-          <Button size="sm" render={<Link href="/admin/products/new" />}>
+          <Button size="sm" nativeButton={false} render={<Link href="/admin/products/new" />}>
             <Plus className="mr-2 size-4" />
             Első termék létrehozása
           </Button>

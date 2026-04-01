@@ -303,7 +303,7 @@ export default function AdminAboutPage() {
   if (state.loading) {
     return (
       <div className="flex items-center justify-center py-32">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground size-6 animate-spin" />
       </div>
     );
   }
@@ -315,7 +315,7 @@ export default function AdminAboutPage() {
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Rólunk oldal</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-sm">
               Szerkeszd az oldal tartalmát, majd tedd közzé.
             </p>
           </div>
@@ -329,7 +329,7 @@ export default function AdminAboutPage() {
           <Link
             href="/about"
             target="_blank"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
           >
             <ExternalLink className="size-3.5" />
             Előnézet
@@ -364,7 +364,7 @@ export default function AdminAboutPage() {
 
       {/* ── Error banner ──────────────────────────────── */}
       {state.error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4 text-sm">
           {state.error}
         </div>
       )}
@@ -419,7 +419,7 @@ export default function AdminAboutPage() {
               onChange={(url) => dispatch({ type: "UPDATE_HERO", field: "imageUrl", value: url })}
               onRemove={() => dispatch({ type: "UPDATE_HERO", field: "imageUrl", value: null })}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Ajánlott méret: 1200×900 px. Hagyd üresen, ha nem szeretnél képet.
             </p>
           </div>
@@ -460,7 +460,7 @@ export default function AdminAboutPage() {
               maxLength={10000}
               rows={10}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {state.content.story.body.length.toLocaleString("hu-HU")} / 10 000 karakter
             </p>
           </div>
@@ -477,9 +477,9 @@ export default function AdminAboutPage() {
       >
         <div className="space-y-6">
           {state.content.team.map((member, index) => (
-            <div key={index} className="relative rounded-lg border bg-muted/30 p-4">
+            <div key={index} className="bg-muted/30 relative rounded-lg border p-4">
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-muted-foreground text-sm font-medium">
                   Csapattag #{index + 1}
                 </span>
                 <Button
@@ -583,7 +583,7 @@ export default function AdminAboutPage() {
           )}
 
           {state.content.team.length >= 20 && (
-            <p className="text-xs text-muted-foreground">Maximum 20 csapattag adható meg.</p>
+            <p className="text-muted-foreground text-xs">Maximum 20 csapattag adható meg.</p>
           )}
         </div>
       </CollapsibleSection>
@@ -598,9 +598,9 @@ export default function AdminAboutPage() {
       >
         <div className="space-y-6">
           {state.content.values.map((value, index) => (
-            <div key={index} className="relative rounded-lg border bg-muted/30 p-4">
+            <div key={index} className="bg-muted/30 relative rounded-lg border p-4">
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-muted-foreground text-sm font-medium">
                   Érték #{index + 1}
                 </span>
                 <Button
@@ -646,7 +646,7 @@ export default function AdminAboutPage() {
                     placeholder="pl. shield-check"
                     maxLength={50}
                   />
-                  <p className="text-xs text-muted-foreground">Lucide ikon neve (opcionális).</p>
+                  <p className="text-muted-foreground text-xs">Lucide ikon neve (opcionális).</p>
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
@@ -678,7 +678,7 @@ export default function AdminAboutPage() {
           )}
 
           {state.content.values.length >= 12 && (
-            <p className="text-xs text-muted-foreground">Maximum 12 érték adható meg.</p>
+            <p className="text-muted-foreground text-xs">Maximum 12 érték adható meg.</p>
           )}
         </div>
       </CollapsibleSection>
@@ -747,7 +747,7 @@ export default function AdminAboutPage() {
               }
               placeholder="https://www.google.com/maps/embed?..."
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Google Maps beágyazási link. Hagyd üresen, ha nem szeretnél térképet.
             </p>
           </div>
@@ -782,13 +782,13 @@ function CollapsibleSection({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {expanded ? (
-              <ChevronDown className="size-4 text-muted-foreground" />
+              <ChevronDown className="text-muted-foreground size-4" />
             ) : (
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <ChevronRight className="text-muted-foreground size-4" />
             )}
             <div>
               <CardTitle className="text-base">{title}</CardTitle>
-              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
             </div>
           </div>
         </div>

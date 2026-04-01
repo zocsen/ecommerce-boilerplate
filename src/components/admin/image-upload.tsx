@@ -100,7 +100,7 @@ function ImagePreview({
       {...dragHandlers}
     >
       <div
-        className="relative w-full overflow-hidden rounded-lg border bg-muted"
+        className="bg-muted relative w-full overflow-hidden rounded-lg border"
         style={{ aspectRatio: "1/1" }}
       >
         <Image
@@ -114,7 +114,7 @@ function ImagePreview({
 
         {/* Drag handle badge (gallery only) */}
         {showDragHandle && (
-          <div className="absolute left-1 top-1 flex size-5 cursor-grab items-center justify-center rounded-full bg-black/70 text-white active:cursor-grabbing">
+          <div className="absolute top-1 left-1 flex size-5 cursor-grab items-center justify-center rounded-full bg-black/70 text-white active:cursor-grabbing">
             <GripVertical className="size-3" />
           </div>
         )}
@@ -318,7 +318,7 @@ export function SingleImageUpload({ value, onChange, onRemove }: SingleImageUplo
           deleting={state.deleting}
         />
 
-        {state.error && <p className="text-xs text-destructive">{state.error}</p>}
+        {state.error && <p className="text-destructive text-xs">{state.error}</p>}
 
         <input
           ref={inputRef}
@@ -357,28 +357,28 @@ export function SingleImageUpload({ value, onChange, onRemove }: SingleImageUplo
         ].join(" ")}
       >
         {state.uploading ? (
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          <Loader2 className="text-muted-foreground size-8 animate-spin" />
         ) : (
-          <Upload className="size-8 text-muted-foreground" />
+          <Upload className="text-muted-foreground size-8" />
         )}
         <div className="text-center">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-muted-foreground text-sm font-medium">
             {state.uploading
               ? "Feltöltés folyamatban..."
               : "Húzza ide a képet vagy kattintson a tallózáshoz"}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground/70">JPEG, PNG, WebP, AVIF — max. 5 MB</p>
+          <p className="text-muted-foreground/70 mt-1 text-xs">JPEG, PNG, WebP, AVIF — max. 5 MB</p>
         </div>
       </button>
 
-      {state.error && <p className="text-xs text-destructive">{state.error}</p>}
+      {state.error && <p className="text-destructive text-xs">{state.error}</p>}
 
       {/* Manual URL entry toggle */}
       <div>
         <button
           type="button"
           onClick={() => dispatch({ type: "TOGGLE_URL_INPUT" })}
-          className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1.5 text-xs transition-colors"
         >
           <LinkIcon className="size-3" />
           URL megadása
@@ -698,8 +698,8 @@ export function GalleryImageUpload({ value, onChange }: GalleryImageUploadProps)
                   showDragHandle
                   className={[
                     "transition-all duration-200",
-                    isDragging ? "opacity-40 scale-95" : "",
-                    isOver && !isDragging ? "ring-2 ring-primary ring-offset-2 rounded-lg" : "",
+                    isDragging ? "scale-95 opacity-40" : "",
+                    isOver && !isDragging ? "ring-primary rounded-lg ring-2 ring-offset-2" : "",
                     isDeleting ? "pointer-events-none opacity-60" : "",
                   ]
                     .filter(Boolean)
@@ -759,7 +759,7 @@ export function GalleryImageUpload({ value, onChange }: GalleryImageUploadProps)
 
       {/* Reorder hint */}
       {value.length > 1 && (
-        <p className="text-xs text-muted-foreground/60">Húzd a képeket a sorrend módosításához.</p>
+        <p className="text-muted-foreground/60 text-xs">Húzd a képeket a sorrend módosításához.</p>
       )}
 
       {/* Drop zone for adding new images */}
@@ -787,27 +787,27 @@ export function GalleryImageUpload({ value, onChange }: GalleryImageUploadProps)
       >
         {state.uploading ? (
           <>
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Feltöltés: {state.uploadProgress}</p>
+            <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            <p className="text-muted-foreground text-xs">Feltöltés: {state.uploadProgress}</p>
           </>
         ) : (
           <>
-            <ImagePlus className="size-6 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">
+            <ImagePlus className="text-muted-foreground size-6" />
+            <p className="text-muted-foreground text-xs">
               Képek hozzáadása — húzza ide vagy kattintson
             </p>
           </>
         )}
       </button>
 
-      {state.error && <p className="text-xs text-destructive">{state.error}</p>}
+      {state.error && <p className="text-destructive text-xs">{state.error}</p>}
 
       {/* Manual URL entry */}
       <div>
         <button
           type="button"
           onClick={() => dispatch({ type: "TOGGLE_URL_INPUT" })}
-          className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1.5 text-xs transition-colors"
         >
           <LinkIcon className="size-3" />
           URL megadása

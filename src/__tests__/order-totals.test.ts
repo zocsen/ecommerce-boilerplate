@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  calculateShippingFee,
-  getAvailableCarriers,
-  getCarrierFee,
-} from "@/lib/utils/shipping";
+import { calculateShippingFee, getAvailableCarriers, getCarrierFee } from "@/lib/utils/shipping";
 import { formatHUF, formatDate, formatDateTime, formatPhone } from "@/lib/utils/format";
 
 /* ------------------------------------------------------------------ */
@@ -79,10 +75,7 @@ describe("getAvailableCarriers", () => {
   });
 
   it("all carriers have a non-empty name and positive fee", () => {
-    const all = [
-      ...getAvailableCarriers("home"),
-      ...getAvailableCarriers("pickup"),
-    ];
+    const all = [...getAvailableCarriers("home"), ...getAvailableCarriers("pickup")];
     for (const carrier of all) {
       expect(carrier.name.length).toBeGreaterThan(0);
       expect(carrier.fee).toBeGreaterThan(0);
@@ -166,9 +159,7 @@ describe("formatDate", () => {
   });
 
   it("formats a date string in Hungarian format", () => {
-    expect(formatDate("2025-01-15T12:00:00Z")).toMatch(
-      /^2025\. 01\. 1[45]\.$/,
-    );
+    expect(formatDate("2025-01-15T12:00:00Z")).toMatch(/^2025\. 01\. 1[45]\.$/);
     // Note: exact day may vary by timezone, so we allow 14 or 15
   });
 

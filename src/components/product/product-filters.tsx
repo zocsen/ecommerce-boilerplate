@@ -1,89 +1,84 @@
-"use client"
+"use client";
 
-import { useCallback } from "react"
-import { useRouter, useSearchParams, usePathname } from "next/navigation"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import type { CategoryRow } from "@/lib/types/database"
-import { cn } from "@/lib/utils"
-import { SlidersHorizontal, X } from "lucide-react"
+} from "@/components/ui/select";
+import type { CategoryRow } from "@/lib/types/database";
+import { cn } from "@/lib/utils";
+import { SlidersHorizontal, X } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Product filters — client component for URL-based filtering         */
 /* ------------------------------------------------------------------ */
 
 interface ProductFiltersProps {
-  categories: CategoryRow[]
+  categories: CategoryRow[];
 }
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Legújabb" },
   { value: "price_asc", label: "Ár (növekvő)" },
   { value: "price_desc", label: "Ár (csökkenő)" },
-] as const
+] as const;
 
 export function ProductFilters({ categories }: ProductFiltersProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const currentCategory = searchParams.get("category") ?? ""
-  const currentSort = searchParams.get("sort") ?? "newest"
-  const currentMinPrice = searchParams.get("minPrice") ?? ""
-  const currentMaxPrice = searchParams.get("maxPrice") ?? ""
-  const currentInStock = searchParams.get("inStock") === "true"
+  const currentCategory = searchParams.get("category") ?? "";
+  const currentSort = searchParams.get("sort") ?? "newest";
+  const currentMinPrice = searchParams.get("minPrice") ?? "";
+  const currentMaxPrice = searchParams.get("maxPrice") ?? "";
+  const currentInStock = searchParams.get("inStock") === "true";
 
   const hasActiveFilters =
-    currentCategory !== "" ||
-    currentMinPrice !== "" ||
-    currentMaxPrice !== "" ||
-    currentInStock
+    currentCategory !== "" || currentMinPrice !== "" || currentMaxPrice !== "" || currentInStock;
 
   const updateParams = useCallback(
     (updates: Record<string, string | null>) => {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(searchParams.toString());
 
       // Reset to page 1 when filters change
-      params.delete("page")
+      params.delete("page");
 
       for (const [key, value] of Object.entries(updates)) {
         if (value === null || value === "") {
-          params.delete(key)
+          params.delete(key);
         } else {
-          params.set(key, value)
+          params.set(key, value);
         }
       }
 
-      const qs = params.toString()
-      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
     [router, pathname, searchParams],
-  )
+  );
 
   function clearFilters() {
-    const params = new URLSearchParams()
-    const sort = searchParams.get("sort")
-    if (sort) params.set("sort", sort)
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    const params = new URLSearchParams();
+    const sort = searchParams.get("sort");
+    if (sort) params.set("sort", sort);
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   return (
     <div className="space-y-6">
       {/* ── Sort + clear row ─────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-2">
           <SlidersHorizontal className="size-4" />
-          <span className="text-xs font-medium uppercase tracking-[0.15em]">
-            Szűrők
-          </span>
+          <span className="text-xs font-medium tracking-[0.15em] uppercase">Szűrők</span>
         </div>
 
         <div className="ml-auto flex items-center gap-3">
@@ -92,17 +87,14 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
               variant="ghost"
               size="sm"
               onClick={clearFilters}
-              className="gap-1.5 text-xs text-muted-foreground"
+              className="text-muted-foreground gap-1.5 text-xs"
             >
               <X className="size-3" />
               Szűrők törlése
             </Button>
           )}
 
-          <Select
-            value={currentSort}
-            onValueChange={(val) => updateParams({ sort: val })}
-          >
+          <Select value={currentSort} onValueChange={(val) => updateParams({ sort: val })}>
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
@@ -158,7 +150,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
           <div className="space-y-1">
             <label
               htmlFor="minPrice"
-              className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+              className="text-muted-foreground text-[11px] font-medium tracking-wider uppercase"
             >
               Min ár
             </label>
@@ -173,11 +165,11 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
               className="h-9 w-28"
             />
           </div>
-          <span className="mt-5 text-muted-foreground">—</span>
+          <span className="text-muted-foreground mt-5">—</span>
           <div className="space-y-1">
             <label
               htmlFor="maxPrice"
-              className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+              className="text-muted-foreground text-[11px] font-medium tracking-wider uppercase"
             >
               Max ár
             </label>
@@ -196,9 +188,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
 
         <button
           type="button"
-          onClick={() =>
-            updateParams({ inStock: currentInStock ? null : "true" })
-          }
+          onClick={() => updateParams({ inStock: currentInStock ? null : "true" })}
           className={cn(
             "cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
             currentInStock
@@ -210,5 +200,5 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
         </button>
       </div>
     </div>
-  )
+  );
 }

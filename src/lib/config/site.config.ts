@@ -5,183 +5,183 @@
 // ── Types ──────────────────────────────────────────────────────────
 
 export interface StoreConfig {
-  name: string
-  legalName: string
-  email: string
-  phone: string
-  address: string
-  currency: "HUF"
+  name: string;
+  legalName: string;
+  email: string;
+  phone: string;
+  address: string;
+  currency: "HUF";
 }
 
 export interface UrlsConfig {
-  siteUrl: string
-  supportEmail: string
+  siteUrl: string;
+  supportEmail: string;
 }
 
 export interface CookieConsentConfig {
-  enabled: boolean
-  categories: readonly ["necessary", "analytics", "marketing"]
+  enabled: boolean;
+  categories: readonly ["necessary", "analytics", "marketing"];
 }
 
 export interface FeaturesConfig {
-  enableAccounts: boolean
-  enableGuestCheckout: boolean
-  enableCoupons: boolean
-  enableReviews: boolean
-  enableMarketingModule: boolean
-  enableAbandonedCart: boolean
-  enableB2BWholesaleMode: boolean
+  enableAccounts: boolean;
+  enableGuestCheckout: boolean;
+  enableCoupons: boolean;
+  enableReviews: boolean;
+  enableMarketingModule: boolean;
+  enableAbandonedCart: boolean;
+  enableB2BWholesaleMode: boolean;
 }
 
 export interface BarionConfig {
-  environment: "test" | "prod"
-  posKeyEnvVar: string
-  payeeEmail: string
+  environment: "test" | "prod";
+  posKeyEnvVar: string;
+  payeeEmail: string;
   redirectUrls: {
-    success: string
-    cancel: string
-    callback: string
-  }
+    success: string;
+    cancel: string;
+    callback: string;
+  };
 }
 
 export interface CodConfig {
   /** Whether cash on delivery is available as a payment method */
-  enabled: boolean
+  enabled: boolean;
   /** Utánvét kezelési díj in HUF (added to total_amount) */
-  fee: number
+  fee: number;
   /** Maximum order amount (before COD fee) for which COD is available (HUF). 0 = no limit. */
-  maxOrderAmount: number
+  maxOrderAmount: number;
   /** Which shipping methods allow COD */
-  allowedShippingMethods: Array<"home" | "pickup">
+  allowedShippingMethods: Array<"home" | "pickup">;
 }
 
 export interface PaymentsConfig {
-  provider: "barion"
-  barion: BarionConfig
-  cod: CodConfig
+  provider: "barion";
+  barion: BarionConfig;
+  cod: CodConfig;
 }
 
-export type HomeDeliveryCarrier = "gls" | "mpl" | "express_one"
+export type HomeDeliveryCarrier = "gls" | "mpl" | "express_one";
 export type PickupPointProvider =
   | "foxpost"
   | "gls_automata"
   | "packeta"
   | "mpl_automata"
-  | "easybox"
+  | "easybox";
 
 export interface ShippingRules {
-  baseFee: number
-  freeOver: number
+  baseFee: number;
+  freeOver: number;
   /** Default weight for products without explicit weight_grams (in grams) */
-  defaultProductWeightGrams: number
+  defaultProductWeightGrams: number;
   weightTiers: Array<{
-    maxWeightKg: number
-    fee: number
-  }>
+    maxWeightKg: number;
+    fee: number;
+  }>;
 }
 
 export interface ShippingConfig {
   methods: {
-    homeDelivery: boolean
-    pickupPoint: boolean
-  }
-  homeDeliveryCarriers: HomeDeliveryCarrier[]
-  pickupPointCarriers: PickupPointProvider[]
-  rules: ShippingRules
-  pickupPointProviders: Record<PickupPointProvider, boolean>
+    homeDelivery: boolean;
+    pickupPoint: boolean;
+  };
+  homeDeliveryCarriers: HomeDeliveryCarrier[];
+  pickupPointCarriers: PickupPointProvider[];
+  rules: ShippingRules;
+  pickupPointProviders: Record<PickupPointProvider, boolean>;
 }
 
-export type InvoicingProvider = "billingo" | "szamlazz" | "none"
-export type InvoicingMode = "auto_on_paid" | "manual"
+export type InvoicingProvider = "billingo" | "szamlazz" | "none";
+export type InvoicingMode = "auto_on_paid" | "manual";
 
 export interface InvoicingConfig {
-  provider: InvoicingProvider
-  mode: InvoicingMode
+  provider: InvoicingProvider;
+  mode: InvoicingMode;
 }
 
 export interface AdminConfig {
-  agencyViewerEnabled: boolean
-  readonlyByDefaultForAgency: boolean
+  agencyViewerEnabled: boolean;
+  readonlyByDefaultForAgency: boolean;
   /**
    * When true, the /agency panel is accessible and agency-specific
    * server actions are enabled. Set to false when using this boilerplate
    * for a standalone shop (no multi-tenant agency management).
    */
-  enableAgencyMode: boolean
+  enableAgencyMode: boolean;
 }
 
 export interface EmailConfig {
   /** Recipients for admin order notification emails */
-  adminNotificationRecipients: string[]
+  adminNotificationRecipients: string[];
   /** Send a confirmation email after email+password signup */
-  sendSignupConfirmation: boolean
+  sendSignupConfirmation: boolean;
   /** Send a welcome email on the user's first sign-in */
-  sendWelcomeEmail: boolean
+  sendWelcomeEmail: boolean;
   /** Send an admin notification when an order is paid */
-  sendAdminOrderNotification: boolean
+  sendAdminOrderNotification: boolean;
 }
 
 export interface TaxConfig {
   /** Default ÁFA rate for new products (percentage) */
-  defaultVatRate: number
+  defaultVatRate: number;
   /** Available ÁFA rates in the admin product form */
-  availableRates: readonly number[]
+  availableRates: readonly number[];
 }
 
 export interface BrandingConfig {
-  logoText: string
-  logoUrl: string | null
+  logoText: string;
+  logoUrl: string | null;
   theme: {
-    background: string
-    foreground: string
-    muted: string
-    mutedForeground: string
-    accent: string
-    accentForeground: string
-    border: string
-  }
+    background: string;
+    foreground: string;
+    muted: string;
+    mutedForeground: string;
+    accent: string;
+    accentForeground: string;
+    border: string;
+  };
 }
 
 export interface SubscriptionConfig {
   /** Default shop identifier to use when no SHOP_IDENTIFIER env var is set */
-  defaultShopIdentifier: string
+  defaultShopIdentifier: string;
   /**
    * When true, missing subscriptions block plan-gated actions.
    * When false (default/dev), missing subscription = unlimited access.
    */
-  enforceGating: boolean
+  enforceGating: boolean;
 }
 
 export interface SiteConfig {
-  store: StoreConfig
-  urls: UrlsConfig
-  features: FeaturesConfig
-  cookieConsent: CookieConsentConfig
-  payments: PaymentsConfig
-  shipping: ShippingConfig
-  invoicing: InvoicingConfig
-  admin: AdminConfig
-  email: EmailConfig
-  tax: TaxConfig
-  branding: BrandingConfig
-  subscription: SubscriptionConfig
+  store: StoreConfig;
+  urls: UrlsConfig;
+  features: FeaturesConfig;
+  cookieConsent: CookieConsentConfig;
+  payments: PaymentsConfig;
+  shipping: ShippingConfig;
+  invoicing: InvoicingConfig;
+  admin: AdminConfig;
+  email: EmailConfig;
+  tax: TaxConfig;
+  branding: BrandingConfig;
+  subscription: SubscriptionConfig;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
 
 function env(key: string, fallback: string = ""): string {
-  return process.env[key] ?? fallback
+  return process.env[key] ?? fallback;
 }
 
 function envAs<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
-  const raw = process.env[key] as T | undefined
-  if (raw && (allowed as readonly string[]).includes(raw)) return raw
-  return fallback
+  const raw = process.env[key] as T | undefined;
+  if (raw && (allowed as readonly string[]).includes(raw)) return raw;
+  return fallback;
 }
 
 // ── Config ─────────────────────────────────────────────────────────
 
-const siteUrl = env("NEXT_PUBLIC_SITE_URL", "http://localhost:3000")
+const siteUrl = env("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
 
 export const siteConfig: SiteConfig = {
   /* ── store ────────────────────────────────────────────── */
@@ -313,4 +313,4 @@ export const siteConfig: SiteConfig = {
     defaultShopIdentifier: env("SHOP_IDENTIFIER", "agency-store"),
     enforceGating: env("SUBSCRIPTION_ENFORCE_GATING", "false") === "true",
   },
-} as const satisfies SiteConfig
+} as const satisfies SiteConfig;

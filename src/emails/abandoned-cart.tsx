@@ -44,10 +44,7 @@ function formatHuf(amount: number): string {
 
 // ── Component ─────────────────────────────────────────────────────
 
-export default function AbandonedCartEmail({
-  recipientEmail,
-  items,
-}: AbandonedCartEmailProps) {
+export default function AbandonedCartEmail({ recipientEmail, items }: AbandonedCartEmailProps) {
   const { store, branding, urls } = siteConfig;
   const cartTotal = items.reduce((sum, item) => sum + item.price, 0);
 
@@ -114,8 +111,7 @@ export default function AbandonedCartEmail({
                 fontSize: "14px",
               }}
             >
-              Észrevettük, hogy termékek maradtak a kosaradban. Ne hagyd, hogy
-              lemaradj róluk!
+              Észrevettük, hogy termékek maradtak a kosaradban. Ne hagyd, hogy lemaradj róluk!
             </Text>
 
             {/* ── Cart items ───────────────── */}
@@ -172,9 +168,7 @@ export default function AbandonedCartEmail({
                 <Column style={{ fontSize: "14px", color: branding.theme.mutedForeground }}>
                   Összesen:
                 </Column>
-                <Column
-                  style={{ textAlign: "right", fontSize: "16px", fontWeight: 700 }}
-                >
+                <Column style={{ textAlign: "right", fontSize: "16px", fontWeight: 700 }}>
                   {formatHuf(cartTotal)}
                 </Column>
               </Row>
@@ -211,8 +205,8 @@ export default function AbandonedCartEmail({
                 lineHeight: "1.6",
               }}
             >
-              Ezt az emailt a(z) {recipientEmail} címre küldtük. Ha nem te
-              vagy az, kérjük hagyd figyelmen kívül.
+              Ezt az emailt a(z) {recipientEmail} címre küldtük. Ha nem te vagy az, kérjük hagyd
+              figyelmen kívül.
             </Text>
           </Section>
 

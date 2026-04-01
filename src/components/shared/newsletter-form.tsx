@@ -45,10 +45,7 @@ export function NewsletterForm() {
 
   return (
     <div className="w-full max-w-sm space-y-1.5">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full items-center gap-2"
-      >
+      <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
         <Input
           type="email"
           placeholder="email@pelda.hu"
@@ -62,10 +59,7 @@ export function NewsletterForm() {
             }
           }}
           disabled={status === "loading"}
-          className={cn(
-            "h-9 flex-1",
-            status === "error" && "border-destructive"
-          )}
+          className={cn("h-9 flex-1", status === "error" && "border-destructive")}
           aria-label="Email cím"
         />
         <Button
@@ -83,9 +77,7 @@ export function NewsletterForm() {
           </span>
         </Button>
       </form>
-      {status === "error" && errorMsg && (
-        <p className="text-xs text-destructive">{errorMsg}</p>
-      )}
+      {status === "error" && errorMsg && <p className="text-destructive text-xs">{errorMsg}</p>}
     </div>
   );
 }

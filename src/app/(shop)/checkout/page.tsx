@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
 /* ------------------------------------------------------------------ */
 /*  Checkout page — multi-step form                                    */
 /* ------------------------------------------------------------------ */
 
-import { useState, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,37 +21,37 @@ import {
   FileText,
   ShoppingBag,
   Wallet,
-} from "lucide-react"
-import { useForm, Controller } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { toast } from "sonner"
+} from "lucide-react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 
-import { useCartStore } from "@/lib/store/cart"
-import { siteConfig } from "@/lib/config/site.config"
-import { createOrderFromCart } from "@/lib/actions/orders"
-import { startPaymentAction } from "@/lib/actions/payments"
-import { formatHUF } from "@/lib/utils/format"
-import { getAvailableCarriers, getCarrierFee } from "@/lib/utils/shipping"
-import { cn } from "@/lib/utils"
+import { useCartStore } from "@/lib/store/cart";
+import { siteConfig } from "@/lib/config/site.config";
+import { createOrderFromCart } from "@/lib/actions/orders";
+import { startPaymentAction } from "@/lib/actions/payments";
+import { formatHUF } from "@/lib/utils/format";
+import { getAvailableCarriers, getCarrierFee } from "@/lib/utils/shipping";
+import { cn } from "@/lib/utils";
 import type {
   ShippingMethod,
   HomeDeliveryCarrier,
   PickupPointProvider,
   CheckoutFormData,
-} from "@/lib/types"
+} from "@/lib/types";
 
-import { CartLineItem } from "@/components/cart/cart-line-item"
-import { OrderSummary } from "@/components/cart/order-summary"
-import { PickupPointSelector } from "@/components/cart/pickup-point-selector"
-import { CheckoutStepper } from "@/components/checkout/checkout-stepper"
-import { AddressFields, FormField, ReviewSection } from "@/components/checkout/address-form"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
+import { CartLineItem } from "@/components/cart/cart-line-item";
+import { OrderSummary } from "@/components/cart/order-summary";
+import { PickupPointSelector } from "@/components/cart/pickup-point-selector";
+import { CheckoutStepper } from "@/components/checkout/checkout-stepper";
+import { AddressFields, FormField, ReviewSection } from "@/components/checkout/address-form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ const STEPS = [
   { id: 1, label: "Szállítás", icon: Truck },
   { id: 2, label: "Kapcsolat és számlázás", icon: User },
   { id: 3, label: "Összegzés és fizetés", icon: CreditCard },
-] as const
+] as const;
 
 const MOCK_PICKUP_POINTS: Record<PickupPointProvider, Array<{ id: string; label: string }>> = {
   foxpost: [
@@ -83,11 +83,11 @@ const MOCK_PICKUP_POINTS: Record<PickupPointProvider, Array<{ id: string; label:
     { id: "EB-BP-001", label: "Easybox - Budapest, Mammut" },
     { id: "EB-PCS-001", label: "Easybox - Pécs, Árkád" },
   ],
-}
+};
 
 // ── Form schema ────────────────────────────────────────────────────
 
-const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/
+const hungarianPhoneRegex = /^\+36\s?\d{2}\s?\d{3}\s?\d{4}$/;
 
 const checkoutFormSchema = z
   .object({
@@ -136,84 +136,84 @@ const checkoutFormSchema = z
           code: z.ZodIssueCode.custom,
           message: "A név megadása kötelező",
           path: [prefix, "name"],
-        })
+        });
       }
       if (!addr.street || addr.street.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Az utca megadása kötelező",
           path: [prefix, "street"],
-        })
+        });
       }
       if (!addr.city || addr.city.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "A város megadása kötelező",
           path: [prefix, "city"],
-        })
+        });
       }
       if (!addr.zip || !/^\d{4}$/.test(addr.zip)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Az irányítószám 4 számjegyű kell legyen",
           path: [prefix, "zip"],
-        })
+        });
       }
       if (!addr.country || addr.country.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Az ország megadása kötelező",
           path: [prefix, "country"],
-        })
+        });
       }
-    }
+    };
 
     if (data.shippingMethod === "home") {
       // Home delivery: shippingAddressOverride is the primary address
       if (data.shippingAddressOverride) {
-        addAddressErrors(data.shippingAddressOverride, "shippingAddressOverride")
+        addAddressErrors(data.shippingAddressOverride, "shippingAddressOverride");
       } else {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "A szállítási cím megadása kötelező",
           path: ["shippingAddressOverride"],
-        })
+        });
       }
 
       // billingAddress only validated when NOT same as shipping
       if (!data.sameAsBilling) {
-        addAddressErrors(data.billingAddress, "billingAddress")
+        addAddressErrors(data.billingAddress, "billingAddress");
       }
     } else {
       // Pickup: only billingAddress required
-      addAddressErrors(data.billingAddress, "billingAddress")
+      addAddressErrors(data.billingAddress, "billingAddress");
       // shippingAddressOverride is irrelevant — skip validation
     }
-  })
+  });
 
-type CheckoutFormValues = z.infer<typeof checkoutFormSchema>
+type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
 
 // ── Component ──────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
-  const router = useRouter()
-  const [currentStep, setCurrentStep] = useState(1)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const items = useCartStore((s) => s.items)
-  const subtotal = useCartStore((s) => s.subtotal())
-  const couponCode = useCartStore((s) => s.couponCode)
-  const couponDiscount = useCartStore((s) => s.couponDiscount)
-  const clearCart = useCartStore((s) => s.clearCart)
+  const items = useCartStore((s) => s.items);
+  const subtotal = useCartStore((s) => s.subtotal());
+  const couponCode = useCartStore((s) => s.couponCode);
+  const couponDiscount = useCartStore((s) => s.couponDiscount);
+  const clearCart = useCartStore((s) => s.clearCart);
 
-  const homeCarriers = useMemo(() => getAvailableCarriers("home"), [])
-  const pickupCarriers = useMemo(() => getAvailableCarriers("pickup"), [])
+  const homeCarriers = useMemo(() => getAvailableCarriers("home"), []);
+  const pickupCarriers = useMemo(() => getAvailableCarriers("pickup"), []);
 
   // Compute total cart weight for weight-based shipping
   const totalWeightGrams = useMemo(
     () => items.reduce((sum, item) => sum + item.weightGrams * item.quantity, 0),
     [items],
-  )
+  );
 
   const {
     register,
@@ -252,43 +252,43 @@ export default function CheckoutPage() {
       notes: "",
       termsAccepted: false,
     },
-  })
+  });
 
-  const watchedValues = watch()
-  const sameAsBilling = watchedValues.sameAsBilling
-  const shippingMethod = watchedValues.shippingMethod as ShippingMethod
-  const selectedCarrier = watchedValues.carrier ?? ""
-  const selectedPickupProvider = watchedValues.pickupPointProvider ?? ""
-  const selectedPickupPointId = watchedValues.pickupPointId ?? ""
+  const watchedValues = watch();
+  const sameAsBilling = watchedValues.sameAsBilling;
+  const shippingMethod = watchedValues.shippingMethod as ShippingMethod;
+  const selectedCarrier = watchedValues.carrier ?? "";
+  const selectedPickupProvider = watchedValues.pickupPointProvider ?? "";
+  const selectedPickupPointId = watchedValues.pickupPointId ?? "";
 
   // Calculate shipping fee based on selections
   const shippingFee = useMemo(() => {
     if (shippingMethod === "home" && selectedCarrier) {
-      return getCarrierFee("home", selectedCarrier, subtotal, totalWeightGrams) ?? 0
+      return getCarrierFee("home", selectedCarrier, subtotal, totalWeightGrams) ?? 0;
     }
     if (shippingMethod === "pickup" && selectedPickupProvider) {
-      return getCarrierFee("pickup", selectedPickupProvider, subtotal, totalWeightGrams) ?? 0
+      return getCarrierFee("pickup", selectedPickupProvider, subtotal, totalWeightGrams) ?? 0;
     }
-    return 0
-  }, [shippingMethod, selectedCarrier, selectedPickupProvider, subtotal, totalWeightGrams])
+    return 0;
+  }, [shippingMethod, selectedCarrier, selectedPickupProvider, subtotal, totalWeightGrams]);
 
   // ── COD (utánvét) configuration ─────────────────────────────────
-  const codConfig = siteConfig.payments.cod
-  const selectedPaymentMethod = watchedValues.paymentMethod ?? "barion"
+  const codConfig = siteConfig.payments.cod;
+  const selectedPaymentMethod = watchedValues.paymentMethod ?? "barion";
 
   const codAvailable = useMemo(() => {
-    if (!codConfig.enabled) return false
-    if (!codConfig.allowedShippingMethods.includes(shippingMethod)) return false
+    if (!codConfig.enabled) return false;
+    if (!codConfig.allowedShippingMethods.includes(shippingMethod)) return false;
     // Check order total limit (subtotal + shipping, before COD fee)
-    const preTotal = subtotal + shippingFee - couponDiscount
-    if (codConfig.maxOrderAmount > 0 && preTotal > codConfig.maxOrderAmount) return false
-    return true
-  }, [codConfig, shippingMethod, subtotal, shippingFee, couponDiscount])
+    const preTotal = subtotal + shippingFee - couponDiscount;
+    if (codConfig.maxOrderAmount > 0 && preTotal > codConfig.maxOrderAmount) return false;
+    return true;
+  }, [codConfig, shippingMethod, subtotal, shippingFee, couponDiscount]);
 
   // If COD becomes unavailable (e.g. total changed), reset to barion
-  const effectiveCodFee = selectedPaymentMethod === "cod" && codAvailable ? codConfig.fee : 0
+  const effectiveCodFee = selectedPaymentMethod === "cod" && codAvailable ? codConfig.fee : 0;
 
-  const total = Math.max(0, subtotal + shippingFee + effectiveCodFee - couponDiscount)
+  const total = Math.max(0, subtotal + shippingFee + effectiveCodFee - couponDiscount);
 
   // ── Step navigation ──────────────────────────────────────────────
 
@@ -296,55 +296,55 @@ export default function CheckoutPage() {
     async (target: number) => {
       if (target > currentStep) {
         // Validate current step fields before advancing
-        let fieldsToValidate: (keyof CheckoutFormValues)[] = []
+        let fieldsToValidate: (keyof CheckoutFormValues)[] = [];
 
         if (currentStep === 1) {
-          fieldsToValidate = ["shippingMethod"]
+          fieldsToValidate = ["shippingMethod"];
           if (shippingMethod === "home") {
-            fieldsToValidate.push("carrier")
+            fieldsToValidate.push("carrier");
           } else {
-            fieldsToValidate.push("pickupPointProvider", "pickupPointId", "pickupPointLabel")
+            fieldsToValidate.push("pickupPointProvider", "pickupPointId", "pickupPointLabel");
           }
         } else if (currentStep === 2) {
-          fieldsToValidate = ["email", "phone"]
+          fieldsToValidate = ["email", "phone"];
           if (shippingMethod === "pickup") {
             // Pickup: only billing address required
-            fieldsToValidate.push("billingAddress")
+            fieldsToValidate.push("billingAddress");
           } else {
             // Home delivery: shipping address is the primary address
-            fieldsToValidate.push("shippingAddressOverride")
+            fieldsToValidate.push("shippingAddressOverride");
             if (!sameAsBilling) {
               // Separate billing address was provided
-              fieldsToValidate.push("billingAddress")
+              fieldsToValidate.push("billingAddress");
             }
           }
         }
 
-        const valid = await trigger(fieldsToValidate)
-        if (!valid) return
+        const valid = await trigger(fieldsToValidate);
+        if (!valid) return;
       }
 
-      setCurrentStep(target)
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      setCurrentStep(target);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
     [currentStep, trigger, sameAsBilling, shippingMethod],
-  )
+  );
 
   // ── Submit handler ───────────────────────────────────────────────
 
   const onSubmit = useCallback(
     async (data: CheckoutFormValues) => {
       if (!data.termsAccepted) {
-        toast.error("Kérlek, fogadd el az Általános Szerződési Feltételeket.")
-        return
+        toast.error("Kérlek, fogadd el az Általános Szerződési Feltételeket.");
+        return;
       }
 
       if (items.length === 0) {
-        toast.error("A kosarad üres.")
-        return
+        toast.error("A kosarad üres.");
+        return;
       }
 
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
       try {
         // Build CheckoutFormData for the server action
@@ -354,12 +354,12 @@ export default function CheckoutPage() {
         const shippingAddress =
           data.shippingMethod === "home"
             ? (data.shippingAddressOverride ?? data.billingAddress)
-            : { name: "", street: "", city: "", zip: "", country: "HU" }
+            : { name: "", street: "", city: "", zip: "", country: "HU" };
 
         const resolvedBillingAddress =
           data.shippingMethod === "home" && data.sameAsBilling
             ? (data.shippingAddressOverride ?? data.billingAddress)
-            : data.billingAddress
+            : data.billingAddress;
 
         const checkoutData: CheckoutFormData = {
           email: data.email,
@@ -389,54 +389,54 @@ export default function CheckoutPage() {
           paymentMethod: data.paymentMethod === "cod" && codAvailable ? "cod" : "barion",
           notes: data.notes ?? "",
           couponCode: couponCode ?? "",
-        }
+        };
 
         // 1. Create order
         const orderResult = await createOrderFromCart({
           items,
           checkout: checkoutData,
-        })
+        });
 
         if (!orderResult.success || !orderResult.data) {
-          toast.error(orderResult.error ?? "Hiba történt a rendelés létrehozásakor.")
-          setIsSubmitting(false)
-          return
+          toast.error(orderResult.error ?? "Hiba történt a rendelés létrehozásakor.");
+          setIsSubmitting(false);
+          return;
         }
 
-        const { orderId } = orderResult.data
+        const { orderId } = orderResult.data;
 
         // 2. Payment method branching
         if (checkoutData.paymentMethod === "cod") {
           // COD: order is already in 'processing' status — no Barion payment needed
-          clearCart()
-          router.push(`/checkout/success?orderId=${orderId}&method=cod`)
+          clearCart();
+          router.push(`/checkout/success?orderId=${orderId}&method=cod`);
         } else {
           // Barion: start online payment
-          const paymentResult = await startPaymentAction(orderId)
+          const paymentResult = await startPaymentAction(orderId);
 
           if (!paymentResult.success || !paymentResult.data) {
-            toast.error(paymentResult.error ?? "Hiba történt a fizetés indításakor.")
+            toast.error(paymentResult.error ?? "Hiba történt a fizetés indításakor.");
             // Order was created — redirect to success with orderId
             // (payment can be retried from admin)
-            router.push(`/checkout/success?orderId=${orderId}`)
-            clearCart()
-            setIsSubmitting(false)
-            return
+            router.push(`/checkout/success?orderId=${orderId}`);
+            clearCart();
+            setIsSubmitting(false);
+            return;
           }
 
           // 3. Clear cart and redirect to Barion gateway
-          clearCart()
-          window.location.href = paymentResult.data.gatewayUrl
+          clearCart();
+          window.location.href = paymentResult.data.gatewayUrl;
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        console.error("[Checkout] Submit error:", message)
-        toast.error("Váratlan hiba történt. Kérlek, próbáld újra.")
-        setIsSubmitting(false)
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[Checkout] Submit error:", message);
+        toast.error("Váratlan hiba történt. Kérlek, próbáld újra.");
+        setIsSubmitting(false);
       }
     },
     [items, couponCode, router, clearCart, codAvailable],
-  )
+  );
 
   // ── Empty cart guard ─────────────────────────────────────────────
 
@@ -444,11 +444,11 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         <div className="mt-20 flex flex-col items-center justify-center text-center">
-          <div className="flex size-20 items-center justify-center rounded-full bg-muted">
-            <ShoppingBag className="size-8 text-muted-foreground" />
+          <div className="bg-muted flex size-20 items-center justify-center rounded-full">
+            <ShoppingBag className="text-muted-foreground size-8" />
           </div>
           <h1 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">A kosarad üres</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             Adj hozzá termékeket a kosaradhoz a fizetés előtt.
           </p>
           <Button className="mt-8" size="lg" render={<Link href="/products" />}>
@@ -456,7 +456,7 @@ export default function CheckoutPage() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   // ── Render ───────────────────────────────────────────────────────
@@ -481,7 +481,7 @@ export default function CheckoutPage() {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.02em]">Szállítási mód</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     Válasszon szállítási módot és futárszolgálatot.
                   </p>
                 </div>
@@ -493,9 +493,9 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setValue("shippingMethod", "home")
+                        setValue("shippingMethod", "home");
                         if (!selectedCarrier && homeCarriers[0]) {
-                          setValue("carrier", homeCarriers[0].id)
+                          setValue("carrier", homeCarriers[0].id);
                         }
                       }}
                       className={cn(
@@ -509,7 +509,7 @@ export default function CheckoutPage() {
                         <Home className="size-5" />
                         <span className="font-medium">Házhozszállítás</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         Futárszolgálat által szállítva az Ön által megadott címre.
                       </p>
                     </button>
@@ -520,9 +520,9 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setValue("shippingMethod", "pickup")
+                        setValue("shippingMethod", "pickup");
                         if (!selectedPickupProvider && pickupCarriers[0]) {
-                          setValue("pickupPointProvider", pickupCarriers[0].id)
+                          setValue("pickupPointProvider", pickupCarriers[0].id);
                         }
                       }}
                       className={cn(
@@ -536,7 +536,7 @@ export default function CheckoutPage() {
                         <Package className="size-5" />
                         <span className="font-medium">Csomagautomata / Átvételi pont</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         Csomagautomatából vagy átvételi ponton vehető át.
                       </p>
                     </button>
@@ -551,8 +551,8 @@ export default function CheckoutPage() {
                     <h3 className="text-base font-medium">Futárszolgálat választása</h3>
                     <div className="space-y-3">
                       {homeCarriers.map((carrier) => {
-                        const fee = getCarrierFee("home", carrier.id, subtotal)
-                        const isSelected = selectedCarrier === carrier.id
+                        const fee = getCarrierFee("home", carrier.id, subtotal);
+                        const isSelected = selectedCarrier === carrier.id;
 
                         return (
                           <label
@@ -569,7 +569,7 @@ export default function CheckoutPage() {
                                 type="radio"
                                 value={carrier.id}
                                 {...register("carrier")}
-                                className="size-4 accent-foreground"
+                                className="accent-foreground size-4"
                               />
                               <div>
                                 <span className="text-sm font-medium">{carrier.name}</span>
@@ -579,7 +579,7 @@ export default function CheckoutPage() {
                               {fee === 0 ? "Ingyenes" : formatHUF(fee ?? 0)}
                             </span>
                           </label>
-                        )
+                        );
                       })}
                     </div>
                   </div>
@@ -594,13 +594,13 @@ export default function CheckoutPage() {
                     selectedPointId={selectedPickupPointId}
                     subtotal={subtotal}
                     onProviderChange={(id) => {
-                      setValue("pickupPointProvider", id)
-                      setValue("pickupPointId", "")
-                      setValue("pickupPointLabel", "")
+                      setValue("pickupPointProvider", id);
+                      setValue("pickupPointId", "");
+                      setValue("pickupPointLabel", "");
                     }}
                     onPointChange={(id, label) => {
-                      setValue("pickupPointId", id)
-                      setValue("pickupPointLabel", label)
+                      setValue("pickupPointId", id);
+                      setValue("pickupPointLabel", label);
                     }}
                     pointError={errors.pickupPointId?.message}
                   />
@@ -609,7 +609,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center justify-between pt-4">
                   <Link
                     href="/cart"
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors duration-300"
                   >
                     <ArrowLeft className="size-3.5" />
                     Vissza a kosárhoz
@@ -627,7 +627,7 @@ export default function CheckoutPage() {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.02em]">Kapcsolat</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     Adja meg elérhetőségi adatait a rendeléshez.
                   </p>
 
@@ -667,7 +667,7 @@ export default function CheckoutPage() {
                   /* ── Pickup: only billing/invoice address ────── */
                   <div>
                     <h2 className="text-lg font-semibold tracking-[-0.02em]">Számlázási cím</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="text-muted-foreground mt-1 text-sm">
                       A számla erre a címre kerül kiállításra.
                     </p>
 
@@ -684,7 +684,7 @@ export default function CheckoutPage() {
                   <>
                     <div>
                       <h2 className="text-lg font-semibold tracking-[-0.02em]">Szállítási cím</h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="text-muted-foreground mt-1 text-sm">
                         A csomag erre a címre kerül kiszállításra.
                       </p>
 
@@ -755,27 +755,27 @@ export default function CheckoutPage() {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.02em]">Rendelés összegzése</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     Ellenőrizze a rendelés részleteit a fizetés előtt.
                   </p>
                 </div>
 
                 {/* ── Items list ───────────────────────── */}
-                <div className="rounded-lg border border-border">
-                  <div className="divide-y divide-border px-4">
+                <div className="border-border rounded-lg border">
+                  <div className="divide-border divide-y px-4">
                     {items.map((item) => (
                       <div
                         key={`${item.productId}-${item.variantId ?? "none"}`}
                         className="flex items-center justify-between py-3"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex size-10 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
+                          <div className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded text-xs font-medium">
                             {item.quantity}x
                           </div>
                           <div>
                             <p className="text-sm font-medium">{item.title}</p>
                             {item.variantLabel && (
-                              <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
+                              <p className="text-muted-foreground text-xs">{item.variantLabel}</p>
                             )}
                           </div>
                         </div>
@@ -817,7 +817,7 @@ export default function CheckoutPage() {
                             selectedPickupProvider}
                         </p>
                         <p>{watchedValues.pickupPointLabel}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           {watchedValues.pickupPointId}
                         </p>
                       </>
@@ -844,7 +844,7 @@ export default function CheckoutPage() {
                       <p className="font-medium">
                         {formatHUF(shippingFee)}
                         {totalWeightGrams > 0 && (
-                          <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                          <span className="text-muted-foreground ml-1.5 text-sm font-normal">
                             ({(totalWeightGrams / 1000).toFixed(1)} kg)
                           </span>
                         )}
@@ -856,7 +856,7 @@ export default function CheckoutPage() {
                 {/* ── Payment method selector ──────────── */}
                 <div>
                   <h3 className="text-sm font-semibold tracking-[-0.01em]">Fizetési mód</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Válassza ki a kívánt fizetési módot.
                   </p>
                   <Controller
@@ -871,15 +871,15 @@ export default function CheckoutPage() {
                           className={cn(
                             "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all duration-300",
                             field.value === "barion"
-                              ? "border-foreground bg-foreground/[0.03] ring-1 ring-foreground/20"
+                              ? "border-foreground bg-foreground/[0.03] ring-foreground/20 ring-1"
                               : "border-border hover:border-foreground/30",
                           )}
                         >
                           <div className="flex items-center gap-2.5">
-                            <CreditCard className="size-5 text-muted-foreground" />
+                            <CreditCard className="text-muted-foreground size-5" />
                             <span className="text-sm font-medium">Online fizetés (Bankkártya)</span>
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-muted-foreground text-xs">
                             Biztonságos fizetés bankkártyával a Barion rendszerén keresztül.
                           </p>
                         </button>
@@ -889,29 +889,29 @@ export default function CheckoutPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (codAvailable) field.onChange("cod")
+                              if (codAvailable) field.onChange("cod");
                             }}
                             disabled={!codAvailable}
                             className={cn(
                               "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all duration-300",
                               !codAvailable && "cursor-not-allowed opacity-50",
                               field.value === "cod" && codAvailable
-                                ? "border-foreground bg-foreground/[0.03] ring-1 ring-foreground/20"
+                                ? "border-foreground bg-foreground/[0.03] ring-foreground/20 ring-1"
                                 : "border-border hover:border-foreground/30",
                               !codAvailable && "hover:border-border",
                             )}
                           >
                             <div className="flex items-center gap-2.5">
-                              <Wallet className="size-5 text-muted-foreground" />
+                              <Wallet className="text-muted-foreground size-5" />
                               <span className="text-sm font-medium">
                                 Utánvét (Fizetés átvételkor)
                               </span>
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-muted-foreground text-xs">
                               Fizetés a csomag átvételekor a futárnak készpénzzel vagy kártyával.
                             </p>
                             {codConfig.fee > 0 && codAvailable && (
-                              <p className="text-xs font-medium text-muted-foreground">
+                              <p className="text-muted-foreground text-xs font-medium">
                                 + {formatHUF(codConfig.fee)} utánvét kezelési díj
                               </p>
                             )}
@@ -961,7 +961,7 @@ export default function CheckoutPage() {
                         <Link
                           href="/terms"
                           target="_blank"
-                          className="underline underline-offset-2 transition-colors hover:text-foreground/70"
+                          className="hover:text-foreground/70 underline underline-offset-2 transition-colors"
                         >
                           Általános Szerződési Feltételeket
                         </Link>{" "}
@@ -969,7 +969,7 @@ export default function CheckoutPage() {
                         <Link
                           href="/privacy"
                           target="_blank"
-                          className="underline underline-offset-2 transition-colors hover:text-foreground/70"
+                          className="hover:text-foreground/70 underline underline-offset-2 transition-colors"
                         >
                           Adatkezelési Tájékoztatót
                         </Link>
@@ -1027,5 +1027,5 @@ export default function CheckoutPage() {
         </div>
       </form>
     </div>
-  )
+  );
 }

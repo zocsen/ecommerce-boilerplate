@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 /* ------------------------------------------------------------------ */
 /*  Product detail loading skeleton                                    */
@@ -47,7 +47,7 @@ export default function ProductDetailLoading() {
           <Skeleton className="mt-10 h-12 w-full rounded-lg" />
 
           {/* Description */}
-          <div className="mt-12 space-y-3 border-t border-border/40 pt-8">
+          <div className="border-border/40 mt-12 space-y-3 border-t pt-8">
             <Skeleton className="h-3 w-16" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
@@ -56,5 +56,5 @@ export default function ProductDetailLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

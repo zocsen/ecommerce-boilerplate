@@ -1,16 +1,8 @@
 import { siteConfig } from "@/lib/config/site.config";
 import { formatHUF } from "@/lib/utils/format";
-import {
-  getAvailableCarriers,
-} from "@/lib/utils/shipping";
+import { getAvailableCarriers } from "@/lib/utils/shipping";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,11 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Truck,
-  Package,
-  MapPin,
-} from "lucide-react";
+import { Truck, Package, MapPin } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Shipping Configuration (read-only display)                   */
@@ -38,11 +26,9 @@ export default function AdminShippingPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Szállítás</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-sm">
           Szállítási módok és díjszabás konfigurációja. A beállítások a{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-            site.config.ts
-          </code>{" "}
+          <code className="bg-muted rounded px-1 py-0.5 font-mono text-xs">site.config.ts</code>{" "}
           fájlban módosíthatók.
         </p>
       </div>
@@ -51,7 +37,7 @@ export default function AdminShippingPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">Alap szállítási díj</div>
+            <div className="text-muted-foreground text-sm">Alap szállítási díj</div>
             <div className="mt-1 text-2xl font-semibold tabular-nums">
               {formatHUF(shipping.rules.baseFee)}
             </div>
@@ -59,19 +45,15 @@ export default function AdminShippingPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">
-              Ingyenes szállítás felett
-            </div>
+            <div className="text-muted-foreground text-sm">Ingyenes szállítás felett</div>
             <div className="mt-1 text-2xl font-semibold tabular-nums">
-              {shipping.rules.freeOver > 0
-                ? formatHUF(shipping.rules.freeOver)
-                : "Nincs"}
+              {shipping.rules.freeOver > 0 ? formatHUF(shipping.rules.freeOver) : "Nincs"}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">Súlysáv díjak</div>
+            <div className="text-muted-foreground text-sm">Súlysáv díjak</div>
             <div className="mt-1 text-2xl font-semibold">
               {shipping.rules.weightTiers.length > 0
                 ? `${shipping.rules.weightTiers.length} sáv`
@@ -87,18 +69,18 @@ export default function AdminShippingPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <Truck className="size-5" />
               </div>
               <div>
                 <CardTitle>Házhozszállítás</CardTitle>
                 <CardDescription>
                   {shipping.methods.homeDelivery ? (
-                    <Badge variant="default" className="text-xs mt-1">
+                    <Badge variant="default" className="mt-1 text-xs">
                       Engedélyezve
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs mt-1">
+                    <Badge variant="outline" className="mt-1 text-xs">
                       Letiltva
                     </Badge>
                   )}
@@ -119,10 +101,8 @@ export default function AdminShippingPage() {
                 <TableBody>
                   {homeCarriers.map((carrier) => (
                     <TableRow key={carrier.id}>
-                      <TableCell className="font-medium">
-                        {carrier.name}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-medium">{carrier.name}</TableCell>
+                      <TableCell className="text-muted-foreground font-mono text-xs">
                         {carrier.id}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -133,9 +113,7 @@ export default function AdminShippingPage() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Nincs konfigurált futárszolgálat.
-              </p>
+              <p className="text-muted-foreground text-sm">Nincs konfigurált futárszolgálat.</p>
             )}
           </CardContent>
         </Card>
@@ -144,18 +122,18 @@ export default function AdminShippingPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <MapPin className="size-5" />
               </div>
               <div>
                 <CardTitle>Csomagautomata / Átvételi pont</CardTitle>
                 <CardDescription>
                   {shipping.methods.pickupPoint ? (
-                    <Badge variant="default" className="text-xs mt-1">
+                    <Badge variant="default" className="mt-1 text-xs">
                       Engedélyezve
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs mt-1">
+                    <Badge variant="outline" className="mt-1 text-xs">
                       Letiltva
                     </Badge>
                   )}
@@ -176,10 +154,8 @@ export default function AdminShippingPage() {
                 <TableBody>
                   {pickupCarriers.map((carrier) => (
                     <TableRow key={carrier.id}>
-                      <TableCell className="font-medium">
-                        {carrier.name}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-medium">{carrier.name}</TableCell>
+                      <TableCell className="text-muted-foreground font-mono text-xs">
                         {carrier.id}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -190,7 +166,7 @@ export default function AdminShippingPage() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Nincs konfigurált átvételi pont szolgáltató.
               </p>
             )}
@@ -203,14 +179,12 @@ export default function AdminShippingPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <Package className="size-5" />
               </div>
               <div>
                 <CardTitle>Súlysáv díjak</CardTitle>
-                <CardDescription>
-                  A szállítási díj a csomag súlya alapján változik.
-                </CardDescription>
+                <CardDescription>A szállítási díj a csomag súlya alapján változik.</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -225,12 +199,8 @@ export default function AdminShippingPage() {
               <TableBody>
                 {shipping.rules.weightTiers.map((tier, i) => (
                   <TableRow key={i}>
-                    <TableCell className="tabular-nums">
-                      {tier.maxWeightKg} kg
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatHUF(tier.fee)}
-                    </TableCell>
+                    <TableCell className="tabular-nums">{tier.maxWeightKg} kg</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatHUF(tier.fee)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

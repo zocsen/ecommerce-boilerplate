@@ -25,9 +25,9 @@ export function Gallery({ mainImage, images }: GalleryProps) {
   // No images at all — show placeholder
   if (allImages.length === 0) {
     return (
-      <div className="w-full rounded-lg bg-muted" style={{ aspectRatio: "4/5" }}>
+      <div className="bg-muted w-full rounded-lg" style={{ aspectRatio: "4/5" }}>
         <div className="flex h-full items-center justify-center">
-          <span className="text-6xl font-light text-muted-foreground/30">?</span>
+          <span className="text-muted-foreground/30 text-6xl font-light">?</span>
         </div>
       </div>
     );
@@ -38,7 +38,7 @@ export function Gallery({ mainImage, images }: GalleryProps) {
   return (
     <div className="space-y-3">
       {/* ── Main image ──────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-lg bg-muted" style={{ aspectRatio: "4/5" }}>
+      <div className="bg-muted relative overflow-hidden rounded-lg" style={{ aspectRatio: "4/5" }}>
         <Image
           src={currentImage}
           alt="Termékfotó"
@@ -59,10 +59,10 @@ export function Gallery({ mainImage, images }: GalleryProps) {
               type="button"
               onClick={() => handleThumbnailClick(index)}
               className={cn(
-                "relative size-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-md bg-muted transition-all duration-300",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "bg-muted relative size-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-md transition-all duration-300",
+                "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                 index === activeIndex
-                  ? "ring-2 ring-foreground ring-offset-2"
+                  ? "ring-foreground ring-2 ring-offset-2"
                   : "opacity-60 hover:opacity-100",
               )}
             >

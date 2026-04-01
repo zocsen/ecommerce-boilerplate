@@ -13,28 +13,28 @@
 /*  - Numeric limits: 0 = unlimited, >0 = max allowed count.          */
 /* ------------------------------------------------------------------ */
 
-import { createAdminClient } from "@/lib/supabase/admin"
-import { siteConfig } from "@/lib/config/site.config"
-import type { PlanFeaturesJson, ShopSubscriptionRow, ShopPlanRow } from "@/lib/types/database"
+import { createAdminClient } from "@/lib/supabase/admin";
+import { siteConfig } from "@/lib/config/site.config";
+import type { PlanFeaturesJson, ShopSubscriptionRow, ShopPlanRow } from "@/lib/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────
 
 export interface GateCheckResult {
-  allowed: boolean
-  reason?: string
-  limit?: number
+  allowed: boolean;
+  reason?: string;
+  limit?: number;
 }
 
 export interface PlanGate {
   /** Check a boolean feature flag */
-  check(feature: keyof PlanFeaturesJson): GateCheckResult
+  check(feature: keyof PlanFeaturesJson): GateCheckResult;
   /**
    * Check a numeric limit against the current count.
    * Returns allowed=true if limit is 0 (unlimited) or count < limit.
    */
-  checkLimit(feature: keyof PlanFeaturesJson, currentCount: number): GateCheckResult
+  checkLimit(feature: keyof PlanFeaturesJson, currentCount: number): GateCheckResult;
   /** The raw merged features (plan + overrides), or null if no subscription found */
-  features: PlanFeaturesJson | null
+  features: PlanFeaturesJson | null;
 }
 
 // ── Feature label map for human-readable error messages ───────────
@@ -54,7 +54,7 @@ const FEATURE_LABELS: Partial<Record<keyof PlanFeaturesJson, string>> = {
   max_admins: "adminisztrátorok",
   max_categories: "kategóriák",
   delivery_options: "szállítási lehetőségek",
-}
+};
 
 // ── Main factory ──────────────────────────────────────────────────
 
@@ -64,10 +64,10 @@ const FEATURE_LABELS: Partial<Record<keyof PlanFeaturesJson, string>> = {
  * (or the SHOP_IDENTIFIER env var it reads from).
  */
 export async function getPlanGate(): Promise<PlanGate> {
-  const shopIdentifier = siteConfig.subscription.defaultShopIdentifier
-  const enforceGating = siteConfig.subscription.enforceGating
+  const shopIdentifier = siteConfig.subscription.defaultShopIdentifier;
+  const enforceGating = siteConfig.subscription.enforceGating;
 
-  const admin = createAdminClient()
+  const admin = createAdminClient();
 
   // Fetch active subscription with plan
   const { data: subscription } = await admin
@@ -77,63 +77,63 @@ export async function getPlanGate(): Promise<PlanGate> {
     .in("status", ["active", "trialing"])
     .order("created_at", { ascending: false })
     .limit(1)
-    .single()
+    .single();
 
   // No subscription found
   if (!subscription) {
     if (!enforceGating) {
       // Dev/test mode: unlimited access
-      return buildUnlimitedGate()
+      return buildUnlimitedGate();
     }
     // Enforcement mode: all gated features blocked
-    return buildBlockedGate("Nincs aktív előfizetés ehhez az üzlethez.")
+    return buildBlockedGate("Nincs aktív előfizetés ehhez az üzlethez.");
   }
 
-  const plan = (subscription as ShopSubscriptionRow & { plan: ShopPlanRow }).plan
+  const plan = (subscription as ShopSubscriptionRow & { plan: ShopPlanRow }).plan;
   if (!plan) {
-    return buildUnlimitedGate()
+    return buildUnlimitedGate();
   }
 
   // Merge plan features with per-shop overrides
   const merged: PlanFeaturesJson = {
     ...plan.features,
     ...subscription.feature_overrides,
-  }
+  };
 
   return {
     features: merged,
     check(feature) {
-      const val = merged[feature]
+      const val = merged[feature];
       if (typeof val === "boolean") {
-        if (val) return { allowed: true }
-        const label = FEATURE_LABELS[feature] ?? String(feature)
+        if (val) return { allowed: true };
+        const label = FEATURE_LABELS[feature] ?? String(feature);
         return {
           allowed: false,
           reason: `A jelenlegi előfizetési csomag nem tartalmazza a(z) ${label} funkciót.`,
-        }
+        };
       }
       // Numeric features are always "allowed" via check() — use checkLimit() for those
-      return { allowed: true }
+      return { allowed: true };
     },
     checkLimit(feature, currentCount) {
-      const val = merged[feature]
+      const val = merged[feature];
       if (typeof val !== "number") {
-        return { allowed: true }
+        return { allowed: true };
       }
       if (val === 0) {
-        return { allowed: true, limit: 0 }
+        return { allowed: true, limit: 0 };
       }
       if (currentCount < val) {
-        return { allowed: true, limit: val }
+        return { allowed: true, limit: val };
       }
-      const label = FEATURE_LABELS[feature] ?? String(feature)
+      const label = FEATURE_LABELS[feature] ?? String(feature);
       return {
         allowed: false,
         limit: val,
         reason: `Elérted a csomag korlátját: legfeljebb ${val} ${label} lehetséges.`,
-      }
+      };
     },
-  }
+  };
 }
 
 // ── Private helpers ───────────────────────────────────────────────
@@ -143,7 +143,7 @@ function buildUnlimitedGate(): PlanGate {
     features: null,
     check: () => ({ allowed: true }),
     checkLimit: () => ({ allowed: true }),
-  }
+  };
 }
 
 function buildBlockedGate(defaultReason: string): PlanGate {
@@ -151,5 +151,5 @@ function buildBlockedGate(defaultReason: string): PlanGate {
     features: null,
     check: () => ({ allowed: false, reason: defaultReason }),
     checkLimit: () => ({ allowed: false, reason: defaultReason }),
-  }
+  };
 }

@@ -35,37 +35,44 @@
 ## 🎯 Find What You Need
 
 ### Getting Started
+
 - Local development: See **RESEND_SETUP_CHECKLIST.md** → "Quick Start"
 - Production setup: See **RESEND_SETUP_CHECKLIST.md** → "Production Setup"
 - API key: See **RESEND_INTEGRATION.md** → "Setup & Configuration"
 
 ### Usage Examples
+
 - Send order receipt: See **RESEND_REFERENCE.md** → "Usage Examples"
 - Send newsletter: See **RESEND_REFERENCE.md** → "Usage Examples"
 - Process webhook: See **RESEND_REFERENCE.md** → "Usage Examples"
 
 ### Architecture & Design
+
 - Overview: See **RESEND_OVERVIEW.md** → "Architecture"
 - Email flow: See **RESEND_REFERENCE.md** → "Email Flow"
 - Modules: See **RESEND_OVERVIEW.md** → "Backend Modules"
 - File structure: See **RESEND_REFERENCE.md** → "File Manifest"
 
 ### Email Types
+
 - Transactional: See **RESEND_INTEGRATION.md** → "Transactional Emails"
 - Marketing: See **RESEND_INTEGRATION.md** → "Marketing Emails"
 - Templates: See **RESEND_REFERENCE.md** → "Email Templates"
 
 ### Troubleshooting
+
 - Quick fixes: See **RESEND_SETUP_CHECKLIST.md** → "Troubleshooting"
 - Detailed guide: See **RESEND_INTEGRATION.md** → "Troubleshooting"
 - Reference table: See **RESEND_REFERENCE.md** → "Troubleshooting"
 
 ### Webhooks
+
 - Setup: See **RESEND_INTEGRATION.md** → "Webhook Integration"
 - Handling: See **RESEND_INTEGRATION.md** → "Webhook Integration"
 - Code example: See **RESEND_REFERENCE.md** → "Event Handling"
 
 ### Email Rendering
+
 - Best practices: See **RESEND_INTEGRATION.md** → "Email Rendering Best Practices"
 - React Email: See **RESEND_INTEGRATION.md** → "Email Rendering Best Practices"
 - Styling: See **RESEND_INTEGRATION.md** → "Email Rendering Best Practices"
@@ -75,6 +82,7 @@
 ## 🏗️ Code Reference
 
 **Core Modules:**
+
 ```
 src/lib/integrations/email/
 ├── sender.ts       - Sender configuration (getSenderEmail, getRecipient)
@@ -85,6 +93,7 @@ src/lib/integrations/email/
 ```
 
 **Email Templates:**
+
 ```
 src/emails/
 ├── order-receipt.tsx      - Order confirmation
@@ -94,11 +103,13 @@ src/emails/
 ```
 
 **API Routes:**
+
 ```
 src/app/api/email/webhook/resend/route.ts  - Webhook receiver
 ```
 
 **Configuration:**
+
 ```
 .env.example  - Environment variables
 ```
@@ -108,6 +119,7 @@ src/app/api/email/webhook/resend/route.ts  - Webhook receiver
 ## 📋 Quick Checklist
 
 ### Local Development
+
 - [ ] Create Resend account
 - [ ] Get API key
 - [ ] Update `.env.local`
@@ -115,6 +127,7 @@ src/app/api/email/webhook/resend/route.ts  - Webhook receiver
 - [ ] Check Resend dashboard
 
 ### Production
+
 - [ ] Verify domain in Resend
 - [ ] Add DNS records (CNAME, SPF, DKIM)
 - [ ] Update `.env` with API key
@@ -127,6 +140,7 @@ src/app/api/email/webhook/resend/route.ts  - Webhook receiver
 ## 🔧 Environment Variables
 
 **Required:**
+
 ```env
 RESEND_API_KEY=re_your_api_key
 RESEND_FROM_EMAIL=orders@yourdomain.com
@@ -134,11 +148,13 @@ RESEND_MARKETING_FROM_EMAIL=marketing@yourdomain.com
 ```
 
 **Optional (Dev):**
+
 ```env
 RESEND_TEST_RECIPIENT=your-email@example.com
 ```
 
 **Optional (Prod):**
+
 ```env
 RESEND_WEBHOOK_SECRET=whsec_your_signing_secret
 ```
@@ -163,17 +179,20 @@ docs/
 ## 🎓 Learning Path
 
 ### Path 1: Just Want to Send Emails (30 min)
+
 1. Read: **RESEND_REFERENCE.md** (5 min)
 2. Read: **RESEND_SETUP_CHECKLIST.md** → Quick Start (10 min)
 3. Implement: Send your first email (15 min)
 
 ### Path 2: Understanding the System (1 hour)
+
 1. Read: **RESEND_REFERENCE.md** (5 min)
 2. Read: **RESEND_OVERVIEW.md** (20 min)
 3. Read: **RESEND_SETUP_CHECKLIST.md** (20 min)
 4. Review: Code in `src/lib/integrations/email/` (15 min)
 
 ### Path 3: Full Deep Dive (2-3 hours)
+
 1. Read: All documentation in order
 2. Review: All code files
 3. Test: Send emails through all flows
@@ -183,15 +202,15 @@ docs/
 
 ## ✨ Key Features
 
-| Feature | Local Dev | Production |
-|---------|-----------|-----------|
-| Send order receipts | ✅ | ✅ |
-| Send newsletters | ✅ | ✅ |
-| Test recipients | ✅ | ❌ |
-| Custom domain | ❌ | ✅ |
-| Webhook handling | ❌ | ✅ |
-| Analytics | ✅ | ✅ |
-| Bounce handling | ✅ | ✅ |
+| Feature             | Local Dev | Production |
+| ------------------- | --------- | ---------- |
+| Send order receipts | ✅        | ✅         |
+| Send newsletters    | ✅        | ✅         |
+| Test recipients     | ✅        | ❌         |
+| Custom domain       | ❌        | ✅         |
+| Webhook handling    | ❌        | ✅         |
+| Analytics           | ✅        | ✅         |
+| Bounce handling     | ✅        | ✅         |
 
 ---
 

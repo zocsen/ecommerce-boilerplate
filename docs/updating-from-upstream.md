@@ -37,13 +37,13 @@ git merge upstream/main
 
 Conflicts are expected in files you have customized. Common conflict locations:
 
-| File | Likely Conflict Reason |
-|---|---|
-| `src/lib/config/site.config.ts` | You changed store info, features, branding |
-| `src/app/globals.css` | Custom theme/color changes |
-| `package.json` | Dependency version bumps on both sides |
-| `pnpm-lock.yaml` | Auto-generated, resolve by running `pnpm install` after fixing `package.json` |
-| Legal pages (`terms/`, `privacy/`, etc.) | Client-specific legal text |
+| File                                     | Likely Conflict Reason                                                        |
+| ---------------------------------------- | ----------------------------------------------------------------------------- |
+| `src/lib/config/site.config.ts`          | You changed store info, features, branding                                    |
+| `src/app/globals.css`                    | Custom theme/color changes                                                    |
+| `package.json`                           | Dependency version bumps on both sides                                        |
+| `pnpm-lock.yaml`                         | Auto-generated, resolve by running `pnpm install` after fixing `package.json` |
+| Legal pages (`terms/`, `privacy/`, etc.) | Client-specific legal text                                                    |
 
 **Resolution strategy:**
 
@@ -151,15 +151,15 @@ Major version bumps in dependencies (Next.js, Supabase, Zod, etc.) may introduce
 
 To minimize merge conflicts and make updates easier:
 
-| Type of Change | Where to Put It |
-|---|---|
-| Store info, features, carriers | `src/lib/config/site.config.ts` |
-| Custom business logic (pricing, checkout, post-payment) | `src/lib/config/hooks.ts` via `overrideHooks()` |
-| Theme colors, fonts | `src/app/globals.css` + `branding` section in config |
-| Legal text | Legal page files (`terms/`, `privacy/`, etc.) |
-| Client-specific pages | New route files in `src/app/` |
-| Client-specific components | New files in `src/components/` (don't modify existing boilerplate components) |
-| Custom database tables | Separate migration files (numbered to avoid conflicts) |
+| Type of Change                                          | Where to Put It                                                               |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Store info, features, carriers                          | `src/lib/config/site.config.ts`                                               |
+| Custom business logic (pricing, checkout, post-payment) | `src/lib/config/hooks.ts` via `overrideHooks()`                               |
+| Theme colors, fonts                                     | `src/app/globals.css` + `branding` section in config                          |
+| Legal text                                              | Legal page files (`terms/`, `privacy/`, etc.)                                 |
+| Client-specific pages                                   | New route files in `src/app/`                                                 |
+| Client-specific components                              | New files in `src/components/` (don't modify existing boilerplate components) |
+| Custom database tables                                  | Separate migration files (numbered to avoid conflicts)                        |
 
 ### Avoid Modifying Core Files Directly
 

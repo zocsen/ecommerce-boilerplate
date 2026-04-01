@@ -24,15 +24,15 @@ export default async function AboutPage() {
   if (!result.success || !result.data) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-32 text-center lg:px-8">
-        <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+        <h1 className="text-foreground text-4xl font-semibold tracking-tight sm:text-5xl">
           Rólunk
         </h1>
-        <p className="mx-auto mt-6 max-w-md text-lg text-muted-foreground">
+        <p className="text-muted-foreground mx-auto mt-6 max-w-md text-lg">
           Ez az oldal hamarosan elérhető lesz.
         </p>
         <Link
           href="/"
-          className="group mt-10 inline-flex items-center gap-3 text-sm font-medium uppercase tracking-[0.15em] text-foreground transition-all duration-500 hover:gap-5"
+          className="group text-foreground mt-10 inline-flex items-center gap-3 text-sm font-medium tracking-[0.15em] uppercase transition-all duration-500 hover:gap-5"
         >
           Vissza a főoldalra
           <ArrowRight className="size-4 transition-transform duration-500 group-hover:translate-x-1" />
@@ -69,10 +69,10 @@ export default async function AboutPage() {
       {/* ── Fallback if everything empty ──────────────────── */}
       {!hasHero && !hasStory && !hasTeam && !hasValues && !hasContact && (
         <div className="mx-auto max-w-7xl px-6 py-32 text-center lg:px-8">
-          <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          <h1 className="text-foreground text-4xl font-semibold tracking-tight sm:text-5xl">
             Rólunk
           </h1>
-          <p className="mx-auto mt-6 max-w-md text-lg text-muted-foreground">Tartalom hamarosan.</p>
+          <p className="text-muted-foreground mx-auto mt-6 max-w-md text-lg">Tartalom hamarosan.</p>
         </div>
       )}
     </>
@@ -86,14 +86,14 @@ export default async function AboutPage() {
 function HeroSection({ hero }: { hero: AboutUsContent["hero"] }) {
   return (
     <section className="relative overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 pb-24 pt-32 lg:px-8 lg:pb-32 lg:pt-48">
+      <div className="mx-auto max-w-7xl px-6 pt-32 pb-24 lg:px-8 lg:pt-48 lg:pb-32">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
-            <h1 className="text-5xl font-semibold leading-[1.08] tracking-[-0.04em] text-foreground sm:text-6xl lg:text-7xl">
+            <h1 className="text-foreground text-5xl leading-[1.08] font-semibold tracking-[-0.04em] sm:text-6xl lg:text-7xl">
               {hero.title}
             </h1>
             {hero.subtitle && (
-              <p className="mt-8 max-w-lg text-lg leading-relaxed text-muted-foreground lg:text-xl">
+              <p className="text-muted-foreground mt-8 max-w-lg text-lg leading-relaxed lg:text-xl">
                 {hero.subtitle}
               </p>
             )}
@@ -119,16 +119,16 @@ function HeroSection({ hero }: { hero: AboutUsContent["hero"] }) {
 
 function StorySection({ story }: { story: AboutUsContent["story"] }) {
   return (
-    <section className="border-t border-border">
+    <section className="border-border border-t">
       <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
         <div className="mx-auto max-w-3xl">
           {story.title && (
-            <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            <h2 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
               {story.title}
             </h2>
           )}
           {story.body && (
-            <div className="mt-8 space-y-6 text-lg leading-relaxed text-muted-foreground whitespace-pre-line">
+            <div className="text-muted-foreground mt-8 space-y-6 text-lg leading-relaxed whitespace-pre-line">
               {story.body}
             </div>
           )}
@@ -140,12 +140,12 @@ function StorySection({ story }: { story: AboutUsContent["story"] }) {
 
 function TeamSection({ team }: { team: AboutUsContent["team"] }) {
   return (
-    <section className="border-t border-border bg-muted/30">
+    <section className="border-border bg-muted/30 border-t">
       <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
-        <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        <h2 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
           Csapatunk
         </h2>
-        <p className="mt-4 max-w-xl text-lg text-muted-foreground">
+        <p className="text-muted-foreground mt-4 max-w-xl text-lg">
           Ismerd meg az embereket, akik a {siteConfig.store.name} mögött állnak.
         </p>
 
@@ -165,23 +165,23 @@ function TeamSection({ team }: { team: AboutUsContent["team"] }) {
                 </div>
               ) : (
                 <div
-                  className="flex items-center justify-center rounded-sm bg-muted"
+                  className="bg-muted flex items-center justify-center rounded-sm"
                   style={{ aspectRatio: "3/4" }}
                 >
-                  <span className="text-6xl font-semibold tracking-tight text-muted-foreground/30">
+                  <span className="text-muted-foreground/30 text-6xl font-semibold tracking-tight">
                     {member.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
               <div className="mt-6">
-                <h3 className="text-lg font-semibold text-foreground">{member.name}</h3>
+                <h3 className="text-foreground text-lg font-semibold">{member.name}</h3>
                 {member.role && (
-                  <p className="mt-1 text-sm font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-sm font-medium tracking-[0.1em] uppercase">
                     {member.role}
                   </p>
                 )}
                 {member.bio && (
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{member.bio}</p>
+                  <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{member.bio}</p>
                 )}
               </div>
             </div>
@@ -194,21 +194,21 @@ function TeamSection({ team }: { team: AboutUsContent["team"] }) {
 
 function ValuesSection({ values }: { values: AboutUsContent["values"] }) {
   return (
-    <section className="border-t border-border">
+    <section className="border-border border-t">
       <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
-        <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        <h2 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
           Értékeink
         </h2>
 
         <div className="mt-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-3">
           {values.map((value, i) => (
             <div key={i}>
-              <span className="text-sm font-medium text-muted-foreground tabular-nums">
+              <span className="text-muted-foreground text-sm font-medium tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <h3 className="mt-3 text-xl font-semibold text-foreground">{value.title}</h3>
+              <h3 className="text-foreground mt-3 text-xl font-semibold">{value.title}</h3>
               {value.description && (
-                <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+                <p className="text-muted-foreground mt-3 text-base leading-relaxed">
                   {value.description}
                 </p>
               )}
@@ -222,14 +222,14 @@ function ValuesSection({ values }: { values: AboutUsContent["values"] }) {
 
 function ContactSection({ contact }: { contact: AboutUsContent["contact"] }) {
   return (
-    <section className="border-t border-border bg-muted/30">
+    <section className="border-border bg-muted/30 border-t">
       <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
         <div className="grid gap-12 lg:grid-cols-2">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            <h2 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
               Kapcsolat
             </h2>
-            <p className="mt-4 max-w-md text-lg text-muted-foreground">
+            <p className="text-muted-foreground mt-4 max-w-md text-lg">
               Kérdésed van? Keress minket bizalommal!
             </p>
 
@@ -237,20 +237,20 @@ function ContactSection({ contact }: { contact: AboutUsContent["contact"] }) {
               {contact.address && (
                 <div className="flex gap-4">
                   <dt>
-                    <MapPin className="mt-0.5 size-5 text-muted-foreground" />
+                    <MapPin className="text-muted-foreground mt-0.5 size-5" />
                   </dt>
-                  <dd className="text-base text-foreground">{contact.address}</dd>
+                  <dd className="text-foreground text-base">{contact.address}</dd>
                 </div>
               )}
               {contact.phone && (
                 <div className="flex gap-4">
                   <dt>
-                    <Phone className="mt-0.5 size-5 text-muted-foreground" />
+                    <Phone className="text-muted-foreground mt-0.5 size-5" />
                   </dt>
                   <dd>
                     <a
                       href={`tel:${contact.phone.replace(/\s/g, "")}`}
-                      className="text-base text-foreground transition-colors hover:text-muted-foreground"
+                      className="text-foreground hover:text-muted-foreground text-base transition-colors"
                     >
                       {contact.phone}
                     </a>
@@ -260,12 +260,12 @@ function ContactSection({ contact }: { contact: AboutUsContent["contact"] }) {
               {contact.email && (
                 <div className="flex gap-4">
                   <dt>
-                    <Mail className="mt-0.5 size-5 text-muted-foreground" />
+                    <Mail className="text-muted-foreground mt-0.5 size-5" />
                   </dt>
                   <dd>
                     <a
                       href={`mailto:${contact.email}`}
-                      className="text-base text-foreground transition-colors hover:text-muted-foreground"
+                      className="text-foreground hover:text-muted-foreground text-base transition-colors"
                     >
                       {contact.email}
                     </a>

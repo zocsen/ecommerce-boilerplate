@@ -79,8 +79,8 @@ function DevProfileSelectorInner() {
   return (
     <div className="mt-6 rounded-lg border border-dashed border-amber-500/40 bg-amber-50/50 p-4 dark:bg-amber-950/10">
       <div className="mb-3 flex items-center gap-2">
-        <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-        <span className="text-xs font-medium tracking-wide uppercase text-amber-700 dark:text-amber-400">
+        <div className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
+        <span className="text-xs font-medium tracking-wide text-amber-700 uppercase dark:text-amber-400">
           Dev Quick Login
         </span>
       </div>
@@ -97,19 +97,17 @@ function DevProfileSelectorInner() {
               type="button"
               disabled={isDisabled}
               onClick={() => handleSelect(user)}
-              className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:bg-amber-100/60 dark:hover:bg-amber-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:bg-amber-100/60 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-900/20"
             >
               {isActive && isPending ? (
-                <Loader2 className="size-3.5 animate-spin text-amber-600 shrink-0" />
+                <Loader2 className="size-3.5 shrink-0 animate-spin text-amber-600" />
               ) : (
                 <div className="size-3.5 shrink-0" />
               )}
 
-              <span className="flex-1 truncate font-medium text-foreground/80">
-                {user.name}
-              </span>
+              <span className="text-foreground/80 flex-1 truncate font-medium">{user.name}</span>
 
-              <span className="hidden sm:block text-xs text-muted-foreground truncate max-w-[140px]">
+              <span className="text-muted-foreground hidden max-w-[140px] truncate text-xs sm:block">
                 {user.email}
               </span>
 

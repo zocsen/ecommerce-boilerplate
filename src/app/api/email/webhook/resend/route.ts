@@ -18,7 +18,7 @@ import {
 
 /**
  * Handle incoming Resend webhooks.
- * 
+ *
  * Requirements:
  * 1. Set RESEND_WEBHOOK_SECRET in environment
  * 2. Configure webhook in Resend Dashboard
@@ -29,13 +29,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Get webhook secret from environment
     const secret = process.env.RESEND_WEBHOOK_SECRET;
     if (!secret) {
-      console.error(
-        "[webhook] RESEND_WEBHOOK_SECRET not configured. Ignoring webhook.",
-      );
-      return NextResponse.json(
-        { error: "Webhook not configured" },
-        { status: 400 },
-      );
+      console.error("[webhook] RESEND_WEBHOOK_SECRET not configured. Ignoring webhook.");
+      return NextResponse.json({ error: "Webhook not configured" }, { status: 400 });
     }
 
     // Read request body as text for signature verification
@@ -46,10 +41,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const isValid = await verifyWebhookSignature(body, signature, secret);
     if (!isValid) {
       console.warn("[webhook] Invalid signature. Rejecting webhook.");
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     // Parse event
@@ -58,10 +50,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       event = JSON.parse(body) as ResendWebhookEvent;
     } catch (err) {
       console.error("[webhook] Failed to parse webhook body", { error: err });
-      return NextResponse.json(
-        { error: "Invalid JSON" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
     // Log event for debugging
@@ -85,10 +74,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ status: "received" });
   } catch (error) {
     console.error("[webhook] Unexpected error", { error });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -98,10 +84,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  */
 export async function GET(_request: NextRequest): Promise<NextResponse> {
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json(
-      { error: "Not found" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   return NextResponse.json({

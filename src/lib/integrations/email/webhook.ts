@@ -55,10 +55,7 @@ export async function verifyWebhookSignature(
     const computed = hmac.update(body).digest("base64");
 
     // Constant-time comparison to prevent timing attacks
-    return crypto.timingSafeEqual(
-      Buffer.from(computed),
-      Buffer.from(signature),
-    );
+    return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
   } catch (error) {
     console.error("[webhook] Signature verification failed", { error });
     return false;
@@ -85,8 +82,7 @@ export async function handleBounce(event: ResendWebhookEvent): Promise<void> {
 
   const supabase = createAdminClient();
 
-  const isSoftBounce =
-    reason.includes("soft") || reason.includes("temporary");
+  const isSoftBounce = reason.includes("soft") || reason.includes("temporary");
 
   if (isSoftBounce) {
     console.log("[webhook] Soft bounce recorded", { email, reason });
@@ -148,9 +144,7 @@ export async function handleBounce(event: ResendWebhookEvent): Promise<void> {
  * Always mark as 'complained' to preserve the reason and prevent
  * future sends.
  */
-export async function handleComplaint(
-  event: ResendWebhookEvent,
-): Promise<void> {
+export async function handleComplaint(event: ResendWebhookEvent): Promise<void> {
   const email = event.data.to?.[0];
 
   if (!email) {
@@ -202,9 +196,7 @@ export async function handleComplaint(
  *
  * Successful delivery confirmation from the recipient's mail server.
  */
-export async function handleDelivered(
-  event: ResendWebhookEvent,
-): Promise<void> {
+export async function handleDelivered(event: ResendWebhookEvent): Promise<void> {
   const email = event.data.to?.[0];
 
   if (!email) {
@@ -297,9 +289,7 @@ export async function handleClicked(event: ResendWebhookEvent): Promise<void> {
 /**
  * Route webhook events to appropriate handlers.
  */
-export async function handleWebhookEvent(
-  event: ResendWebhookEvent,
-): Promise<void> {
+export async function handleWebhookEvent(event: ResendWebhookEvent): Promise<void> {
   try {
     switch (event.type) {
       case "email.bounced":
@@ -341,9 +331,7 @@ export async function handleWebhookEvent(
  * Extract useful metadata from webhook event.
  * Useful for debugging and audit logging.
  */
-export function getEventMetadata(
-  event: ResendWebhookEvent,
-): Record<string, unknown> {
+export function getEventMetadata(event: ResendWebhookEvent): Record<string, unknown> {
   return {
     type: event.type,
     email_id: event.data.email_id,

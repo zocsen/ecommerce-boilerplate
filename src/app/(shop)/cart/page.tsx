@@ -56,11 +56,11 @@ export default function CartPage() {
         <Breadcrumbs items={[{ label: "Kosár" }]} />
 
         <div className="mt-20 flex flex-col items-center justify-center text-center">
-          <div className="flex size-20 items-center justify-center rounded-full bg-muted">
-            <ShoppingBag className="size-8 text-muted-foreground" />
+          <div className="bg-muted flex size-20 items-center justify-center rounded-full">
+            <ShoppingBag className="text-muted-foreground size-8" />
           </div>
           <h1 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">A kosarad üres</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             Még nem adtál hozzá termékeket a kosaradhoz.
           </p>
           <Button className="mt-8" size="lg" render={<Link href="/products" />}>
@@ -79,12 +79,12 @@ export default function CartPage() {
       <Breadcrumbs items={[{ label: "Kosár" }]} />
 
       <h1 className="mt-8 text-3xl font-semibold tracking-[-0.03em]">Kosár</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{items.length} tétel a kosárban</p>
+      <p className="text-muted-foreground mt-1 text-sm">{items.length} tétel a kosárban</p>
 
       <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_380px]">
         {/* ── Left: Cart items ─────────────────────────── */}
         <div>
-          <div className="divide-y divide-border">
+          <div className="divide-border divide-y">
             {items.map((item) => (
               <CartLineItem key={`${item.productId}-${item.variantId ?? "none"}`} item={item} />
             ))}
@@ -94,14 +94,14 @@ export default function CartPage() {
           {siteConfig.features.enableCoupons && (
             <div className="mt-8">
               <Separator className="mb-6" />
-              <h2 className="mb-3 text-sm font-medium text-foreground">Kuponkód</h2>
+              <h2 className="text-foreground mb-3 text-sm font-medium">Kuponkód</h2>
               {couponCode ? (
                 <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/30">
                   <div className="text-sm">
                     <span className="font-medium text-emerald-700 dark:text-emerald-400">
                       {couponCode}
                     </span>
-                    <span className="ml-2 text-muted-foreground">
+                    <span className="text-muted-foreground ml-2">
                       &mdash; {formatHUF(couponDiscount)} kedvezmény
                     </span>
                   </div>
@@ -124,7 +124,7 @@ export default function CartPage() {
           <div className="mt-8">
             <Link
               href="/products"
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors duration-300"
             >
               <ArrowLeft className="size-3.5" />
               Vissza a vásárláshoz
@@ -146,9 +146,9 @@ export default function CartPage() {
             <ArrowRight className="ml-1.5 size-4" />
           </Button>
 
-          <p className="mt-3 text-center text-xs text-muted-foreground">
+          <p className="text-muted-foreground mt-3 text-center text-xs">
             {totalWeightGrams > 0 && (
-              <span className="block mb-1">
+              <span className="mb-1 block">
                 Becsült súly: {(totalWeightGrams / 1000).toFixed(1)} kg
               </span>
             )}

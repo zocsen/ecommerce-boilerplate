@@ -5,19 +5,9 @@ import { getProfile, updateAddresses } from "@/lib/actions/profile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Save, MapPin, FileText, Package } from "lucide-react";
-import type {
-  AddressJson,
-  BillingAddressJson,
-  PickupPointJson,
-} from "@/lib/types/database";
+import type { AddressJson, BillingAddressJson, PickupPointJson } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Profile Addresses Page                                             */
@@ -140,7 +130,7 @@ export default function ProfileAddressesPage() {
 
   if (loading) {
     return (
-      <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-60 items-center justify-center text-sm">
         <Loader2 className="mr-2 size-4 animate-spin" />
         Betöltés...
       </div>
@@ -151,13 +141,13 @@ export default function ProfileAddressesPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Címek</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-sm">
           Alapértelmezett szállítási, számlázási és átvételi pont címek kezelése.
         </p>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -172,7 +162,7 @@ export default function ProfileAddressesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <MapPin className="size-5 text-muted-foreground" />
+            <MapPin className="text-muted-foreground size-5" />
             <div>
               <CardTitle>Szállítási cím</CardTitle>
               <CardDescription>
@@ -240,7 +230,7 @@ export default function ProfileAddressesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <FileText className="size-5 text-muted-foreground" />
+            <FileText className="text-muted-foreground size-5" />
             <div>
               <CardTitle>Számlázási cím</CardTitle>
               <CardDescription>
@@ -296,9 +286,7 @@ export default function ProfileAddressesPage() {
                 <Input
                   id="bill-company"
                   value={billing.company_name ?? ""}
-                  onChange={(e) =>
-                    setBilling({ ...billing, company_name: e.target.value })
-                  }
+                  onChange={(e) => setBilling({ ...billing, company_name: e.target.value })}
                   placeholder="Példa Kft."
                 />
               </div>
@@ -307,9 +295,7 @@ export default function ProfileAddressesPage() {
                 <Input
                   id="bill-tax"
                   value={billing.tax_number ?? ""}
-                  onChange={(e) =>
-                    setBilling({ ...billing, tax_number: e.target.value })
-                  }
+                  onChange={(e) => setBilling({ ...billing, tax_number: e.target.value })}
                   placeholder="12345678-1-23"
                 />
               </div>
@@ -332,12 +318,10 @@ export default function ProfileAddressesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Package className="size-5 text-muted-foreground" />
+            <Package className="text-muted-foreground size-5" />
             <div>
               <CardTitle>Átvételi pont</CardTitle>
-              <CardDescription>
-                Alapértelmezett csomagautomata / átvételi pont.
-              </CardDescription>
+              <CardDescription>Alapértelmezett csomagautomata / átvételi pont.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -350,7 +334,7 @@ export default function ProfileAddressesPage() {
                   id="pickup-provider"
                   value={pickup.provider ?? ""}
                   onChange={(e) => setPickup({ ...pickup, provider: e.target.value })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                   <option value="">Válasszon...</option>
                   <option value="foxpost">Foxpost</option>

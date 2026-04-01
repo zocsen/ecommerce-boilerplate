@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /* ------------------------------------------------------------------ */
 /*  Reusable admin pagination controls                                  */
@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button"
 
 export interface AdminPaginationProps {
   /** Current page (1-indexed) */
-  page: number
+  page: number;
   /** Total number of pages */
-  totalPages: number
+  totalPages: number;
   /** Called when the user navigates to a different page */
-  onPageChange: (page: number) => void
+  onPageChange: (page: number) => void;
   /** Optional suffix displayed after "X. / Y. oldal" (e.g. "— 150 feliratkozó") */
-  suffix?: string
+  suffix?: string;
 }
 
 /**
@@ -24,11 +24,11 @@ export interface AdminPaginationProps {
  * Renders only when `totalPages > 1`.
  */
 export function AdminPagination({ page, totalPages, onPageChange, suffix }: AdminPaginationProps) {
-  if (totalPages <= 1) return null
+  if (totalPages <= 1) return null;
 
   return (
     <div className="flex items-center justify-between">
-      <span className="text-xs text-muted-foreground">
+      <span className="text-muted-foreground text-xs">
         {page}. / {totalPages}. oldal{suffix ? ` ${suffix}` : ""}
       </span>
       <div className="flex items-center gap-2">
@@ -50,5 +50,5 @@ export function AdminPagination({ page, totalPages, onPageChange, suffix }: Admi
         </Button>
       </div>
     </div>
-  )
+  );
 }

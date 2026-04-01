@@ -43,9 +43,7 @@ export async function signUnsubscribeToken(email: string): Promise<string> {
 }
 
 /** Verify a token and return the embedded email, or null if invalid. */
-export async function verifyUnsubscribeToken(
-  token: string,
-): Promise<string | null> {
+export async function verifyUnsubscribeToken(token: string): Promise<string | null> {
   try {
     const dotIndex = token.lastIndexOf(".");
     if (dotIndex === -1) return null;

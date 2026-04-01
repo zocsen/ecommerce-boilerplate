@@ -179,12 +179,12 @@ export default function RegisterPage() {
         <h1 className="mt-4 text-xl font-semibold tracking-[-0.02em]">
           Ellenőrizd az e-mail fiókodat
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-2 text-sm">
           Küldtünk egy megerősítő e-mailt. Kérlek, kattints a linkre a regisztráció befejezéséhez.
         </p>
         <Link
           href="/login"
-          className="mt-6 text-sm font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
+          className="text-foreground hover:text-foreground/70 mt-6 text-sm font-medium underline underline-offset-2 transition-colors"
         >
           Vissza a bejelentkezéshez
         </Link>
@@ -197,7 +197,7 @@ export default function RegisterPage() {
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-[-0.02em]">Regisztráció</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Hozzon létre egy fiókot a vásárláshoz.</p>
+      <p className="text-muted-foreground mt-1 text-sm">Hozzon létre egy fiókot a vásárláshoz.</p>
 
       {/* ── OAuth buttons ──────────────────────────────── */}
       <div className="mt-6 space-y-2.5">
@@ -220,7 +220,7 @@ export default function RegisterPage() {
       {/* ── Divider ────────────────────────────────────── */}
       <div className="relative my-6 flex items-center gap-3">
         <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground select-none">vagy</span>
+        <span className="text-muted-foreground text-xs select-none">vagy</span>
         <Separator className="flex-1" />
       </div>
 
@@ -228,7 +228,7 @@ export default function RegisterPage() {
       <button
         type="button"
         onClick={() => setShowEmailForm((prev) => !prev)}
-        className="flex w-full cursor-pointer items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground flex w-full cursor-pointer items-center justify-center gap-1.5 text-sm transition-colors duration-200"
       >
         <Mail className="size-3.5" />
         E-mail címmel
@@ -344,11 +344,11 @@ export default function RegisterPage() {
       </div>
 
       {/* ── Login link ─────────────────────────────────── */}
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="text-muted-foreground mt-6 text-center text-sm">
         Már van fiókod?{" "}
         <Link
           href="/login"
-          className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
+          className="text-foreground hover:text-foreground/70 font-medium underline underline-offset-2 transition-colors"
         >
           Bejelentkezés
         </Link>

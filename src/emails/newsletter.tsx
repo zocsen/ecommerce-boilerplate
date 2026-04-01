@@ -145,8 +145,7 @@ export default function NewsletterEmail({
                 lineHeight: "1.6",
               }}
             >
-              Ezt a hírlevelet azért kaptad, mert feliratkoztál a(z){" "}
-              {store.name} hírlevelére.
+              Ezt a hírlevelet azért kaptad, mert feliratkoztál a(z) {store.name} hírlevelére.
               <br />
               <Link
                 href={unsubscribeUrl}

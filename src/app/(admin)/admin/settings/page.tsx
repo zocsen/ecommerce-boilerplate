@@ -1,20 +1,7 @@
 import { siteConfig } from "@/lib/config/site.config";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  CreditCard,
-  Mail,
-  FileText,
-  Shield,
-  ToggleLeft,
-  Store,
-} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CreditCard, Mail, FileText, Shield, ToggleLeft, Store } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Settings Page — integration status overview                  */
@@ -32,17 +19,11 @@ function StatusBadge({ enabled }: { enabled: boolean }) {
   );
 }
 
-function ConfigItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function ConfigItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium font-mono">{value}</span>
+      <span className="text-muted-foreground text-sm">{label}</span>
+      <span className="font-mono text-sm font-medium">{value}</span>
     </div>
   );
 }
@@ -54,12 +35,10 @@ export default function AdminSettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Beállítások</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-sm">
           Integrációk és funkciók állapota. A beállítások a{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-            site.config.ts
-          </code>{" "}
-          és a környezeti változókban módosíthatók.
+          <code className="bg-muted rounded px-1 py-0.5 font-mono text-xs">site.config.ts</code> és
+          a környezeti változókban módosíthatók.
         </p>
       </div>
 
@@ -68,7 +47,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <Store className="size-5" />
               </div>
               <div>
@@ -91,7 +70,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <CreditCard className="size-5" />
               </div>
               <div>
@@ -102,21 +81,11 @@ export default function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="divide-y">
             <ConfigItem label="Szolgáltató" value={payments.provider} />
-            <ConfigItem
-              label="Környezet"
-              value={payments.barion.environment}
-            />
-            <ConfigItem
-              label="POS kulcs env var"
-              value={payments.barion.posKeyEnvVar}
-            />
+            <ConfigItem label="Környezet" value={payments.barion.environment} />
+            <ConfigItem label="POS kulcs env var" value={payments.barion.posKeyEnvVar} />
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">
-                POS kulcs beállítva
-              </span>
-              <StatusBadge
-                enabled={!!process.env[payments.barion.posKeyEnvVar]}
-              />
+              <span className="text-muted-foreground text-sm">POS kulcs beállítva</span>
+              <StatusBadge enabled={!!process.env[payments.barion.posKeyEnvVar]} />
             </div>
           </CardContent>
         </Card>
@@ -125,7 +94,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <FileText className="size-5" />
               </div>
               <div>
@@ -136,7 +105,7 @@ export default function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="divide-y">
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Szolgáltató</span>
+              <span className="text-muted-foreground text-sm">Szolgáltató</span>
               <span className="text-sm font-medium">
                 {invoicing.provider === "none"
                   ? "Nincs konfigurálva"
@@ -145,9 +114,12 @@ export default function AdminSettingsPage() {
                     : "Számlázz.hu"}
               </span>
             </div>
-            <ConfigItem label="Mód" value={invoicing.mode === "auto_on_paid" ? "Automatikus (fizetéskor)" : "Kézi"} />
+            <ConfigItem
+              label="Mód"
+              value={invoicing.mode === "auto_on_paid" ? "Automatikus (fizetéskor)" : "Kézi"}
+            />
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Státusz</span>
+              <span className="text-muted-foreground text-sm">Státusz</span>
               <StatusBadge enabled={invoicing.provider !== "none"} />
             </div>
           </CardContent>
@@ -157,7 +129,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <Mail className="size-5" />
               </div>
               <div>
@@ -168,19 +140,12 @@ export default function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="divide-y">
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">
-                API kulcs beállítva
-              </span>
+              <span className="text-muted-foreground text-sm">API kulcs beállítva</span>
               <StatusBadge enabled={!!process.env.RESEND_API_KEY} />
             </div>
-            <ConfigItem
-              label="Feladó"
-              value={process.env.RESEND_FROM_EMAIL ?? "Nincs beállítva"}
-            />
+            <ConfigItem label="Feladó" value={process.env.RESEND_FROM_EMAIL ?? "Nincs beállítva"} />
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">
-                Marketing modul
-              </span>
+              <span className="text-muted-foreground text-sm">Marketing modul</span>
               <StatusBadge enabled={features.enableMarketingModule} />
             </div>
           </CardContent>
@@ -190,7 +155,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <ToggleLeft className="size-5" />
               </div>
               <div>
@@ -201,31 +166,31 @@ export default function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="divide-y">
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Felhasználói fiókok</span>
+              <span className="text-muted-foreground text-sm">Felhasználói fiókok</span>
               <StatusBadge enabled={features.enableAccounts} />
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Vendég checkout</span>
+              <span className="text-muted-foreground text-sm">Vendég checkout</span>
               <StatusBadge enabled={features.enableGuestCheckout} />
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Kuponok</span>
+              <span className="text-muted-foreground text-sm">Kuponok</span>
               <StatusBadge enabled={features.enableCoupons} />
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Értékelések</span>
+              <span className="text-muted-foreground text-sm">Értékelések</span>
               <StatusBadge enabled={features.enableReviews} />
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Marketing modul</span>
+              <span className="text-muted-foreground text-sm">Marketing modul</span>
               <StatusBadge enabled={features.enableMarketingModule} />
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Elhagyott kosár</span>
+              <span className="text-muted-foreground text-sm">Elhagyott kosár</span>
               <StatusBadge enabled={features.enableAbandonedCart} />
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">B2B nagykereskedés</span>
+              <span className="text-muted-foreground text-sm">B2B nagykereskedés</span>
               <StatusBadge enabled={features.enableB2BWholesaleMode} />
             </div>
           </CardContent>
@@ -235,7 +200,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <Shield className="size-5" />
               </div>
               <div>
@@ -246,20 +211,15 @@ export default function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="divide-y">
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Agency viewer</span>
+              <span className="text-muted-foreground text-sm">Agency viewer</span>
               <StatusBadge enabled={admin.agencyViewerEnabled} />
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">
-                Csak olvasás (agency)
-              </span>
+              <span className="text-muted-foreground text-sm">Csak olvasás (agency)</span>
               <StatusBadge enabled={admin.readonlyByDefaultForAgency} />
             </div>
             <ConfigItem label="Logó szöveg" value={branding.logoText} />
-            <ConfigItem
-              label="Logó URL"
-              value={branding.logoUrl ?? "Nincs"}
-            />
+            <ConfigItem label="Logó URL" value={branding.logoUrl ?? "Nincs"} />
           </CardContent>
         </Card>
       </div>

@@ -30,21 +30,21 @@ export default async function ProfileOrdersPage({
 
       <div>
         <h1 className="text-3xl font-semibold tracking-[-0.03em]">Rendeléseim</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{total} rendelés összesen</p>
+        <p className="text-muted-foreground mt-1 text-sm">{total} rendelés összesen</p>
       </div>
 
       {orders.length === 0 ? (
         <div className="mt-16 flex flex-col items-center text-center">
-          <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-            <Package className="size-7 text-muted-foreground" />
+          <div className="bg-muted flex size-16 items-center justify-center rounded-full">
+            <Package className="text-muted-foreground size-7" />
           </div>
           <h2 className="mt-4 text-lg font-medium">Még nincsenek rendeléseid</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-1 text-sm">
             Amint leadod az első rendelést, itt fog megjelenni.
           </p>
           <Link
             href="/products"
-            className="mt-6 text-sm font-medium underline underline-offset-2 transition-colors hover:text-foreground/70"
+            className="hover:text-foreground/70 mt-6 text-sm font-medium underline underline-offset-2 transition-colors"
           >
             Termékek böngészése
           </Link>
@@ -56,28 +56,28 @@ export default async function ProfileOrdersPage({
               <Link
                 key={order.id}
                 href={`/profile/orders/${order.id}`}
-                className="group flex items-center justify-between rounded-xl border border-border p-5 transition-all duration-500 ease-out hover:border-foreground/20 hover:bg-muted/30"
+                className="group border-border hover:border-foreground/20 hover:bg-muted/30 flex items-center justify-between rounded-xl border p-5 transition-all duration-500 ease-out"
               >
                 <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
                   <div>
-                    <p className="text-xs text-muted-foreground">Rendelés</p>
+                    <p className="text-muted-foreground text-xs">Rendelés</p>
                     <p className="font-mono text-sm font-medium">
                       #{order.id.slice(0, 8).toUpperCase()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Dátum</p>
+                    <p className="text-muted-foreground text-xs">Dátum</p>
                     <p className="text-sm">{formatDate(order.created_at)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Összeg</p>
+                    <p className="text-muted-foreground text-xs">Összeg</p>
                     <p className="text-sm font-medium tabular-nums">
                       {formatHUF(order.total_amount)}
                     </p>
                   </div>
                   <OrderStatusBadge status={order.status as OrderStatus} />
                 </div>
-                <ChevronRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5" />
+                <ChevronRight className="text-muted-foreground size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </Link>
             ))}
           </div>
@@ -85,7 +85,7 @@ export default async function ProfileOrdersPage({
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {page}. / {totalPages}. oldal
               </span>
               <div className="flex items-center gap-2">

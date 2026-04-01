@@ -39,9 +39,7 @@ interface ResendErrorResponse {
 function getApiKey(): string {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    throw new Error(
-      'Missing RESEND_API_KEY environment variable. Email sending is disabled.',
-    );
+    throw new Error("Missing RESEND_API_KEY environment variable. Email sending is disabled.");
   }
   return key;
 }
@@ -148,10 +146,7 @@ export async function sendEmail(
 
       // If we have retries left, wait with exponential backoff
       if (attempt < maxRetries) {
-        const delayMs = Math.min(
-          baseDelayMs * Math.pow(2, attempt),
-          DEFAULT_MAX_DELAY_MS,
-        );
+        const delayMs = Math.min(baseDelayMs * Math.pow(2, attempt), DEFAULT_MAX_DELAY_MS);
         console.warn(
           `[email-provider] Retryable error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms:`,
           lastError,
@@ -159,15 +154,11 @@ export async function sendEmail(
         await sleep(delayMs);
       }
     } catch (error) {
-      lastError =
-        error instanceof Error ? error.message : "Unknown email sending error";
+      lastError = error instanceof Error ? error.message : "Unknown email sending error";
 
       // Network errors are retryable
       if (attempt < maxRetries) {
-        const delayMs = Math.min(
-          baseDelayMs * Math.pow(2, attempt),
-          DEFAULT_MAX_DELAY_MS,
-        );
+        const delayMs = Math.min(baseDelayMs * Math.pow(2, attempt), DEFAULT_MAX_DELAY_MS);
         console.warn(
           `[email-provider] Network error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms:`,
           lastError,
@@ -177,10 +168,7 @@ export async function sendEmail(
     }
   }
 
-  console.error(
-    `[email-provider] All ${maxRetries + 1} attempts failed:`,
-    lastError,
-  );
+  console.error(`[email-provider] All ${maxRetries + 1} attempts failed:`, lastError);
   return { success: false, error: lastError };
 }
 
@@ -215,9 +203,8 @@ export async function sendBatchEmail(
       } else {
         results.push({
           success: false,
-          error: result.reason instanceof Error
-            ? result.reason.message
-            : "Unknown batch email error",
+          error:
+            result.reason instanceof Error ? result.reason.message : "Unknown batch email error",
         });
       }
     }

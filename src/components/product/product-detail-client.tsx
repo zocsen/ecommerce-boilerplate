@@ -116,7 +116,7 @@ export function ProductDetailClient({
 
       {/* ── Right: Product info ──────────────────────────── */}
       <div className="flex flex-col">
-        <h1 className="text-3xl font-semibold tracking-[-0.03em] text-foreground lg:text-4xl">
+        <h1 className="text-foreground text-3xl font-semibold tracking-[-0.03em] lg:text-4xl">
           {product.title}
         </h1>
 
@@ -147,7 +147,7 @@ export function ProductDetailClient({
         {/* ── Extras checkboxes ─────────────────────────── */}
         {availableExtras.length > 0 && (
           <div className="mt-8 space-y-3">
-            <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+            <p className="text-muted-foreground text-xs font-medium tracking-[0.15em] uppercase">
               Kiegészítők
             </p>
             {availableExtras.map((extra) => {
@@ -168,8 +168,8 @@ export function ProductDetailClient({
                     onCheckedChange={() => toggleExtra(extra.id)}
                     disabled={outOfStock}
                   />
-                  <span className="flex-1 text-sm text-foreground">{extra.label}</span>
-                  <span className="text-sm font-medium tabular-nums text-foreground/70">
+                  <span className="text-foreground flex-1 text-sm">{extra.label}</span>
+                  <span className="text-foreground/70 text-sm font-medium tabular-nums">
                     {outOfStock ? "Elfogyott" : `+${formatHUF(price)}`}
                   </span>
                 </label>
@@ -190,12 +190,12 @@ export function ProductDetailClient({
 
         {/* Description */}
         {product.description && (
-          <div className="mt-12 border-t border-border/40 pt-8">
-            <h2 className="mb-4 text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+          <div className="border-border/40 mt-12 border-t pt-8">
+            <h2 className="text-muted-foreground mb-4 text-xs font-medium tracking-[0.15em] uppercase">
               Leírás
             </h2>
-            <div className="prose prose-sm prose-neutral max-w-none text-muted-foreground">
-              <p className="whitespace-pre-line leading-relaxed">{product.description}</p>
+            <div className="prose prose-sm prose-neutral text-muted-foreground max-w-none">
+              <p className="leading-relaxed whitespace-pre-line">{product.description}</p>
             </div>
           </div>
         )}

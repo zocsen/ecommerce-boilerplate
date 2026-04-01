@@ -85,7 +85,7 @@ export default function OrderTrackingPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[60vh] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
         </div>
       }
     >
@@ -143,11 +143,11 @@ function OrderTrackingContent() {
     <div className="mx-auto max-w-xl px-6 py-20 lg:px-8">
       {/* ── Header ──────────────────────────────────── */}
       <div className="text-center">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-muted">
-          <Package className="size-8 text-muted-foreground" />
+        <div className="bg-muted mx-auto flex size-16 items-center justify-center rounded-full">
+          <Package className="text-muted-foreground size-8" />
         </div>
         <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">Rendeléskövetés</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="text-muted-foreground mt-2">
           Adja meg a rendelésszámát és az e-mail címét a rendelés állapotának megtekintéséhez.
         </p>
       </div>
@@ -199,7 +199,7 @@ function OrderTrackingContent() {
 
       {/* ── Error message ──────────────────────────── */}
       {state.error && (
-        <div className="mt-6 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-center text-sm text-destructive">
+        <div className="border-destructive/20 bg-destructive/5 text-destructive mt-6 rounded-lg border px-4 py-3 text-center text-sm">
           {state.error}
         </div>
       )}
@@ -214,10 +214,10 @@ function OrderTrackingContent() {
 
 function OrderStatusCard({ data }: { data: GuestOrderTrackingData }) {
   return (
-    <div className="mt-10 rounded-xl border border-border p-6">
+    <div className="border-border mt-10 rounded-xl border p-6">
       {/* ── Header row ──────────────── */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+        <h2 className="text-muted-foreground text-sm font-semibold tracking-widest uppercase">
           Rendelés állapota
         </h2>
         <OrderStatusBadge status={data.status as OrderStatus} />
@@ -257,7 +257,7 @@ function OrderTimeline({
 }) {
   return (
     <div className="space-y-0">
-      <h3 className="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+      <h3 className="text-muted-foreground mb-4 text-sm font-semibold tracking-widest uppercase">
         Rendelés folyamata
       </h3>
       <div className="relative ml-3">
@@ -271,7 +271,7 @@ function OrderTimeline({
               {/* Vertical line */}
               {!isLast && (
                 <div
-                  className={`absolute left-[7px] top-[20px] h-[calc(100%-8px)] w-[2px] ${
+                  className={`absolute top-[20px] left-[7px] h-[calc(100%-8px)] w-[2px] ${
                     isCompleted ? "bg-foreground" : "bg-border"
                   }`}
                 />
@@ -280,20 +280,20 @@ function OrderTimeline({
               {/* Dot */}
               <div className="relative z-10 flex-shrink-0">
                 {isCompleted ? (
-                  <div className="flex size-4 items-center justify-center rounded-full bg-foreground">
+                  <div className="bg-foreground flex size-4 items-center justify-center rounded-full">
                     {isCurrent ? (
-                      <StatusIcon status={step.status} className="size-2.5 text-background" />
+                      <StatusIcon status={step.status} className="text-background size-2.5" />
                     ) : (
-                      <CheckCircle2 className="size-2.5 text-background" />
+                      <CheckCircle2 className="text-background size-2.5" />
                     )}
                   </div>
                 ) : (
-                  <div className="size-4 rounded-full border-2 border-border bg-background" />
+                  <div className="border-border bg-background size-4 rounded-full border-2" />
                 )}
               </div>
 
               {/* Text */}
-              <div className="flex-1 -mt-0.5">
+              <div className="-mt-0.5 flex-1">
                 <p
                   className={`text-sm font-medium ${
                     isCompleted ? "text-foreground" : "text-muted-foreground"
@@ -302,7 +302,7 @@ function OrderTimeline({
                   {step.label}
                 </p>
                 {step.date && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(step.date)}</p>
+                  <p className="text-muted-foreground mt-0.5 text-xs">{formatDate(step.date)}</p>
                 )}
               </div>
             </div>

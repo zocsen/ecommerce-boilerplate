@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { Loader2, CheckCircle, XCircle, Crown } from "lucide-react"
-import { listPlans, getMySubscription } from "@/lib/actions/subscriptions"
-import { formatHUF } from "@/lib/utils/format"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import type { ShopPlanRow, PlanFeaturesJson, ShopSubscriptionWithPlan } from "@/lib/types/database"
+import { useState, useEffect, useCallback } from "react";
+import { Loader2, CheckCircle, XCircle, Crown } from "lucide-react";
+import { listPlans, getMySubscription } from "@/lib/actions/subscriptions";
+import { formatHUF } from "@/lib/utils/format";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { ShopPlanRow, PlanFeaturesJson, ShopSubscriptionWithPlan } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Feature labels (Hungarian)                                         */
@@ -29,14 +29,14 @@ const FEATURE_LABELS: Record<keyof PlanFeaturesJson, string> = {
   enable_scheduled_publishing: "Ütemezett közzététel",
   enable_agency_viewer: "Agency Viewer",
   enable_custom_pages: "Egyedi oldalak",
-}
+};
 
 const NUMERIC_KEYS: (keyof PlanFeaturesJson)[] = [
   "max_products",
   "max_admins",
   "max_categories",
   "delivery_options",
-]
+];
 
 /* ------------------------------------------------------------------ */
 /*  Billing cycle toggle                                               */
@@ -46,11 +46,11 @@ function BillingToggle({
   cycle,
   onChange,
 }: {
-  cycle: "monthly" | "annual"
-  onChange: (c: "monthly" | "annual") => void
+  cycle: "monthly" | "annual";
+  onChange: (c: "monthly" | "annual") => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1">
+    <div className="border-border bg-muted/50 inline-flex items-center gap-1 rounded-lg border p-1">
       <button
         onClick={() => onChange("monthly")}
         className={cn(
@@ -74,7 +74,7 @@ function BillingToggle({
         Éves
       </button>
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -85,33 +85,33 @@ function FeatureLine({
   featureKey,
   value,
 }: {
-  featureKey: keyof PlanFeaturesJson
-  value: boolean | number
+  featureKey: keyof PlanFeaturesJson;
+  value: boolean | number;
 }) {
-  const isNumeric = NUMERIC_KEYS.includes(featureKey)
-  const label = FEATURE_LABELS[featureKey]
+  const isNumeric = NUMERIC_KEYS.includes(featureKey);
+  const label = FEATURE_LABELS[featureKey];
 
   if (isNumeric) {
-    const numVal = value as number
+    const numVal = value as number;
     return (
       <div className="flex items-center justify-between py-1.5 text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium tabular-nums">{numVal === 0 ? "Korlátlan" : numVal}</span>
       </div>
-    )
+    );
   }
 
-  const enabled = value as boolean
+  const enabled = value as boolean;
   return (
     <div className="flex items-center justify-between py-1.5 text-sm">
       <span className={cn("text-muted-foreground", !enabled && "opacity-50")}>{label}</span>
       {enabled ? (
         <CheckCircle className="size-4 text-green-600 dark:text-green-500" />
       ) : (
-        <XCircle className="size-4 text-muted-foreground/30" />
+        <XCircle className="text-muted-foreground/30 size-4" />
       )}
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -123,28 +123,28 @@ function PricingCard({
   cycle,
   isCurrent,
 }: {
-  plan: ShopPlanRow
-  cycle: "monthly" | "annual"
-  isCurrent: boolean
+  plan: ShopPlanRow;
+  cycle: "monthly" | "annual";
+  isCurrent: boolean;
 }) {
-  const price = cycle === "annual" ? plan.base_annual_price : plan.base_monthly_price
+  const price = cycle === "annual" ? plan.base_annual_price : plan.base_monthly_price;
   const featureEntries = Object.entries(plan.features) as [
     keyof PlanFeaturesJson,
     boolean | number,
-  ][]
+  ][];
 
   // Sort: numeric limits first, then booleans
   const sortedFeatures = featureEntries.sort((a, b) => {
-    const aNum = NUMERIC_KEYS.includes(a[0]) ? 0 : 1
-    const bNum = NUMERIC_KEYS.includes(b[0]) ? 0 : 1
-    return aNum - bNum
-  })
+    const aNum = NUMERIC_KEYS.includes(a[0]) ? 0 : 1;
+    const bNum = NUMERIC_KEYS.includes(b[0]) ? 0 : 1;
+    return aNum - bNum;
+  });
 
   return (
     <Card
       className={cn(
         "relative flex flex-col transition-all duration-500",
-        isCurrent && "border-foreground/40 ring-1 ring-foreground/20",
+        isCurrent && "border-foreground/40 ring-foreground/20 ring-1",
       )}
     >
       {isCurrent && (
@@ -156,10 +156,10 @@ function PricingCard({
         </div>
       )}
 
-      <CardHeader className="pb-2 pt-6 text-center">
+      <CardHeader className="pt-6 pb-2 text-center">
         <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
         {plan.description && (
-          <p className="mt-1 text-xs text-muted-foreground">{plan.description}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{plan.description}</p>
         )}
       </CardHeader>
 
@@ -167,25 +167,25 @@ function PricingCard({
         {/* Price */}
         <div className="mb-6 text-center">
           <span className="text-3xl font-bold tracking-tight">{formatHUF(price)}</span>
-          <span className="ml-1 text-sm text-muted-foreground">
+          <span className="text-muted-foreground ml-1 text-sm">
             / {cycle === "annual" ? "év" : "hó"}
           </span>
           {cycle === "annual" && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-xs">
               {formatHUF(Math.round(plan.base_annual_price / 12))} / hó átlagosan
             </p>
           )}
         </div>
 
         {/* Features */}
-        <div className="flex-1 space-y-0 divide-y divide-border/50">
+        <div className="divide-border/50 flex-1 space-y-0 divide-y">
           {sortedFeatures.map(([key, value]) => (
             <FeatureLine key={key} featureKey={key} value={value} />
           ))}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -193,36 +193,36 @@ function PricingCard({
 /* ------------------------------------------------------------------ */
 
 export default function PlansComparisonPage() {
-  const [plans, setPlans] = useState<ShopPlanRow[]>([])
-  const [mySubscription, setMySubscription] = useState<ShopSubscriptionWithPlan | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [cycle, setCycle] = useState<"monthly" | "annual">("monthly")
+  const [plans, setPlans] = useState<ShopPlanRow[]>([]);
+  const [mySubscription, setMySubscription] = useState<ShopSubscriptionWithPlan | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cycle, setCycle] = useState<"monthly" | "annual">("monthly");
 
   const fetchData = useCallback(async () => {
-    setLoading(true)
-    const [plansRes, subRes] = await Promise.all([listPlans(), getMySubscription()])
+    setLoading(true);
+    const [plansRes, subRes] = await Promise.all([listPlans(), getMySubscription()]);
 
     if (plansRes.success && plansRes.data) {
-      setPlans(plansRes.data.filter((p) => p.is_active))
+      setPlans(plansRes.data.filter((p) => p.is_active));
     }
     if (subRes.success && subRes.data) {
-      setMySubscription(subRes.data)
-      setCycle(subRes.data.billing_cycle)
+      setMySubscription(subRes.data);
+      setCycle(subRes.data.billing_cycle);
     }
 
-    setLoading(false)
-  }, [])
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
       <div className="flex h-60 items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground size-6 animate-spin" />
       </div>
-    )
+    );
   }
 
   return (
@@ -230,7 +230,7 @@ export default function PlansComparisonPage() {
       {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Elérhető csomagok</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Előfizetési csomagok összehasonlítása</p>
+        <p className="text-muted-foreground mt-2 text-sm">Előfizetési csomagok összehasonlítása</p>
       </div>
 
       {/* Billing toggle */}
@@ -240,7 +240,7 @@ export default function PlansComparisonPage() {
 
       {/* Pricing cards grid */}
       {plans.length === 0 ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+        <div className="border-border text-muted-foreground flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm">
           <p>Nincsenek elérhető csomagok.</p>
         </div>
       ) : (
@@ -266,10 +266,10 @@ export default function PlansComparisonPage() {
 
       {/* Contact note */}
       <div className="text-center">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           Csomag váltáshoz lépj kapcsolatba az ügynökségeddel.
         </p>
       </div>
     </div>
-  )
+  );
 }

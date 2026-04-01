@@ -7,13 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -80,9 +74,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={4}
-                tickFormatter={(v: number) =>
-                  v >= 1000 ? `${Math.round(v / 1000)}e` : String(v)
-                }
+                tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}e` : String(v))}
                 fontSize={11}
                 width={48}
               />
@@ -96,11 +88,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                   />
                 }
               />
-              <Bar
-                dataKey="revenue"
-                fill="var(--color-revenue)"
-                radius={[3, 3, 0, 0]}
-              />
+              <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ChartContainer>
         </CardContent>
@@ -142,11 +130,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                   />
                 }
               />
-              <Bar
-                dataKey="orders"
-                fill="var(--color-orders)"
-                radius={[3, 3, 0, 0]}
-              />
+              <Bar dataKey="orders" fill="var(--color-orders)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ChartContainer>
         </CardContent>

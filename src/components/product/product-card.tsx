@@ -17,7 +17,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     <Link href={`/products/${product.slug}`} className="group block">
       {/* ── Image ──────────────────────────────────────── */}
       <div
-        className="relative overflow-hidden rounded-lg bg-muted transition-all duration-500 ease-out group-hover:shadow-lg group-hover:shadow-black/5"
+        className="bg-muted relative overflow-hidden rounded-lg transition-all duration-500 ease-out group-hover:shadow-lg group-hover:shadow-black/5"
         style={{ aspectRatio: "4/5" }}
       >
         {product.main_image_url ? (
@@ -32,7 +32,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <span className="text-4xl font-light tracking-[-0.04em] text-muted-foreground/40">
+            <span className="text-muted-foreground/40 text-4xl font-light tracking-[-0.04em]">
               {product.title.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -40,7 +40,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
         {/* Sale indicator — top-right corner */}
         {product.compare_at_price != null && product.compare_at_price > product.base_price && (
-          <div className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-background">
+          <div className="bg-foreground text-background absolute top-3 right-3 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase">
             Akció
           </div>
         )}
@@ -48,7 +48,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
       {/* ── Details ────────────────────────────────────── */}
       <div className="mt-4 space-y-1.5">
-        <h3 className="text-sm font-medium leading-snug tracking-[-0.01em] text-foreground transition-colors duration-300 group-hover:text-foreground/70">
+        <h3 className="text-foreground group-hover:text-foreground/70 text-sm leading-snug font-medium tracking-[-0.01em] transition-colors duration-300">
           {product.title}
         </h3>
         <PriceDisplay

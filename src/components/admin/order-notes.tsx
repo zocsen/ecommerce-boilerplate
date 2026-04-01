@@ -145,7 +145,7 @@ export function OrderNotes({ orderId, currentUserId, isReadOnly }: OrderNotesPro
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Error display */}
-        {state.error && <p className="text-xs text-destructive">{state.error}</p>}
+        {state.error && <p className="text-destructive text-xs">{state.error}</p>}
 
         {/* Add note form — admin only, not read-only */}
         {!isReadOnly && (
@@ -183,11 +183,11 @@ export function OrderNotes({ orderId, currentUserId, isReadOnly }: OrderNotesPro
         )}
 
         {/* Loading state */}
-        {state.loading && <p className="text-xs text-muted-foreground">Betöltés...</p>}
+        {state.loading && <p className="text-muted-foreground text-xs">Betöltés...</p>}
 
         {/* Notes list — reverse chronological */}
         {!state.loading && state.notes.length === 0 && (
-          <p className="text-xs text-muted-foreground">Még nincsenek belső megjegyzések.</p>
+          <p className="text-muted-foreground text-xs">Még nincsenek belső megjegyzések.</p>
         )}
 
         {!state.loading &&
@@ -197,13 +197,13 @@ export function OrderNotes({ orderId, currentUserId, isReadOnly }: OrderNotesPro
             const isConfirming = state.confirmDelete === note.id;
 
             return (
-              <div key={note.id} className="rounded-lg border border-border p-3 space-y-1.5">
+              <div key={note.id} className="border-border space-y-1.5 rounded-lg border p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-0.5">
                     <p className="text-xs font-medium">
                       {note.author_name ?? "Törölt felhasználó"}
                     </p>
-                    <p className="text-[10px] text-muted-foreground tabular-nums">
+                    <p className="text-muted-foreground text-[10px] tabular-nums">
                       {formatDateTime(note.created_at)}
                     </p>
                   </div>

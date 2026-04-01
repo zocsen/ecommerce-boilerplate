@@ -5,11 +5,7 @@ import { cn } from "@/lib/utils";
 /*  ProductCardSkeleton                                                */
 /* ------------------------------------------------------------------ */
 
-export function ProductCardSkeleton({
-  className,
-}: {
-  className?: string;
-}) {
+export function ProductCardSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {/* Image placeholder */}
@@ -34,12 +30,7 @@ export function ProductGridSkeleton({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4",
-        className
-      )}
-    >
+    <div className={cn("grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4", className)}>
       {Array.from({ length: count }, (_, i) => (
         <ProductCardSkeleton key={i} />
       ))}

@@ -14,10 +14,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!paymentId) {
     console.warn("[barion-route] Callback received without paymentId.");
     // Barion expects 200 even on errors to avoid retries
-    return NextResponse.json(
-      { error: "Missing paymentId parameter" },
-      { status: 200 },
-    );
+    return NextResponse.json({ error: "Missing paymentId parameter" }, { status: 200 });
   }
 
   try {
@@ -38,14 +35,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { status: 200 },
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unexpected callback error";
+    const message = error instanceof Error ? error.message : "Unexpected callback error";
     console.error("[barion-route] Unhandled callback error:", message);
 
     // Return 200 even on unexpected errors – Barion retries on non-200
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 200 },
-    );
+    return NextResponse.json({ success: false, error: message }, { status: 200 });
   }
 }

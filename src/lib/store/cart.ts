@@ -19,11 +19,7 @@ interface CartState {
 interface CartActions {
   addItem: (item: CartItem) => void;
   removeItem: (productId: string, variantId: string | null) => void;
-  updateQuantity: (
-    productId: string,
-    variantId: string | null,
-    quantity: number,
-  ) => void;
+  updateQuantity: (productId: string, variantId: string | null, quantity: number) => void;
   clearCart: () => void;
   setCoupon: (code: string, discount: number) => void;
   removeCoupon: () => void;
@@ -39,11 +35,7 @@ type CartStore = CartState & CartActions & CartComputeds;
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function matchesItem(
-  item: CartItem,
-  productId: string,
-  variantId: string | null,
-): boolean {
+function matchesItem(item: CartItem, productId: string, variantId: string | null): boolean {
   return item.productId === productId && item.variantId === variantId;
 }
 
@@ -80,10 +72,7 @@ export const useCartStore = create<CartStore>()(
                 matchesItem(item, newItem.productId, newItem.variantId)
                   ? {
                       ...item,
-                      quantity: Math.min(
-                        item.quantity + newItem.quantity,
-                        item.stock,
-                      ),
+                      quantity: Math.min(item.quantity + newItem.quantity, item.stock),
                     }
                   : item,
               ),
@@ -104,18 +93,14 @@ export const useCartStore = create<CartStore>()(
 
       removeItem: (productId, variantId) =>
         set((state) => ({
-          items: state.items.filter(
-            (item) => !matchesItem(item, productId, variantId),
-          ),
+          items: state.items.filter((item) => !matchesItem(item, productId, variantId)),
         })),
 
       updateQuantity: (productId, variantId, quantity) =>
         set((state) => {
           if (quantity <= 0) {
             return {
-              items: state.items.filter(
-                (item) => !matchesItem(item, productId, variantId),
-              ),
+              items: state.items.filter((item) => !matchesItem(item, productId, variantId)),
             };
           }
 

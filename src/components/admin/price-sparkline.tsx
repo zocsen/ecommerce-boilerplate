@@ -53,13 +53,13 @@ export function PriceSparkline({ history, width = 120, height = 32 }: PriceSpark
   }, [history, width, height]);
 
   if (history.length === 0) {
-    return <span className="text-xs text-muted-foreground/60">Nincs ártörténet</span>;
+    return <span className="text-muted-foreground/60 text-xs">Nincs ártörténet</span>;
   }
 
   // For a flat line (single price or no change), show a simple indicator
   if (history.length === 1) {
     return (
-      <span className="text-xs text-muted-foreground">
+      <span className="text-muted-foreground text-xs">
         {formatHUF(history[0].price)} — {formatDate(history[0].date)}
       </span>
     );
@@ -109,7 +109,7 @@ export function PriceSparkline({ history, width = 120, height = 32 }: PriceSpark
       </svg>
 
       {/* Tooltip on hover */}
-      <span className="pointer-events-none absolute -top-8 left-0 hidden rounded bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md group-hover:block whitespace-nowrap">
+      <span className="bg-popover text-popover-foreground pointer-events-none absolute -top-8 left-0 hidden rounded px-2 py-1 text-xs whitespace-nowrap shadow-md group-hover:block">
         {formatHUF(minPrice)} – {formatHUF(maxPrice)} (30 nap)
       </span>
     </div>

@@ -207,6 +207,7 @@ The boilerplate handles redirect URLs automatically via `site.config.ts`.
 5. If using the marketing module, set `RESEND_MARKETING_FROM_EMAIL` (e.g. `marketing@yourclient.hu`)
 
 **Recommended:** Use separate subdomains for transactional and marketing email to protect deliverability:
+
 - `orders@mail.yourclient.hu` for receipts and shipping updates
 - `marketing@promo.yourclient.hu` for newsletters
 
@@ -237,6 +238,7 @@ If the client needs automatic invoice generation, choose a provider:
 Leave `INVOICING_PROVIDER=none` (the default). Invoicing buttons in the admin will be disabled.
 
 Set the invoicing mode in `site.config.ts`:
+
 - `"auto_on_paid"` — automatically generate an invoice when payment is confirmed
 - `"manual"` — admin clicks a button to generate invoices per order
 

@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   Loader2,
@@ -14,7 +14,7 @@ import {
   FileText,
   Plus,
   X,
-} from "lucide-react"
+} from "lucide-react";
 import {
   getSubscription,
   listInvoices,
@@ -23,13 +23,13 @@ import {
   adminCancelSubscription,
   adminCreateInvoice,
   adminUpdateInvoice,
-} from "@/lib/actions/subscriptions"
-import { formatHUF, formatDate } from "@/lib/utils/format"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/lib/actions/subscriptions";
+import { formatHUF, formatDate } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -37,12 +37,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import type {
   ShopSubscriptionWithPlan,
   SubscriptionInvoiceRow,
   ShopPlanRow,
-} from "@/lib/types/database"
+} from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -53,14 +53,14 @@ const STATUS_LABELS: Record<string, string> = {
   trialing: "Próbaidőszak",
   past_due: "Lejárt",
   cancelled: "Lemondva",
-}
+};
 
 const INVOICE_STATUS_LABELS: Record<string, string> = {
   pending: "Függőben",
   paid: "Fizetve",
   failed: "Sikertelen",
   refunded: "Visszatérítve",
-}
+};
 
 function subscriptionStatusBadge(status: string) {
   switch (status) {
@@ -70,65 +70,65 @@ function subscriptionStatusBadge(status: string) {
           <CheckCircle className="size-3" />
           {STATUS_LABELS[status]}
         </Badge>
-      )
+      );
     case "trialing":
       return (
         <Badge variant="secondary" className="gap-1 text-xs">
           <Clock className="size-3" />
           {STATUS_LABELS[status]}
         </Badge>
-      )
+      );
     case "past_due":
       return (
         <Badge variant="destructive" className="gap-1 text-xs">
           <AlertCircle className="size-3" />
           {STATUS_LABELS[status]}
         </Badge>
-      )
+      );
     case "cancelled":
       return (
         <Badge variant="outline" className="gap-1 text-xs">
           <XCircle className="size-3" />
           {STATUS_LABELS[status]}
         </Badge>
-      )
+      );
     default:
       return (
         <Badge variant="outline" className="text-xs">
           {status}
         </Badge>
-      )
+      );
   }
 }
 
 function invoiceStatusBadge(status: string) {
   switch (status) {
     case "paid":
-      return <Badge className="text-xs">{INVOICE_STATUS_LABELS[status]}</Badge>
+      return <Badge className="text-xs">{INVOICE_STATUS_LABELS[status]}</Badge>;
     case "pending":
       return (
         <Badge variant="secondary" className="text-xs">
           {INVOICE_STATUS_LABELS[status]}
         </Badge>
-      )
+      );
     case "failed":
       return (
         <Badge variant="destructive" className="text-xs">
           {INVOICE_STATUS_LABELS[status]}
         </Badge>
-      )
+      );
     case "refunded":
       return (
         <Badge variant="outline" className="text-xs">
           {INVOICE_STATUS_LABELS[status]}
         </Badge>
-      )
+      );
     default:
       return (
         <Badge variant="outline" className="text-xs">
           {status}
         </Badge>
-      )
+      );
   }
 }
 
@@ -137,90 +137,90 @@ function invoiceStatusBadge(status: string) {
 /* ------------------------------------------------------------------ */
 
 export default function ClientSubscriptionDetailPage() {
-  const params = useParams<{ id: string }>()
-  const router = useRouter()
-  const id = params.id
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const id = params.id;
 
-  const [subscription, setSubscription] = useState<ShopSubscriptionWithPlan | null>(null)
-  const [invoices, setInvoices] = useState<SubscriptionInvoiceRow[]>([])
-  const [plans, setPlans] = useState<ShopPlanRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [subscription, setSubscription] = useState<ShopSubscriptionWithPlan | null>(null);
+  const [invoices, setInvoices] = useState<SubscriptionInvoiceRow[]>([]);
+  const [plans, setPlans] = useState<ShopPlanRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Edit subscription fields
-  const [editPlanId, setEditPlanId] = useState("")
-  const [editBillingCycle, setEditBillingCycle] = useState<"monthly" | "annual">("monthly")
+  const [editPlanId, setEditPlanId] = useState("");
+  const [editBillingCycle, setEditBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [editStatus, setEditStatus] = useState<"active" | "trialing" | "past_due" | "cancelled">(
     "active",
-  )
-  const [editCustomMonthly, setEditCustomMonthly] = useState("")
-  const [editCustomAnnual, setEditCustomAnnual] = useState("")
-  const [editPeriodEnd, setEditPeriodEnd] = useState("")
-  const [editNotes, setEditNotes] = useState("")
-  const [saving, setSaving] = useState(false)
+  );
+  const [editCustomMonthly, setEditCustomMonthly] = useState("");
+  const [editCustomAnnual, setEditCustomAnnual] = useState("");
+  const [editPeriodEnd, setEditPeriodEnd] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // Cancel
-  const [confirmCancel, setConfirmCancel] = useState(false)
-  const [cancelling, setCancelling] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   // Invoice create
-  const [showCreateInvoice, setShowCreateInvoice] = useState(false)
-  const [invoiceAmount, setInvoiceAmount] = useState("")
-  const [invoicePeriodStart, setInvoicePeriodStart] = useState("")
-  const [invoicePeriodEnd, setInvoicePeriodEnd] = useState("")
+  const [showCreateInvoice, setShowCreateInvoice] = useState(false);
+  const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [invoicePeriodStart, setInvoicePeriodStart] = useState("");
+  const [invoicePeriodEnd, setInvoicePeriodEnd] = useState("");
   const [invoiceStatus, setInvoiceStatus] = useState<"pending" | "paid" | "failed" | "refunded">(
     "pending",
-  )
-  const [invoiceNumber, setInvoiceNumber] = useState("")
-  const [invoiceProvider, setInvoiceProvider] = useState("")
-  const [creatingInvoice, setCreatingInvoice] = useState(false)
+  );
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [invoiceProvider, setInvoiceProvider] = useState("");
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Invoice update
-  const [updatingInvoiceId, setUpdatingInvoiceId] = useState<string | null>(null)
+  const [updatingInvoiceId, setUpdatingInvoiceId] = useState<string | null>(null);
 
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     const [subRes, plansRes, invRes] = await Promise.all([
       getSubscription(id),
       listPlans(),
       listInvoices(id),
-    ])
+    ]);
 
     if (!subRes.success || !subRes.data) {
-      setError(subRes.error ?? "Az előfizetés nem található.")
-      setLoading(false)
-      return
+      setError(subRes.error ?? "Az előfizetés nem található.");
+      setLoading(false);
+      return;
     }
 
-    const sub = subRes.data
-    setSubscription(sub)
-    setEditPlanId(sub.plan_id)
-    setEditBillingCycle(sub.billing_cycle)
-    setEditStatus(sub.status)
-    setEditCustomMonthly(sub.custom_monthly_price != null ? String(sub.custom_monthly_price) : "")
-    setEditCustomAnnual(sub.custom_annual_price != null ? String(sub.custom_annual_price) : "")
-    setEditPeriodEnd(sub.current_period_end.slice(0, 10))
-    setEditNotes(sub.notes ?? "")
+    const sub = subRes.data;
+    setSubscription(sub);
+    setEditPlanId(sub.plan_id);
+    setEditBillingCycle(sub.billing_cycle);
+    setEditStatus(sub.status);
+    setEditCustomMonthly(sub.custom_monthly_price != null ? String(sub.custom_monthly_price) : "");
+    setEditCustomAnnual(sub.custom_annual_price != null ? String(sub.custom_annual_price) : "");
+    setEditPeriodEnd(sub.current_period_end.slice(0, 10));
+    setEditNotes(sub.notes ?? "");
 
-    if (plansRes.success && plansRes.data) setPlans(plansRes.data)
-    if (invRes.success && invRes.data) setInvoices(invRes.data)
+    if (plansRes.success && plansRes.data) setPlans(plansRes.data);
+    if (invRes.success && invRes.data) setInvoices(invRes.data);
 
-    setLoading(false)
-  }, [id])
+    setLoading(false);
+  }, [id]);
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    fetchData();
+  }, [fetchData]);
 
   // ── Save subscription updates ────────────────────────────────────
   async function handleSave() {
-    setSaving(true)
-    setError(null)
-    setSuccessMsg(null)
+    setSaving(true);
+    setError(null);
+    setSuccessMsg(null);
 
     const res = await adminUpdateSubscription(id, {
       plan_id: editPlanId || undefined,
@@ -230,44 +230,44 @@ export default function ClientSubscriptionDetailPage() {
       custom_annual_price: editCustomAnnual ? Number(editCustomAnnual) : null,
       current_period_end: editPeriodEnd ? new Date(editPeriodEnd).toISOString() : undefined,
       notes: editNotes || null,
-    })
+    });
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a frissítéskor.")
+      setError(res.error ?? "Hiba a frissítéskor.");
     } else {
-      setSuccessMsg("Az előfizetés sikeresen frissítve.")
-      fetchData()
+      setSuccessMsg("Az előfizetés sikeresen frissítve.");
+      fetchData();
     }
-    setSaving(false)
+    setSaving(false);
   }
 
   // ── Cancel subscription ──────────────────────────────────────────
   async function handleCancel() {
     if (!confirmCancel) {
-      setConfirmCancel(true)
-      return
+      setConfirmCancel(true);
+      return;
     }
-    setCancelling(true)
-    setError(null)
-    const res = await adminCancelSubscription(id)
+    setCancelling(true);
+    setError(null);
+    const res = await adminCancelSubscription(id);
     if (!res.success) {
-      setError(res.error ?? "Hiba a lemondásnál.")
+      setError(res.error ?? "Hiba a lemondásnál.");
     } else {
-      setSuccessMsg("Az előfizetés lemondva.")
-      setConfirmCancel(false)
-      fetchData()
+      setSuccessMsg("Az előfizetés lemondva.");
+      setConfirmCancel(false);
+      fetchData();
     }
-    setCancelling(false)
+    setCancelling(false);
   }
 
   // ── Create invoice ───────────────────────────────────────────────
   async function handleCreateInvoice() {
     if (!invoiceAmount || !invoicePeriodStart || !invoicePeriodEnd) {
-      setError("Az összeg és a számlázási időszak kötelező.")
-      return
+      setError("Az összeg és a számlázási időszak kötelező.");
+      return;
     }
-    setCreatingInvoice(true)
-    setError(null)
+    setCreatingInvoice(true);
+    setError(null);
 
     const res = await adminCreateInvoice({
       subscription_id: id,
@@ -277,42 +277,42 @@ export default function ClientSubscriptionDetailPage() {
       status: invoiceStatus,
       invoice_number: invoiceNumber || undefined,
       invoice_provider: invoiceProvider || undefined,
-    })
+    });
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a számla létrehozásakor.")
+      setError(res.error ?? "Hiba a számla létrehozásakor.");
     } else {
-      setShowCreateInvoice(false)
-      setInvoiceAmount("")
-      setInvoicePeriodStart("")
-      setInvoicePeriodEnd("")
-      setInvoiceStatus("pending")
-      setInvoiceNumber("")
-      setInvoiceProvider("")
-      fetchData()
+      setShowCreateInvoice(false);
+      setInvoiceAmount("");
+      setInvoicePeriodStart("");
+      setInvoicePeriodEnd("");
+      setInvoiceStatus("pending");
+      setInvoiceNumber("");
+      setInvoiceProvider("");
+      fetchData();
     }
-    setCreatingInvoice(false)
+    setCreatingInvoice(false);
   }
 
   // ── Mark invoice paid ────────────────────────────────────────────
   async function handleMarkPaid(invoiceId: string) {
-    setUpdatingInvoiceId(invoiceId)
-    setError(null)
-    const res = await adminUpdateInvoice(invoiceId, { status: "paid" })
+    setUpdatingInvoiceId(invoiceId);
+    setError(null);
+    const res = await adminUpdateInvoice(invoiceId, { status: "paid" });
     if (!res.success) {
-      setError(res.error ?? "Hiba a számla frissítésekor.")
+      setError(res.error ?? "Hiba a számla frissítésekor.");
     } else {
-      fetchData()
+      fetchData();
     }
-    setUpdatingInvoiceId(null)
+    setUpdatingInvoiceId(null);
   }
 
   if (loading) {
     return (
       <div className="flex h-60 items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground size-6 animate-spin" />
       </div>
-    )
+    );
   }
 
   if (!subscription) {
@@ -324,9 +324,9 @@ export default function ClientSubscriptionDetailPage() {
             Vissza
           </Button>
         </Link>
-        <p className="text-sm text-destructive">{error ?? "Az előfizetés nem található."}</p>
+        <p className="text-destructive text-sm">{error ?? "Az előfizetés nem található."}</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -335,7 +335,7 @@ export default function ClientSubscriptionDetailPage() {
       <div className="flex items-start justify-between">
         <div>
           <Link href="/agency/clients">
-            <Button variant="ghost" size="sm" className="mb-3 gap-2 pl-0 text-muted-foreground">
+            <Button variant="ghost" size="sm" className="text-muted-foreground mb-3 gap-2 pl-0">
               <ArrowLeft className="size-4" />
               Vissza az ügyfelekhez
             </Button>
@@ -343,7 +343,7 @@ export default function ClientSubscriptionDetailPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{subscription.shop_identifier}</h1>
           <div className="mt-2 flex items-center gap-3">
             {subscriptionStatusBadge(subscription.status)}
-            <span className="text-sm text-muted-foreground">{subscription.plan.name}</span>
+            <span className="text-muted-foreground text-sm">{subscription.plan.name}</span>
           </div>
         </div>
 
@@ -362,7 +362,7 @@ export default function ClientSubscriptionDetailPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -384,7 +384,7 @@ export default function ClientSubscriptionDetailPage() {
               <select
                 value={editPlanId}
                 onChange={(e) => setEditPlanId(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -398,7 +398,7 @@ export default function ClientSubscriptionDetailPage() {
               <select
                 value={editBillingCycle}
                 onChange={(e) => setEditBillingCycle(e.target.value as "monthly" | "annual")}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 <option value="monthly">Havi</option>
                 <option value="annual">Éves</option>
@@ -411,7 +411,7 @@ export default function ClientSubscriptionDetailPage() {
                 onChange={(e) =>
                   setEditStatus(e.target.value as "active" | "trialing" | "past_due" | "cancelled")
                 }
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 <option value="active">Aktív</option>
                 <option value="trialing">Próbaidőszak</option>
@@ -477,8 +477,8 @@ export default function ClientSubscriptionDetailPage() {
             size="sm"
             variant="outline"
             onClick={() => {
-              setShowCreateInvoice((v) => !v)
-              setError(null)
+              setShowCreateInvoice((v) => !v);
+              setError(null);
             }}
           >
             {showCreateInvoice ? (
@@ -534,7 +534,7 @@ export default function ClientSubscriptionDetailPage() {
                   <select
                     value={invoiceStatus}
                     onChange={(e) => setInvoiceStatus(e.target.value as typeof invoiceStatus)}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   >
                     <option value="pending">Függőben</option>
                     <option value="paid">Fizetve</option>
@@ -574,8 +574,8 @@ export default function ClientSubscriptionDetailPage() {
         )}
 
         {invoices.length === 0 ? (
-          <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-            <FileText className="size-7 text-muted-foreground/40" />
+          <div className="border-border text-muted-foreground flex h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm">
+            <FileText className="text-muted-foreground/40 size-7" />
             <p>Nincsenek számlák.</p>
           </div>
         ) : (
@@ -593,22 +593,22 @@ export default function ClientSubscriptionDetailPage() {
             <TableBody>
               {invoices.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground font-mono text-xs">
                     {inv.invoice_number ?? inv.id.slice(0, 8)}
                     {inv.invoice_provider && (
-                      <span className="ml-1 text-muted-foreground/60">
+                      <span className="text-muted-foreground/60 ml-1">
                         ({inv.invoice_provider})
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                     {formatDate(inv.billing_period_start)} – {formatDate(inv.billing_period_end)}
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums">
                     {formatHUF(inv.amount)}
                   </TableCell>
                   <TableCell>{invoiceStatusBadge(inv.status)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     {inv.paid_at ? formatDate(inv.paid_at) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
@@ -635,5 +635,5 @@ export default function ClientSubscriptionDetailPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

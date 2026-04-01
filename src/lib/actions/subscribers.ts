@@ -51,10 +51,7 @@ async function getClientIp(): Promise<string> {
 
 // ── Public actions ─────────────────────────────────────────────────
 
-export async function subscribe(
-  email: string,
-  source?: string,
-): Promise<ActionResult> {
+export async function subscribe(email: string, source?: string): Promise<ActionResult> {
   try {
     // Rate limiting
     const ip = await getClientIp();
@@ -135,9 +132,7 @@ export async function subscribe(
   }
 }
 
-export async function unsubscribe(
-  email: string,
-): Promise<ActionResult> {
+export async function unsubscribe(email: string): Promise<ActionResult> {
   try {
     const parsed = z.string().email().safeParse(email);
     if (!parsed.success) {
@@ -169,13 +164,15 @@ export async function unsubscribe(
 
 // ── Admin actions ──────────────────────────────────────────────────
 
-export async function adminListSubscribers(filters: {
-  search?: string;
-  status?: string;
-  tag?: string;
-  page?: number;
-  perPage?: number;
-} = {}): Promise<ActionResult<SubscriberListData>> {
+export async function adminListSubscribers(
+  filters: {
+    search?: string;
+    status?: string;
+    tag?: string;
+    page?: number;
+    perPage?: number;
+  } = {},
+): Promise<ActionResult<SubscriberListData>> {
   try {
     await requireAdminOrViewer();
 
@@ -184,13 +181,7 @@ export async function adminListSubscribers(filters: {
       return { success: false, error: "Érvénytelen szűrő paraméterek." };
     }
 
-    const {
-      search,
-      status,
-      tag,
-      page = 1,
-      perPage = 20,
-    } = parsed.data;
+    const { search, status, tag, page = 1, perPage = 20 } = parsed.data;
 
     const admin = createAdminClient();
 
@@ -243,10 +234,7 @@ export async function adminListSubscribers(filters: {
   }
 }
 
-export async function adminTagSubscriber(
-  email: string,
-  tags: string[],
-): Promise<ActionResult> {
+export async function adminTagSubscriber(email: string, tags: string[]): Promise<ActionResult> {
   try {
     const profile = await requireAdmin();
 
@@ -334,10 +322,7 @@ export async function adminGetAllActiveSubscriberEmails(
       const { data, error } = await query;
 
       if (error) {
-        console.error(
-          "[adminGetAllActiveSubscriberEmails] DB error:",
-          error.message,
-        );
+        console.error("[adminGetAllActiveSubscriberEmails] DB error:", error.message);
         return {
           success: false,
           error: "Hiba a feliratkozók lekérésekor.",
@@ -361,10 +346,7 @@ export async function adminGetAllActiveSubscriberEmails(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(
-      "[adminGetAllActiveSubscriberEmails] Unexpected error:",
-      message,
-    );
+    console.error("[adminGetAllActiveSubscriberEmails] Unexpected error:", message);
     return { success: false, error: "Váratlan hiba történt." };
   }
 }
@@ -382,10 +364,7 @@ export async function adminGetAllTags(): Promise<ActionResult<string[]>> {
     // Fetch all distinct tags — Supabase doesn't support DISTINCT on array
     // elements directly, so we fetch all tags arrays and deduplicate in JS.
     // For large subscriber counts this should be replaced with a DB function.
-    const { data, error } = await admin
-      .from("subscribers")
-      .select("tags")
-      .not("tags", "eq", "{}");
+    const { data, error } = await admin.from("subscribers").select("tags").not("tags", "eq", "{}");
 
     if (error) {
       console.error("[adminGetAllTags] DB error:", error.message);

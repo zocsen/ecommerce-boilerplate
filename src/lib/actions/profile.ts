@@ -167,10 +167,7 @@ export async function updateAddresses(input: {
 
     const supabase = await createClient();
 
-    const { error } = await supabase
-      .from("profiles")
-      .update(updatePayload)
-      .eq("id", user.id);
+    const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
 
     if (error) {
       console.error("[updateAddresses] DB error:", error.message);
@@ -187,9 +184,7 @@ export async function updateAddresses(input: {
 
 // ── Change password ────────────────────────────────────────────────
 
-export async function changePassword(input: {
-  newPassword: string;
-}): Promise<ActionResult> {
+export async function changePassword(input: { newPassword: string }): Promise<ActionResult> {
   try {
     await requireAuth();
 
@@ -234,7 +229,11 @@ export async function listUserOrders(input?: {
     const from = (page - 1) * perPage;
     const to = from + perPage - 1;
 
-    const { data: orders, count, error } = await supabase
+    const {
+      data: orders,
+      count,
+      error,
+    } = await supabase
       .from("orders")
       .select("*", { count: "exact" })
       .eq("user_id", user.id)
@@ -291,12 +290,7 @@ export async function getUserOrder(orderId: string): Promise<
     const supabase = await createClient();
 
     const [orderResult, itemsResult] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("*")
-        .eq("id", idParsed.data)
-        .eq("user_id", user.id)
-        .single(),
+      supabase.from("orders").select("*").eq("id", idParsed.data).eq("user_id", user.id).single(),
       supabase
         .from("order_items")
         .select("*")

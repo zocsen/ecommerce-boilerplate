@@ -5,13 +5,9 @@ import { siteConfig } from "@/lib/config/site.config";
 /*  Auth layout — minimal centered card, no header/footer navigation   */
 /* ------------------------------------------------------------------ */
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-6 py-12">
+    <div className="bg-muted/40 flex min-h-screen flex-col items-center justify-center px-6 py-12">
       {/* Logo */}
       <Link
         href="/"
@@ -21,14 +17,14 @@ export default function AuthLayout({
       </Link>
 
       {/* Auth card */}
-      <div className="w-full max-w-[400px] rounded-xl border border-border bg-background p-8 shadow-sm">
+      <div className="border-border bg-background w-full max-w-[400px] rounded-xl border p-8 shadow-sm">
         {children}
       </div>
 
       {/* Back link */}
       <Link
         href="/"
-        className="mt-8 text-xs text-muted-foreground transition-colors duration-300 hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground mt-8 text-xs transition-colors duration-300"
       >
         &larr; Vissza a boltba
       </Link>

@@ -30,10 +30,7 @@ function useOptionGroups(variants: ProductVariantRow[]) {
 
     // Option 1 — always present
     const option1Name = variants[0]?.option1_name ?? "Méret";
-    const option1Map = new Map<
-      string,
-      { variantIds: string[]; allOutOfStock: boolean }
-    >();
+    const option1Map = new Map<string, { variantIds: string[]; allOutOfStock: boolean }>();
 
     for (const v of variants) {
       if (v.option1_value == null) continue;
@@ -65,17 +62,11 @@ function useOptionGroups(variants: ProductVariantRow[]) {
     }
 
     // Option 2 — optional
-    const hasOption2 = variants.some(
-      (v) => v.option2_name != null && v.option2_value != null,
-    );
+    const hasOption2 = variants.some((v) => v.option2_name != null && v.option2_value != null);
 
     if (hasOption2) {
-      const option2Name = variants.find((v) => v.option2_name != null)
-        ?.option2_name as string;
-      const option2Map = new Map<
-        string,
-        { variantIds: string[]; allOutOfStock: boolean }
-      >();
+      const option2Name = variants.find((v) => v.option2_name != null)?.option2_name as string;
+      const option2Map = new Map<string, { variantIds: string[]; allOutOfStock: boolean }>();
 
       for (const v of variants) {
         if (v.option2_value == null) continue;
@@ -108,11 +99,7 @@ function useOptionGroups(variants: ProductVariantRow[]) {
   }, [variants]);
 }
 
-export function VariantSelector({
-  variants,
-  selectedVariantId,
-  onSelect,
-}: VariantSelectorProps) {
+export function VariantSelector({ variants, selectedVariantId, onSelect }: VariantSelectorProps) {
   const groups = useOptionGroups(variants);
 
   if (variants.length === 0) return null;
@@ -126,14 +113,12 @@ export function VariantSelector({
     <div className="space-y-5">
       {groups.map((group) => (
         <div key={group.name}>
-          <p className="mb-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          <p className="text-muted-foreground mb-2.5 text-xs font-medium tracking-widest uppercase">
             {group.name}
           </p>
           <div className="flex flex-wrap gap-2">
             {group.values.map((option) => {
-              const isSelected = option.variantIds.includes(
-                selectedVariantId ?? "",
-              );
+              const isSelected = option.variantIds.includes(selectedVariantId ?? "");
               const isDisabled = option.allOutOfStock;
 
               return (
@@ -156,12 +141,12 @@ export function VariantSelector({
                   }}
                   className={cn(
                     "relative min-w-[3rem] cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-300",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                     isSelected
                       ? "border-foreground bg-foreground text-background"
                       : "border-border bg-background text-foreground hover:border-foreground/40",
                     isDisabled &&
-                      "cursor-not-allowed border-border/50 bg-muted text-muted-foreground/50 hover:border-border/50",
+                      "border-border/50 bg-muted text-muted-foreground/50 hover:border-border/50 cursor-not-allowed",
                   )}
                 >
                   {isDisabled && (
@@ -169,12 +154,10 @@ export function VariantSelector({
                       aria-hidden="true"
                       className="absolute inset-0 flex items-center justify-center"
                     >
-                      <span className="h-px w-[calc(100%-16px)] rotate-[-12deg] bg-muted-foreground/30" />
+                      <span className="bg-muted-foreground/30 h-px w-[calc(100%-16px)] rotate-[-12deg]" />
                     </span>
                   )}
-                  <span className={cn(isDisabled && "line-through")}>
-                    {option.value}
-                  </span>
+                  <span className={cn(isDisabled && "line-through")}>{option.value}</span>
                 </button>
               );
             })}

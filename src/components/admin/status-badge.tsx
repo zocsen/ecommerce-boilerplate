@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /*  Unified StatusBadge for any entity status                           */
@@ -7,17 +7,17 @@ import { cn } from "@/lib/utils"
 
 /** Configuration for a single status variant. */
 export interface StatusConfig {
-  label: string
-  variant: "default" | "secondary" | "destructive" | "outline"
+  label: string;
+  variant: "default" | "secondary" | "destructive" | "outline";
 }
 
 export interface StatusBadgeProps<T extends string = string> {
   /** The status key to render */
-  status: T
+  status: T;
   /** Map of status keys to their display configuration */
-  config: Record<T, StatusConfig>
+  config: Record<T, StatusConfig>;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -30,21 +30,21 @@ export interface StatusBadgeProps<T extends string = string> {
  * <StatusBadge status="subscribed" config={SUBSCRIBER_STATUS_CONFIG} />
  */
 export function StatusBadge<T extends string>({ status, config, className }: StatusBadgeProps<T>) {
-  const entry = config[status]
+  const entry = config[status];
 
   if (!entry) {
     return (
       <Badge variant="outline" className={cn("text-xs", className)}>
         {status}
       </Badge>
-    )
+    );
   }
 
   return (
     <Badge variant={entry.variant} className={cn("text-xs", className)}>
       {entry.label}
     </Badge>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -57,4 +57,4 @@ export const SUBSCRIBER_STATUS_CONFIG: Record<string, StatusConfig> = {
   unsubscribed: { label: "Leiratkozott", variant: "outline" },
   bounced: { label: "Visszapattant", variant: "destructive" },
   complained: { label: "Panasz", variant: "destructive" },
-}
+};

@@ -105,7 +105,7 @@ export default async function AdminDashboardPage() {
       {/* Page heading */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Áttekintés az elmúlt 30 napról</p>
+        <p className="text-muted-foreground mt-1 text-sm">Áttekintés az elmúlt 30 napról</p>
       </div>
 
       {/* KPI cards */}
@@ -136,7 +136,7 @@ export default async function AdminDashboardPage() {
             <CardDescription>Alacsony készlet</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
               {data.lowStockVariants}
-              <span className="ml-1 text-sm font-normal text-muted-foreground">változat</span>
+              <span className="text-muted-foreground ml-1 text-sm font-normal">változat</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -153,20 +153,20 @@ export default async function AdminDashboardPage() {
         </CardHeader>
         <CardContent>
           {data.recentPaidOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nincsenek rendelések.</p>
+            <p className="text-muted-foreground text-sm">Nincsenek rendelések.</p>
           ) : (
             <div className="space-y-3">
               {data.recentPaidOrders.map((order) => (
                 <Link
                   key={order.id}
                   href={`/admin/orders/${order.id}`}
-                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors duration-300 hover:bg-muted/50"
+                  className="border-border hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors duration-300"
                 >
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium">
                       {order.id.slice(0, 8).toUpperCase()}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {order.email} &middot; {formatDate(order.created_at)}
                     </span>
                   </div>

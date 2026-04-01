@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Package,
@@ -10,7 +10,7 @@ import {
   RotateCcw,
   ArrowRight,
   AlertTriangle,
-} from "lucide-react"
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,16 +21,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   ORDER_STATUS_LABELS,
   TRANSITION_META,
   getStatusTransitions,
   getTransitionDescription,
   getStepOrder,
-} from "@/lib/constants/order-status"
-import type { OrderStatus, AddressJson, PaymentMethod } from "@/lib/types/database"
+} from "@/lib/constants/order-status";
+import type { OrderStatus, AddressJson, PaymentMethod } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Icon maps                                                            */
@@ -44,7 +44,7 @@ const STEP_ICONS: Record<OrderStatus, React.ElementType> = {
   shipped: Truck,
   cancelled: XCircle,
   refunded: RotateCcw,
-}
+};
 
 const ACTION_ICONS: Record<string, React.ElementType> = {
   check: CheckCircle2,
@@ -53,29 +53,29 @@ const ACTION_ICONS: Record<string, React.ElementType> = {
   x: XCircle,
   undo: RotateCcw,
   banknote: Banknote,
-}
+};
 
 /* ------------------------------------------------------------------ */
 /*  StatusStepper — visual order progress indicator                     */
 /* ------------------------------------------------------------------ */
 
 export interface StatusStepperProps {
-  currentStatus: OrderStatus
-  paymentMethod: PaymentMethod
+  currentStatus: OrderStatus;
+  paymentMethod: PaymentMethod;
 }
 
 export function StatusStepper({ currentStatus, paymentMethod }: StatusStepperProps) {
-  const isTerminal = currentStatus === "cancelled" || currentStatus === "refunded"
-  const steps = getStepOrder(paymentMethod)
-  const currentIdx = steps.indexOf(currentStatus)
+  const isTerminal = currentStatus === "cancelled" || currentStatus === "refunded";
+  const steps = getStepOrder(paymentMethod);
+  const currentIdx = steps.indexOf(currentStatus);
 
   return (
     <div className="flex items-center gap-1">
       {steps.map((step, idx) => {
-        const Icon = STEP_ICONS[step]
-        const isActive = step === currentStatus && !isTerminal
-        const isCompleted = !isTerminal && currentIdx >= 0 && idx < currentIdx
-        const isFuture = !isTerminal && (currentIdx < 0 || idx > currentIdx)
+        const Icon = STEP_ICONS[step];
+        const isActive = step === currentStatus && !isTerminal;
+        const isCompleted = !isTerminal && currentIdx >= 0 && idx < currentIdx;
+        const isFuture = !isTerminal && (currentIdx < 0 || idx > currentIdx);
 
         return (
           <div key={step} className="flex items-center gap-1">
@@ -99,13 +99,13 @@ export function StatusStepper({ currentStatus, paymentMethod }: StatusStepperPro
               {ORDER_STATUS_LABELS[step]}
             </div>
           </div>
-        )
+        );
       })}
 
       {isTerminal && (
         <div className="flex items-center gap-1">
-          <ArrowRight className="size-3 text-destructive/50" />
-          <div className="flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
+          <ArrowRight className="text-destructive/50 size-3" />
+          <div className="bg-destructive/10 text-destructive flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
             {currentStatus === "cancelled" ? (
               <XCircle className="size-3" />
             ) : (
@@ -116,7 +116,7 @@ export function StatusStepper({ currentStatus, paymentMethod }: StatusStepperPro
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -124,12 +124,12 @@ export function StatusStepper({ currentStatus, paymentMethod }: StatusStepperPro
 /* ------------------------------------------------------------------ */
 
 export interface StatusTransitionButtonProps {
-  targetStatus: OrderStatus
-  currentStatus: OrderStatus
-  paymentMethod: PaymentMethod
-  disabled: boolean
-  trackingCode?: string
-  onConfirm: (status: OrderStatus) => void
+  targetStatus: OrderStatus;
+  currentStatus: OrderStatus;
+  paymentMethod: PaymentMethod;
+  disabled: boolean;
+  trackingCode?: string;
+  onConfirm: (status: OrderStatus) => void;
 }
 
 export function StatusTransitionButton({
@@ -140,9 +140,9 @@ export function StatusTransitionButton({
   trackingCode,
   onConfirm,
 }: StatusTransitionButtonProps) {
-  const meta = TRANSITION_META[targetStatus]
-  const description = getTransitionDescription(targetStatus, paymentMethod, currentStatus)
-  const IconComponent = ACTION_ICONS[meta.icon]
+  const meta = TRANSITION_META[targetStatus];
+  const description = getTransitionDescription(targetStatus, paymentMethod, currentStatus);
+  const IconComponent = ACTION_ICONS[meta.icon];
 
   return (
     <AlertDialog>
@@ -167,14 +167,14 @@ export function StatusTransitionButton({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {meta.destructive && <AlertTriangle className="mr-2 inline size-4 text-destructive" />}
+            {meta.destructive && <AlertTriangle className="text-destructive mr-2 inline size-4" />}
             Státusz módosítása: {meta.label}
           </AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
 
         {targetStatus === "shipped" && trackingCode && (
-          <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm">
+          <div className="border-border bg-muted/50 rounded-lg border px-3 py-2 text-sm">
             <span className="text-muted-foreground">Csomagkövetési szám: </span>
             <span className="font-mono font-medium">{trackingCode}</span>
           </div>
@@ -193,7 +193,7 @@ export function StatusTransitionButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -201,15 +201,15 @@ export function StatusTransitionButton({
 /* ------------------------------------------------------------------ */
 
 export interface AddressDisplayProps {
-  address: AddressJson
-  label: string
+  address: AddressJson;
+  label: string;
 }
 
 export function AddressDisplay({ address, label }: AddressDisplayProps) {
-  if (!address.name && !address.street) return null
+  if (!address.name && !address.street) return null;
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">{label}</p>
       <div className="text-sm">
         <p className="font-medium">{address.name}</p>
         <p>{address.street}</p>
@@ -219,5 +219,5 @@ export function AddressDisplay({ address, label }: AddressDisplayProps) {
         <p>{address.country}</p>
       </div>
     </div>
-  )
+  );
 }

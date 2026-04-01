@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { useParams } from "next/navigation"
+import { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
 import {
   FileText,
   Send,
@@ -11,30 +11,30 @@ import {
   XCircle,
   RotateCcw,
   AlertTriangle,
-} from "lucide-react"
-import { adminGetOrder, adminUpdateOrderStatus } from "@/lib/actions/orders"
-import { sendReceipt, sendShippingUpdate } from "@/lib/integrations/email/actions"
-import { formatHUF, formatDate, formatDateTime } from "@/lib/utils/format"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { OrderStatusBadge } from "@/components/admin/order-status-badge"
-import { OrderNotes } from "@/components/admin/order-notes"
+} from "lucide-react";
+import { adminGetOrder, adminUpdateOrderStatus } from "@/lib/actions/orders";
+import { sendReceipt, sendShippingUpdate } from "@/lib/integrations/email/actions";
+import { formatHUF, formatDate, formatDateTime } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
+import { OrderNotes } from "@/components/admin/order-notes";
 import {
   StatusStepper,
   StatusTransitionButton,
   AddressDisplay,
-} from "@/components/admin/order-detail-components"
-import { createClient as createBrowserClient } from "@/lib/supabase/client"
+} from "@/components/admin/order-detail-components";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import {
   ORDER_STATUS_LABELS,
   getStatusTransitions,
   isTerminalStatusForPayment,
-} from "@/lib/constants/order-status"
-import type { OrderRow, OrderItemRow, OrderStatus, PaymentMethod } from "@/lib/types/database"
+} from "@/lib/constants/order-status";
+import type { OrderRow, OrderItemRow, OrderStatus, PaymentMethod } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Order Detail                                                  */
@@ -43,108 +43,108 @@ import type { OrderRow, OrderItemRow, OrderStatus, PaymentMethod } from "@/lib/t
 // ── Main page component ────────────────────────────────────────────
 
 interface OrderWithItems extends OrderRow {
-  order_items: OrderItemRow[]
+  order_items: OrderItemRow[];
 }
 
 export default function AdminOrderDetailPage() {
-  const params = useParams()
-  const orderId = params.id as string
+  const params = useParams();
+  const orderId = params.id as string;
 
-  const [order, setOrder] = useState<OrderWithItems | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [trackingCode, setTrackingCode] = useState("")
-  const [currentUserId, setCurrentUserId] = useState<string>("")
-  const [isAgencyViewer, setIsAgencyViewer] = useState(false)
+  const [order, setOrder] = useState<OrderWithItems | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [trackingCode, setTrackingCode] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [isAgencyViewer, setIsAgencyViewer] = useState(false);
 
   const fetchOrder = useCallback(async () => {
-    const result = await adminGetOrder(orderId)
+    const result = await adminGetOrder(orderId);
     if (result.success && result.data) {
-      setOrder(result.data as OrderWithItems)
+      setOrder(result.data as OrderWithItems);
     } else {
-      setError(result.error ?? "Nem sikerült betölteni a rendelést.")
+      setError(result.error ?? "Nem sikerült betölteni a rendelést.");
     }
-    setLoading(false)
-  }, [orderId])
+    setLoading(false);
+  }, [orderId]);
 
   useEffect(() => {
-    fetchOrder()
+    fetchOrder();
 
     // Fetch current user for notes ownership
-    const supabase = createBrowserClient()
+    const supabase = createBrowserClient();
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        setCurrentUserId(data.user.id)
+        setCurrentUserId(data.user.id);
       }
-    })
+    });
     supabase
       .from("profiles")
       .select("role")
       .single()
       .then(({ data }) => {
         if (data?.role === "agency_viewer") {
-          setIsAgencyViewer(true)
+          setIsAgencyViewer(true);
         }
-      })
-  }, [fetchOrder])
+      });
+  }, [fetchOrder]);
 
   async function handleStatusChange(newStatus: OrderStatus) {
-    if (!order) return
-    setActionLoading(true)
-    setActionError(null)
+    if (!order) return;
+    setActionLoading(true);
+    setActionError(null);
 
     const result = await adminUpdateOrderStatus(
       order.id,
       newStatus,
       newStatus === "shipped" ? trackingCode || undefined : undefined,
-    )
+    );
 
     if (result.success) {
       // Send email notifications
       if (newStatus === "paid") {
-        await sendReceipt(order.id)
+        await sendReceipt(order.id);
       }
       if (newStatus === "shipped") {
-        await sendShippingUpdate(order.id, trackingCode || undefined)
+        await sendShippingUpdate(order.id, trackingCode || undefined);
       }
-      await fetchOrder()
-      setTrackingCode("")
+      await fetchOrder();
+      setTrackingCode("");
     } else {
-      setActionError(result.error ?? "Nem sikerült a státusz módosítása.")
+      setActionError(result.error ?? "Nem sikerült a státusz módosítása.");
     }
 
-    setActionLoading(false)
+    setActionLoading(false);
   }
 
   async function handleSendReceipt() {
-    if (!order) return
-    setActionLoading(true)
-    await sendReceipt(order.id)
-    setActionLoading(false)
+    if (!order) return;
+    setActionLoading(true);
+    await sendReceipt(order.id);
+    setActionLoading(false);
   }
 
   if (loading) {
     return (
-      <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-60 items-center justify-center text-sm">
         Betöltés...
       </div>
-    )
+    );
   }
 
   if (error || !order) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-destructive text-sm">{error}</p>
       </div>
-    )
+    );
   }
 
-  const paymentMethod: PaymentMethod = order.payment_method ?? "barion"
-  const transitions = getStatusTransitions(paymentMethod)
-  const possibleTransitions = transitions[order.status] ?? []
-  const isTerminal = isTerminalStatusForPayment(order.status, paymentMethod)
+  const paymentMethod: PaymentMethod = order.payment_method ?? "barion";
+  const transitions = getStatusTransitions(paymentMethod);
+  const possibleTransitions = transitions[order.status] ?? [];
+  const isTerminal = isTerminalStatusForPayment(order.status, paymentMethod);
 
   return (
     <div className="space-y-6">
@@ -163,7 +163,7 @@ export default function AdminOrderDetailPage() {
               </Badge>
             )}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(order.created_at)}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{formatDateTime(order.created_at)}</p>
         </div>
 
         <Button variant="outline" size="sm" disabled={actionLoading} onClick={handleSendReceipt}>
@@ -173,7 +173,7 @@ export default function AdminOrderDetailPage() {
       </div>
 
       {/* ── Status stepper ──────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card px-4 py-3">
+      <div className="border-border bg-card overflow-x-auto rounded-lg border px-4 py-3">
         <StatusStepper currentStatus={order.status} paymentMethod={paymentMethod} />
       </div>
 
@@ -221,7 +221,7 @@ export default function AdminOrderDetailPage() {
 
             {/* Error message */}
             {actionError && (
-              <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              <div className="border-destructive/30 bg-destructive/5 text-destructive flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                 <AlertTriangle className="size-4 shrink-0" />
                 {actionError}
               </div>
@@ -232,7 +232,7 @@ export default function AdminOrderDetailPage() {
 
       {/* Terminal state notice */}
       {isTerminal && (
-        <div className="flex items-center gap-2 rounded-lg border border-muted bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+        <div className="border-muted bg-muted/50 text-muted-foreground flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
           {order.status === "cancelled" ? (
             <XCircle className="size-4 shrink-0" />
           ) : order.status === "refunded" ? (
@@ -256,7 +256,7 @@ export default function AdminOrderDetailPage() {
             <CardContent>
               <div className="space-y-3">
                 {order.order_items.map((item) => {
-                  const variant = item.variant_snapshot as Record<string, string | undefined>
+                  const variant = item.variant_snapshot as Record<string, string | undefined>;
                   const variantLabel = [
                     variant.option1Value
                       ? `${variant.option1Name ?? "Méret"}: ${variant.option1Value}`
@@ -264,32 +264,32 @@ export default function AdminOrderDetailPage() {
                     variant.option2Value ? `${variant.option2Name}: ${variant.option2Value}` : null,
                   ]
                     .filter(Boolean)
-                    .join(" / ")
+                    .join(" / ");
 
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded-lg border border-border p-3"
+                      className="border-border flex items-center justify-between rounded-lg border p-3"
                     >
                       <div>
                         <p className="text-sm font-medium">{item.title_snapshot}</p>
                         {variantLabel && (
-                          <p className="text-xs text-muted-foreground">{variantLabel}</p>
+                          <p className="text-muted-foreground text-xs">{variantLabel}</p>
                         )}
                         {variant.sku && (
-                          <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                          <p className="text-muted-foreground text-xs">SKU: {variant.sku}</p>
                         )}
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium tabular-nums">
                           {formatHUF(item.line_total)}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           {item.quantity} x {formatHUF(item.unit_price_snapshot)}
                         </p>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
 
@@ -350,7 +350,7 @@ export default function AdminOrderDetailPage() {
                 )}
               </div>
               {order.user_id && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Felhasználó: {order.user_id.slice(0, 8)}...
                 </p>
               )}
@@ -378,12 +378,12 @@ export default function AdminOrderDetailPage() {
 
               {order.shipping_method === "pickup" && (
                 <div className="space-y-1 text-sm">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                     Átvételi pont
                   </p>
                   <p className="font-medium">{order.pickup_point_provider?.toUpperCase()}</p>
                   <p>{order.pickup_point_label}</p>
-                  <p className="text-xs text-muted-foreground">ID: {order.pickup_point_id}</p>
+                  <p className="text-muted-foreground text-xs">ID: {order.pickup_point_id}</p>
                 </div>
               )}
             </CardContent>
@@ -399,7 +399,7 @@ export default function AdminOrderDetailPage() {
 
               {order.invoice_number && (
                 <div className="space-y-1 text-sm">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                     Számla
                   </p>
                   <p className="font-medium">{order.invoice_number}</p>
@@ -426,16 +426,16 @@ export default function AdminOrderDetailPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div>
-                <p className="text-xs text-muted-foreground">Fizetési mód</p>
+                <p className="text-muted-foreground text-xs">Fizetési mód</p>
                 <div className="mt-0.5 flex items-center gap-1.5">
                   {paymentMethod === "cod" ? (
                     <>
-                      <Banknote className="size-3.5 text-muted-foreground" />
+                      <Banknote className="text-muted-foreground size-3.5" />
                       <span className="font-medium">Utánvét</span>
                     </>
                   ) : (
                     <>
-                      <Wallet className="size-3.5 text-muted-foreground" />
+                      <Wallet className="text-muted-foreground size-3.5" />
                       <span className="font-medium">Online bankkártya (Barion)</span>
                     </>
                   )}
@@ -443,25 +443,25 @@ export default function AdminOrderDetailPage() {
               </div>
               {order.cod_fee > 0 && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Utánvét kezelési díj</p>
+                  <p className="text-muted-foreground text-xs">Utánvét kezelési díj</p>
                   <p className="font-medium">{formatHUF(order.cod_fee)}</p>
                 </div>
               )}
               {order.barion_payment_id && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Barion ID</p>
+                  <p className="text-muted-foreground text-xs">Barion ID</p>
                   <p className="font-mono text-xs">{order.barion_payment_id}</p>
                 </div>
               )}
               {order.barion_status && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Barion státusz</p>
+                  <p className="text-muted-foreground text-xs">Barion státusz</p>
                   <p className="font-medium">{order.barion_status}</p>
                 </div>
               )}
               {order.paid_at && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Fizetve</p>
+                  <p className="text-muted-foreground text-xs">Fizetve</p>
                   <p>{formatDateTime(order.paid_at)}</p>
                 </div>
               )}
@@ -475,12 +475,12 @@ export default function AdminOrderDetailPage() {
                 <CardTitle>Megjegyzés</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{order.notes}</p>
+                <p className="text-muted-foreground text-sm">{order.notes}</p>
               </CardContent>
             </Card>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }

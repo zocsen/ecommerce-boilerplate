@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 /* ------------------------------------------------------------------ */
 /*  Subscription management server actions (FE-003)                    */
@@ -7,11 +7,11 @@
 /*  Shop-owner actions use requireAdminOrViewer().                      */
 /* ------------------------------------------------------------------ */
 
-import { z } from "zod"
-import { createAdminClient } from "@/lib/supabase/admin"
-import { requireAgencyOwner, requireAdminOrViewer } from "@/lib/security/roles"
-import { logAudit } from "@/lib/security/logger"
-import { siteConfig } from "@/lib/config/site.config"
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAgencyOwner, requireAdminOrViewer } from "@/lib/security/roles";
+import { logAudit } from "@/lib/security/logger";
+import { siteConfig } from "@/lib/config/site.config";
 import {
   planCreateSchema,
   planUpdateSchema,
@@ -19,29 +19,29 @@ import {
   subscriptionUpdateSchema,
   invoiceCreateSchema,
   invoiceUpdateSchema,
-} from "@/lib/validators/subscription"
-import { uuidSchema } from "@/lib/validators/uuid"
+} from "@/lib/validators/subscription";
+import { uuidSchema } from "@/lib/validators/uuid";
 import type {
   ShopPlanRow,
   ShopSubscriptionRow,
   ShopSubscriptionWithPlan,
   SubscriptionInvoiceRow,
-} from "@/lib/types/database"
+} from "@/lib/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────
 
 interface ActionResult<T = undefined> {
-  success: boolean
-  data?: T
-  error?: string
+  success: boolean;
+  data?: T;
+  error?: string;
 }
 
 // ── Agency mode guard ──────────────────────────────────────────────
 
-const AGENCY_MODE_DISABLED_ERROR = "Az ügynökségi mód nincs engedélyezve."
+const AGENCY_MODE_DISABLED_ERROR = "Az ügynökségi mód nincs engedélyezve.";
 
 function isAgencyModeEnabled(): boolean {
-  return siteConfig.admin.enableAgencyMode
+  return siteConfig.admin.enableAgencyMode;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -51,49 +51,49 @@ function isAgencyModeEnabled(): boolean {
 /** List all active plans (any admin or viewer can read) */
 export async function listPlans(): Promise<ActionResult<ShopPlanRow[]>> {
   try {
-    await requireAdminOrViewer()
-    const admin = createAdminClient()
+    await requireAdminOrViewer();
+    const admin = createAdminClient();
 
     const { data, error } = await admin
       .from("shop_plans")
       .select("*")
-      .order("sort_order", { ascending: true })
+      .order("sort_order", { ascending: true });
 
     if (error) {
-      console.error("[listPlans] Error:", error.message)
-      return { success: false, error: "Hiba a csomagok lekérésekor." }
+      console.error("[listPlans] Error:", error.message);
+      return { success: false, error: "Hiba a csomagok lekérésekor." };
     }
 
-    return { success: true, data: data ?? [] }
+    return { success: true, data: data ?? [] };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[listPlans] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[listPlans] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
 /** Get a single plan by ID */
 export async function getPlan(id: string): Promise<ActionResult<ShopPlanRow>> {
   try {
-    await requireAdminOrViewer()
+    await requireAdminOrViewer();
 
-    const idParsed = uuidSchema.safeParse(id)
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen csomag azonosító." }
+      return { success: false, error: "Érvénytelen csomag azonosító." };
     }
 
-    const admin = createAdminClient()
-    const { data, error } = await admin.from("shop_plans").select("*").eq("id", id).single()
+    const admin = createAdminClient();
+    const { data, error } = await admin.from("shop_plans").select("*").eq("id", id).single();
 
     if (error || !data) {
-      return { success: false, error: "A csomag nem található." }
+      return { success: false, error: "A csomag nem található." };
     }
 
-    return { success: true, data }
+    return { success: true, data };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[getPlan] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[getPlan] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -101,18 +101,18 @@ export async function getPlan(id: string): Promise<ActionResult<ShopPlanRow>> {
 export async function adminCreatePlan(input: unknown): Promise<ActionResult<{ id: string }>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    const profile = await requireAgencyOwner()
+    const profile = await requireAgencyOwner();
 
-    const parsed = planCreateSchema.safeParse(input)
+    const parsed = planCreateSchema.safeParse(input);
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0]
-      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." }
+      const firstIssue = parsed.error.issues[0];
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." };
     }
 
-    const data = parsed.data
-    const admin = createAdminClient()
+    const data = parsed.data;
+    const admin = createAdminClient();
 
     const { data: plan, error } = await admin
       .from("shop_plans")
@@ -127,14 +127,14 @@ export async function adminCreatePlan(input: unknown): Promise<ActionResult<{ id
         is_active: data.is_active ?? true,
       })
       .select("id")
-      .single()
+      .single();
 
     if (error || !plan) {
       if (error?.code === "23505") {
-        return { success: false, error: "Ez a slug már foglalt." }
+        return { success: false, error: "Ez a slug már foglalt." };
       }
-      console.error("[adminCreatePlan] Insert error:", error?.message)
-      return { success: false, error: "Hiba a csomag létrehozásakor." }
+      console.error("[adminCreatePlan] Insert error:", error?.message);
+      return { success: false, error: "Hiba a csomag létrehozásakor." };
     }
 
     await logAudit({
@@ -144,13 +144,13 @@ export async function adminCreatePlan(input: unknown): Promise<ActionResult<{ id
       entityType: "shop_plan",
       entityId: plan.id,
       metadata: { name: data.name, slug: data.slug },
-    })
+    });
 
-    return { success: true, data: { id: plan.id } }
+    return { success: true, data: { id: plan.id } };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[adminCreatePlan] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminCreatePlan] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -161,49 +161,49 @@ export async function adminUpdatePlan(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    const profile = await requireAgencyOwner()
+    const profile = await requireAgencyOwner();
 
-    const idParsed = uuidSchema.safeParse(id)
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen csomag azonosító." }
+      return { success: false, error: "Érvénytelen csomag azonosító." };
     }
 
-    const parsed = planUpdateSchema.safeParse(input)
+    const parsed = planUpdateSchema.safeParse(input);
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0]
-      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." }
+      const firstIssue = parsed.error.issues[0];
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." };
     }
 
-    const data = parsed.data
-    const admin = createAdminClient()
+    const data = parsed.data;
+    const admin = createAdminClient();
 
-    const updatePayload: Record<string, unknown> = {}
-    if (data.name !== undefined) updatePayload.name = data.name
-    if (data.slug !== undefined) updatePayload.slug = data.slug
-    if (data.description !== undefined) updatePayload.description = data.description
+    const updatePayload: Record<string, unknown> = {};
+    if (data.name !== undefined) updatePayload.name = data.name;
+    if (data.slug !== undefined) updatePayload.slug = data.slug;
+    if (data.description !== undefined) updatePayload.description = data.description;
     if (data.base_monthly_price !== undefined)
-      updatePayload.base_monthly_price = data.base_monthly_price
+      updatePayload.base_monthly_price = data.base_monthly_price;
     if (data.base_annual_price !== undefined)
-      updatePayload.base_annual_price = data.base_annual_price
-    if (data.features !== undefined) updatePayload.features = data.features
-    if (data.sort_order !== undefined) updatePayload.sort_order = data.sort_order
-    if (data.is_active !== undefined) updatePayload.is_active = data.is_active
+      updatePayload.base_annual_price = data.base_annual_price;
+    if (data.features !== undefined) updatePayload.features = data.features;
+    if (data.sort_order !== undefined) updatePayload.sort_order = data.sort_order;
+    if (data.is_active !== undefined) updatePayload.is_active = data.is_active;
 
     const { data: plan, error } = await admin
       .from("shop_plans")
       .update(updatePayload)
       .eq("id", id)
       .select("id")
-      .single()
+      .single();
 
     if (error || !plan) {
       if (error?.code === "23505") {
-        return { success: false, error: "Ez a slug már foglalt." }
+        return { success: false, error: "Ez a slug már foglalt." };
       }
-      console.error("[adminUpdatePlan] Update error:", error?.message)
-      return { success: false, error: "Hiba a csomag frissítésekor." }
+      console.error("[adminUpdatePlan] Update error:", error?.message);
+      return { success: false, error: "Hiba a csomag frissítésekor." };
     }
 
     await logAudit({
@@ -213,13 +213,13 @@ export async function adminUpdatePlan(
       entityType: "shop_plan",
       entityId: plan.id,
       metadata: { changes: data },
-    })
+    });
 
-    return { success: true, data: { id: plan.id } }
+    return { success: true, data: { id: plan.id } };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[adminUpdatePlan] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminUpdatePlan] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -236,9 +236,9 @@ export async function adminUpdatePlan(
  */
 export async function getMySubscription(): Promise<ActionResult<ShopSubscriptionWithPlan | null>> {
   try {
-    await requireAdminOrViewer()
-    const admin = createAdminClient()
-    const shopId = siteConfig.subscription.defaultShopIdentifier
+    await requireAdminOrViewer();
+    const admin = createAdminClient();
+    const shopId = siteConfig.subscription.defaultShopIdentifier;
 
     const { data, error } = await admin
       .from("shop_subscriptions")
@@ -247,18 +247,18 @@ export async function getMySubscription(): Promise<ActionResult<ShopSubscription
       .in("status", ["active", "trialing", "past_due"])
       .order("created_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle();
 
     if (error) {
-      console.error("[getMySubscription] Error:", error.message)
-      return { success: false, error: "Hiba az előfizetés lekérésekor." }
+      console.error("[getMySubscription] Error:", error.message);
+      return { success: false, error: "Hiba az előfizetés lekérésekor." };
     }
 
-    return { success: true, data: (data as ShopSubscriptionWithPlan) ?? null }
+    return { success: true, data: (data as ShopSubscriptionWithPlan) ?? null };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[getMySubscription] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[getMySubscription] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -268,9 +268,9 @@ export async function getMySubscription(): Promise<ActionResult<ShopSubscription
  */
 export async function getMyInvoices(): Promise<ActionResult<SubscriptionInvoiceRow[]>> {
   try {
-    await requireAdminOrViewer()
-    const admin = createAdminClient()
-    const shopId = siteConfig.subscription.defaultShopIdentifier
+    await requireAdminOrViewer();
+    const admin = createAdminClient();
+    const shopId = siteConfig.subscription.defaultShopIdentifier;
 
     // Find the shop's subscription first
     const { data: sub } = await admin
@@ -279,28 +279,28 @@ export async function getMyInvoices(): Promise<ActionResult<SubscriptionInvoiceR
       .eq("shop_identifier", shopId)
       .order("created_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle();
 
     if (!sub) {
-      return { success: true, data: [] }
+      return { success: true, data: [] };
     }
 
     const { data, error } = await admin
       .from("subscription_invoices")
       .select("*")
       .eq("subscription_id", sub.id)
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("[getMyInvoices] Error:", error.message)
-      return { success: false, error: "Hiba a számlák lekérésekor." }
+      console.error("[getMyInvoices] Error:", error.message);
+      return { success: false, error: "Hiba a számlák lekérésekor." };
     }
 
-    return { success: true, data: data ?? [] }
+    return { success: true, data: data ?? [] };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[getMyInvoices] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[getMyInvoices] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -312,26 +312,26 @@ export async function getMyInvoices(): Promise<ActionResult<SubscriptionInvoiceR
 export async function listSubscriptions(): Promise<ActionResult<ShopSubscriptionWithPlan[]>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    await requireAgencyOwner()
-    const admin = createAdminClient()
+    await requireAgencyOwner();
+    const admin = createAdminClient();
 
     const { data, error } = await admin
       .from("shop_subscriptions")
       .select("*, plan:shop_plans(*)")
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("[listSubscriptions] Error:", error.message)
-      return { success: false, error: "Hiba az előfizetések lekérésekor." }
+      console.error("[listSubscriptions] Error:", error.message);
+      return { success: false, error: "Hiba az előfizetések lekérésekor." };
     }
 
-    return { success: true, data: (data ?? []) as ShopSubscriptionWithPlan[] }
+    return { success: true, data: (data ?? []) as ShopSubscriptionWithPlan[] };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[listSubscriptions] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[listSubscriptions] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -339,31 +339,31 @@ export async function listSubscriptions(): Promise<ActionResult<ShopSubscription
 export async function getSubscription(id: string): Promise<ActionResult<ShopSubscriptionWithPlan>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    await requireAgencyOwner()
+    await requireAgencyOwner();
 
-    const idParsed = uuidSchema.safeParse(id)
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen előfizetés azonosító." }
+      return { success: false, error: "Érvénytelen előfizetés azonosító." };
     }
 
-    const admin = createAdminClient()
+    const admin = createAdminClient();
     const { data, error } = await admin
       .from("shop_subscriptions")
       .select("*, plan:shop_plans(*)")
       .eq("id", id)
-      .single()
+      .single();
 
     if (error || !data) {
-      return { success: false, error: "Az előfizetés nem található." }
+      return { success: false, error: "Az előfizetés nem található." };
     }
 
-    return { success: true, data: data as ShopSubscriptionWithPlan }
+    return { success: true, data: data as ShopSubscriptionWithPlan };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[getSubscription] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[getSubscription] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -373,28 +373,28 @@ export async function adminCreateSubscription(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    const profile = await requireAgencyOwner()
+    const profile = await requireAgencyOwner();
 
-    const parsed = subscriptionCreateSchema.safeParse(input)
+    const parsed = subscriptionCreateSchema.safeParse(input);
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0]
-      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." }
+      const firstIssue = parsed.error.issues[0];
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." };
     }
 
-    const data = parsed.data
-    const admin = createAdminClient()
+    const data = parsed.data;
+    const admin = createAdminClient();
 
     // Verify plan exists
     const { data: plan } = await admin
       .from("shop_plans")
       .select("id")
       .eq("id", data.plan_id)
-      .single()
+      .single();
 
     if (!plan) {
-      return { success: false, error: "A megadott csomag nem található." }
+      return { success: false, error: "A megadott csomag nem található." };
     }
 
     const { data: subscription, error } = await admin
@@ -414,14 +414,14 @@ export async function adminCreateSubscription(
         notes: data.notes ?? null,
       })
       .select("id")
-      .single()
+      .single();
 
     if (error || !subscription) {
       if (error?.code === "23505") {
-        return { success: false, error: "Ez a bolt azonosító már rendelkezik előfizetéssel." }
+        return { success: false, error: "Ez a bolt azonosító már rendelkezik előfizetéssel." };
       }
-      console.error("[adminCreateSubscription] Insert error:", error?.message)
-      return { success: false, error: "Hiba az előfizetés létrehozásakor." }
+      console.error("[adminCreateSubscription] Insert error:", error?.message);
+      return { success: false, error: "Hiba az előfizetés létrehozásakor." };
     }
 
     await logAudit({
@@ -431,13 +431,13 @@ export async function adminCreateSubscription(
       entityType: "shop_subscription",
       entityId: subscription.id,
       metadata: { shop_identifier: data.shop_identifier, plan_id: data.plan_id },
-    })
+    });
 
-    return { success: true, data: { id: subscription.id } }
+    return { success: true, data: { id: subscription.id } };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[adminCreateSubscription] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminCreateSubscription] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -448,56 +448,56 @@ export async function adminUpdateSubscription(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    const profile = await requireAgencyOwner()
+    const profile = await requireAgencyOwner();
 
-    const idParsed = uuidSchema.safeParse(id)
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen előfizetés azonosító." }
+      return { success: false, error: "Érvénytelen előfizetés azonosító." };
     }
 
-    const parsed = subscriptionUpdateSchema.safeParse(input)
+    const parsed = subscriptionUpdateSchema.safeParse(input);
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0]
-      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." }
+      const firstIssue = parsed.error.issues[0];
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." };
     }
 
-    const data = parsed.data
-    const admin = createAdminClient()
+    const data = parsed.data;
+    const admin = createAdminClient();
 
-    const updatePayload: Record<string, unknown> = {}
-    if (data.plan_id !== undefined) updatePayload.plan_id = data.plan_id
-    if (data.shop_identifier !== undefined) updatePayload.shop_identifier = data.shop_identifier
-    if (data.status !== undefined) updatePayload.status = data.status
-    if (data.billing_cycle !== undefined) updatePayload.billing_cycle = data.billing_cycle
+    const updatePayload: Record<string, unknown> = {};
+    if (data.plan_id !== undefined) updatePayload.plan_id = data.plan_id;
+    if (data.shop_identifier !== undefined) updatePayload.shop_identifier = data.shop_identifier;
+    if (data.status !== undefined) updatePayload.status = data.status;
+    if (data.billing_cycle !== undefined) updatePayload.billing_cycle = data.billing_cycle;
     if (data.custom_monthly_price !== undefined)
-      updatePayload.custom_monthly_price = data.custom_monthly_price
+      updatePayload.custom_monthly_price = data.custom_monthly_price;
     if (data.custom_annual_price !== undefined)
-      updatePayload.custom_annual_price = data.custom_annual_price
+      updatePayload.custom_annual_price = data.custom_annual_price;
     if (data.current_period_start !== undefined)
-      updatePayload.current_period_start = data.current_period_start
+      updatePayload.current_period_start = data.current_period_start;
     if (data.current_period_end !== undefined)
-      updatePayload.current_period_end = data.current_period_end
-    if (data.trial_ends_at !== undefined) updatePayload.trial_ends_at = data.trial_ends_at
-    if (data.cancelled_at !== undefined) updatePayload.cancelled_at = data.cancelled_at
+      updatePayload.current_period_end = data.current_period_end;
+    if (data.trial_ends_at !== undefined) updatePayload.trial_ends_at = data.trial_ends_at;
+    if (data.cancelled_at !== undefined) updatePayload.cancelled_at = data.cancelled_at;
     if (data.feature_overrides !== undefined)
-      updatePayload.feature_overrides = data.feature_overrides
-    if (data.notes !== undefined) updatePayload.notes = data.notes
+      updatePayload.feature_overrides = data.feature_overrides;
+    if (data.notes !== undefined) updatePayload.notes = data.notes;
 
     const { data: subscription, error } = await admin
       .from("shop_subscriptions")
       .update(updatePayload)
       .eq("id", id)
       .select("id")
-      .single()
+      .single();
 
     if (error || !subscription) {
       if (error?.code === "23505") {
-        return { success: false, error: "Ez a bolt azonosító már rendelkezik előfizetéssel." }
+        return { success: false, error: "Ez a bolt azonosító már rendelkezik előfizetéssel." };
       }
-      console.error("[adminUpdateSubscription] Update error:", error?.message)
-      return { success: false, error: "Hiba az előfizetés frissítésekor." }
+      console.error("[adminUpdateSubscription] Update error:", error?.message);
+      return { success: false, error: "Hiba az előfizetés frissítésekor." };
     }
 
     await logAudit({
@@ -507,13 +507,13 @@ export async function adminUpdateSubscription(
       entityType: "shop_subscription",
       entityId: subscription.id,
       metadata: { changes: data },
-    })
+    });
 
-    return { success: true, data: { id: subscription.id } }
+    return { success: true, data: { id: subscription.id } };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[adminUpdateSubscription] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminUpdateSubscription] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -521,27 +521,27 @@ export async function adminUpdateSubscription(
 export async function adminCancelSubscription(id: string): Promise<ActionResult> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    const profile = await requireAgencyOwner()
+    const profile = await requireAgencyOwner();
 
-    const idParsed = uuidSchema.safeParse(id)
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen előfizetés azonosító." }
+      return { success: false, error: "Érvénytelen előfizetés azonosító." };
     }
 
-    const admin = createAdminClient()
+    const admin = createAdminClient();
 
     const { data: subscription, error } = await admin
       .from("shop_subscriptions")
       .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
       .eq("id", id)
       .select("id, shop_identifier")
-      .single()
+      .single();
 
     if (error || !subscription) {
-      console.error("[adminCancelSubscription] Update error:", error?.message)
-      return { success: false, error: "Hiba az előfizetés lemondásakor." }
+      console.error("[adminCancelSubscription] Update error:", error?.message);
+      return { success: false, error: "Hiba az előfizetés lemondásakor." };
     }
 
     await logAudit({
@@ -551,13 +551,13 @@ export async function adminCancelSubscription(id: string): Promise<ActionResult>
       entityType: "shop_subscription",
       entityId: subscription.id,
       metadata: { shop_identifier: subscription.shop_identifier },
-    })
+    });
 
-    return { success: true }
+    return { success: true };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[adminCancelSubscription] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminCancelSubscription] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -571,32 +571,32 @@ export async function listInvoices(
 ): Promise<ActionResult<SubscriptionInvoiceRow[]>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    await requireAgencyOwner()
+    await requireAgencyOwner();
 
-    const idParsed = uuidSchema.safeParse(subscriptionId)
+    const idParsed = uuidSchema.safeParse(subscriptionId);
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen előfizetés azonosító." }
+      return { success: false, error: "Érvénytelen előfizetés azonosító." };
     }
 
-    const admin = createAdminClient()
+    const admin = createAdminClient();
     const { data, error } = await admin
       .from("subscription_invoices")
       .select("*")
       .eq("subscription_id", subscriptionId)
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("[listInvoices] Error:", error.message)
-      return { success: false, error: "Hiba a számlák lekérésekor." }
+      console.error("[listInvoices] Error:", error.message);
+      return { success: false, error: "Hiba a számlák lekérésekor." };
     }
 
-    return { success: true, data: data ?? [] }
+    return { success: true, data: data ?? [] };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[listInvoices] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[listInvoices] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -604,28 +604,28 @@ export async function listInvoices(
 export async function adminCreateInvoice(input: unknown): Promise<ActionResult<{ id: string }>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    const profile = await requireAgencyOwner()
+    const profile = await requireAgencyOwner();
 
-    const parsed = invoiceCreateSchema.safeParse(input)
+    const parsed = invoiceCreateSchema.safeParse(input);
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0]
-      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." }
+      const firstIssue = parsed.error.issues[0];
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." };
     }
 
-    const data = parsed.data
-    const admin = createAdminClient()
+    const data = parsed.data;
+    const admin = createAdminClient();
 
     // Verify subscription exists
     const { data: sub } = await admin
       .from("shop_subscriptions")
       .select("id")
       .eq("id", data.subscription_id)
-      .single()
+      .single();
 
     if (!sub) {
-      return { success: false, error: "Az előfizetés nem található." }
+      return { success: false, error: "Az előfizetés nem található." };
     }
 
     const { data: invoice, error } = await admin
@@ -645,11 +645,11 @@ export async function adminCreateInvoice(input: unknown): Promise<ActionResult<{
         notes: data.notes ?? null,
       })
       .select("id")
-      .single()
+      .single();
 
     if (error || !invoice) {
-      console.error("[adminCreateInvoice] Insert error:", error?.message)
-      return { success: false, error: "Hiba a számla létrehozásakor." }
+      console.error("[adminCreateInvoice] Insert error:", error?.message);
+      return { success: false, error: "Hiba a számla létrehozásakor." };
     }
 
     await logAudit({
@@ -663,13 +663,13 @@ export async function adminCreateInvoice(input: unknown): Promise<ActionResult<{
         amount: data.amount,
         currency: data.currency ?? "HUF",
       },
-    })
+    });
 
-    return { success: true, data: { id: invoice.id } }
+    return { success: true, data: { id: invoice.id } };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[adminCreateInvoice] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminCreateInvoice] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }
 
@@ -680,37 +680,37 @@ export async function adminUpdateInvoice(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     if (!isAgencyModeEnabled()) {
-      return { success: false, error: AGENCY_MODE_DISABLED_ERROR }
+      return { success: false, error: AGENCY_MODE_DISABLED_ERROR };
     }
-    const profile = await requireAgencyOwner()
+    const profile = await requireAgencyOwner();
 
-    const idParsed = uuidSchema.safeParse(id)
+    const idParsed = uuidSchema.safeParse(id);
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen számla azonosító." }
+      return { success: false, error: "Érvénytelen számla azonosító." };
     }
 
-    const parsed = invoiceUpdateSchema.safeParse(input)
+    const parsed = invoiceUpdateSchema.safeParse(input);
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0]
-      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." }
+      const firstIssue = parsed.error.issues[0];
+      return { success: false, error: firstIssue?.message ?? "Érvénytelen adatok." };
     }
 
-    const data = parsed.data
-    const admin = createAdminClient()
+    const data = parsed.data;
+    const admin = createAdminClient();
 
-    const updatePayload: Record<string, unknown> = {}
-    if (data.amount !== undefined) updatePayload.amount = data.amount
-    if (data.status !== undefined) updatePayload.status = data.status
-    if (data.paid_at !== undefined) updatePayload.paid_at = data.paid_at
-    if (data.invoice_provider !== undefined) updatePayload.invoice_provider = data.invoice_provider
-    if (data.invoice_number !== undefined) updatePayload.invoice_number = data.invoice_number
-    if (data.invoice_url !== undefined) updatePayload.invoice_url = data.invoice_url
-    if (data.payment_method !== undefined) updatePayload.payment_method = data.payment_method
-    if (data.notes !== undefined) updatePayload.notes = data.notes
+    const updatePayload: Record<string, unknown> = {};
+    if (data.amount !== undefined) updatePayload.amount = data.amount;
+    if (data.status !== undefined) updatePayload.status = data.status;
+    if (data.paid_at !== undefined) updatePayload.paid_at = data.paid_at;
+    if (data.invoice_provider !== undefined) updatePayload.invoice_provider = data.invoice_provider;
+    if (data.invoice_number !== undefined) updatePayload.invoice_number = data.invoice_number;
+    if (data.invoice_url !== undefined) updatePayload.invoice_url = data.invoice_url;
+    if (data.payment_method !== undefined) updatePayload.payment_method = data.payment_method;
+    if (data.notes !== undefined) updatePayload.notes = data.notes;
 
     // Auto-set paid_at when marking as paid
     if (data.status === "paid" && !data.paid_at) {
-      updatePayload.paid_at = new Date().toISOString()
+      updatePayload.paid_at = new Date().toISOString();
     }
 
     const { data: invoice, error } = await admin
@@ -718,11 +718,11 @@ export async function adminUpdateInvoice(
       .update(updatePayload)
       .eq("id", id)
       .select("id")
-      .single()
+      .single();
 
     if (error || !invoice) {
-      console.error("[adminUpdateInvoice] Update error:", error?.message)
-      return { success: false, error: "Hiba a számla frissítésekor." }
+      console.error("[adminUpdateInvoice] Update error:", error?.message);
+      return { success: false, error: "Hiba a számla frissítésekor." };
     }
 
     await logAudit({
@@ -732,12 +732,12 @@ export async function adminUpdateInvoice(
       entityType: "subscription_invoice",
       entityId: invoice.id,
       metadata: { changes: data },
-    })
+    });
 
-    return { success: true, data: { id: invoice.id } }
+    return { success: true, data: { id: invoice.id } };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error("[adminUpdateInvoice] Unexpected error:", message)
-    return { success: false, error: "Váratlan hiba történt." }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminUpdateInvoice] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
   }
 }

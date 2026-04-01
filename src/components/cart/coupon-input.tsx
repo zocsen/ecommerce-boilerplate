@@ -12,9 +12,7 @@ import { cn } from "@/lib/utils";
 /* ------------------------------------------------------------------ */
 
 interface CouponInputProps {
-  onApply: (
-    code: string,
-  ) => Promise<{ success: boolean; discount?: number; error?: string }>;
+  onApply: (code: string) => Promise<{ success: boolean; discount?: number; error?: string }>;
 }
 
 type CouponState =
@@ -61,7 +59,7 @@ export function CouponInput({ onApply }: CouponInputProps) {
     <div className="space-y-2">
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Tag className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Tag className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
           <Input
             value={code}
             onChange={(e) => {
@@ -95,11 +93,7 @@ export function CouponInput({ onApply }: CouponInputProps) {
             onClick={() => void handleApply()}
             disabled={isLoading || !code.trim()}
           >
-            {isLoading ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              "Alkalmaz"
-            )}
+            {isLoading ? <Loader2 className="size-3.5 animate-spin" /> : "Alkalmaz"}
           </Button>
         )}
       </div>
@@ -109,20 +103,14 @@ export function CouponInput({ onApply }: CouponInputProps) {
         <div className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
           <Check className="size-3.5" />
           <span>
-            Kupon alkalmazva: <strong>{state.code}</strong> &mdash;{" "}
-            {formatHUF(state.discount)} kedvezmény
+            Kupon alkalmazva: <strong>{state.code}</strong> &mdash; {formatHUF(state.discount)}{" "}
+            kedvezmény
           </span>
         </div>
       )}
 
       {state.status === "error" && (
-        <p
-          className={cn(
-            "text-sm text-red-600 dark:text-red-400",
-          )}
-        >
-          {state.message}
-        </p>
+        <p className={cn("text-sm text-red-600 dark:text-red-400")}>{state.message}</p>
       )}
     </div>
   );

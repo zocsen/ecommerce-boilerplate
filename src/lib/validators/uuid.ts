@@ -18,9 +18,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Relaxed UUID schema that validates the format without RFC 4122 version checks.
  * Use this instead of `z.string().uuid()` or `z.uuid()` throughout the project.
  */
-export const uuidSchema = z
-  .string()
-  .regex(UUID_REGEX, "Ervenytelen UUID formatum");
+export const uuidSchema = z.string().regex(UUID_REGEX, "Ervenytelen UUID formatum");
 
 /**
  * Helper for inline usage: validates a single UUID string.

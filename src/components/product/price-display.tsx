@@ -49,7 +49,7 @@ export function PriceDisplay({
             </span>
             <Badge
               variant="destructive"
-              className="text-[10px] font-semibold uppercase tracking-wider"
+              className="text-[10px] font-semibold tracking-wider uppercase"
             >
               Akció
             </Badge>
@@ -59,7 +59,7 @@ export function PriceDisplay({
 
       {/* EU Omnibus Directive: lowest price in last 30 days */}
       {isOnSale && lowest30DayPrice != null && lowest30DayPrice > 0 && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Legalacsonyabb ár az elmúlt 30 napban:{" "}
           <span className="font-medium">{formatHUF(lowest30DayPrice)}</span>
         </p>

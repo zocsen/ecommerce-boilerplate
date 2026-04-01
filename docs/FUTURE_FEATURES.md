@@ -113,13 +113,15 @@ New file: `src/lib/actions/storage.ts`
 
 ```typescript
 // Upload a product image to Supabase Storage
-export async function uploadProductImage(formData: FormData): Promise<{ url: string; path: string }>
+export async function uploadProductImage(
+  formData: FormData,
+): Promise<{ url: string; path: string }>;
 
 // Delete a product image from Supabase Storage
-export async function deleteProductImage(path: string): Promise<void>
+export async function deleteProductImage(path: string): Promise<void>;
 
 // Reorder product images (updates the images[] array order)
-export async function reorderProductImages(productId: string, imageUrls: string[]): Promise<void>
+export async function reorderProductImages(productId: string, imageUrls: string[]): Promise<void>;
 ```
 
 - `uploadProductImage`: Validates file (type, size), generates unique path `{shopId}/{productId}/{uuid}.{ext}`, uploads to `product-images` bucket, returns public URL.
@@ -506,46 +508,46 @@ New file: `src/lib/actions/subscriptions.ts`
 
 ```typescript
 // Shop owner actions
-export async function getShopSubscription(): Promise<ShopSubscription & { plan: ShopPlan }>
+export async function getShopSubscription(): Promise<ShopSubscription & { plan: ShopPlan }>;
 export async function getSubscriptionInvoices(
   filters: InvoiceFilters,
-): Promise<PaginatedResult<SubscriptionInvoice>>
-export async function getAvailablePlans(): Promise<ShopPlan[]>
+): Promise<PaginatedResult<SubscriptionInvoice>>;
+export async function getAvailablePlans(): Promise<ShopPlan[]>;
 
 // Agency admin actions (all require is_agency_owner = true)
 export async function agencyListClients(
   filters: ClientFilters,
-): Promise<PaginatedResult<ClientSubscription>>
-export async function agencyGetClient(subscriptionId: string): Promise<ClientDetail>
+): Promise<PaginatedResult<ClientSubscription>>;
+export async function agencyGetClient(subscriptionId: string): Promise<ClientDetail>;
 export async function agencyCreateSubscription(
   input: CreateSubscriptionInput,
-): Promise<ShopSubscription>
+): Promise<ShopSubscription>;
 export async function agencyUpdateSubscription(
   id: string,
   input: UpdateSubscriptionInput,
-): Promise<ShopSubscription>
-export async function agencyPauseSubscription(id: string): Promise<void>
-export async function agencyResumeSubscription(id: string): Promise<void>
-export async function agencyCancelSubscription(id: string, reason: string): Promise<void>
+): Promise<ShopSubscription>;
+export async function agencyPauseSubscription(id: string): Promise<void>;
+export async function agencyResumeSubscription(id: string): Promise<void>;
+export async function agencyCancelSubscription(id: string, reason: string): Promise<void>;
 export async function agencyCreateSubscriptionInvoice(
   subscriptionId: string,
-): Promise<SubscriptionInvoice>
+): Promise<SubscriptionInvoice>;
 
 // Feature gating (used by other server actions)
-export async function getPlanFeatures(shopId?: string): Promise<ResolvedFeatures>
+export async function getPlanFeatures(shopId?: string): Promise<ResolvedFeatures>;
 export async function checkPlanLimit(
   feature: string,
   currentCount?: number,
-): Promise<{ allowed: boolean; limit: number; current: number }>
+): Promise<{ allowed: boolean; limit: number; current: number }>;
 ```
 
 **New file: `src/lib/security/plan-gate.ts`**
 
 ```typescript
-export function getPlanFeatures(): Promise<PlanFeatures>
-export function checkPlanLimit(feature: PlanLimitKey, currentCount?: number): Promise<void> // throws if limit exceeded
-export function isPlanFeatureEnabled(feature: PlanFeatureKey): Promise<boolean>
-export function getEffectivePrice(subscription: ShopSubscription, plan: ShopPlan): number
+export function getPlanFeatures(): Promise<PlanFeatures>;
+export function checkPlanLimit(feature: PlanLimitKey, currentCount?: number): Promise<void>; // throws if limit exceeded
+export function isPlanFeatureEnabled(feature: PlanFeatureKey): Promise<boolean>;
+export function getEffectivePrice(subscription: ShopSubscription, plan: ShopPlan): number;
 ```
 
 - `getPlanFeatures()`: Fetches plan features from `shop_plans.features`, merges with `shop_subscriptions.feature_overrides`. Subscription overrides take precedence.
@@ -689,20 +691,20 @@ New helpers in `src/lib/actions/dashboard.ts` (or new file `src/lib/utils/profit
 ```typescript
 // Calculate profit for a single order
 export function calculateOrderProfit(order: OrderWithItems): {
-  profit: number
-  hasFullCostData: boolean // true if ALL items had cost_price
-  itemsWithCostData: number
-  totalItems: number
-}
+  profit: number;
+  hasFullCostData: boolean; // true if ALL items had cost_price
+  itemsWithCostData: number;
+  totalItems: number;
+};
 
 // Dashboard KPIs
 export async function getDashboardProfitKPIs(days: number): Promise<{
-  grossProfit: number
-  profitMargin: number // percentage
-  itemsWithCostData: number
-  totalItems: number
-  dailyProfit: Array<{ date: string; profit: number; revenue: number }>
-}>
+  grossProfit: number;
+  profitMargin: number; // percentage
+  itemsWithCostData: number;
+  totalItems: number;
+  dailyProfit: Array<{ date: string; profit: number; revenue: number }>;
+}>;
 ```
 
 **Profit calculation logic:**
@@ -946,13 +948,13 @@ New helper in `src/lib/utils/price-history.ts`:
 export async function getLowest30DayPrice(
   productId: string,
   variantId?: string,
-): Promise<{ lowestPrice: number; date: string } | null>
+): Promise<{ lowestPrice: number; date: string } | null>;
 
 export async function getPriceHistory(
   productId: string,
   variantId?: string,
   days?: number,
-): Promise<Array<{ price: number; date: string }>>
+): Promise<Array<{ price: number; date: string }>>;
 ```
 
 **UI/UX Specification:**
@@ -1029,20 +1031,20 @@ Modify `src/lib/actions/email.ts` (or wherever email sending is handled):
 ```typescript
 // New email sending functions
 export async function sendSignupConfirmationEmail(params: {
-  to: string
-  name: string
-}): Promise<void>
+  to: string;
+  name: string;
+}): Promise<void>;
 
-export async function sendWelcomeEmail(params: { to: string; name: string }): Promise<void>
+export async function sendWelcomeEmail(params: { to: string; name: string }): Promise<void>;
 
 export async function sendAdminOrderNotification(params: {
-  orderId: string
-  orderNumber: string
-  customerName: string
-  itemCount: number
-  total: number
-  shippingMethod: string
-}): Promise<void>
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  itemCount: number;
+  total: number;
+  shippingMethod: string;
+}): Promise<void>;
 ```
 
 **Trigger points:**
@@ -1191,30 +1193,30 @@ New file: `src/lib/actions/search.ts`
 
 ```typescript
 export async function searchProducts(params: {
-  query: string
-  categorySlug?: string
-  minPrice?: number
-  maxPrice?: number
-  sortBy?: "relevance" | "price_asc" | "price_desc" | "newest"
-  page?: number
-  limit?: number
+  query: string;
+  categorySlug?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: "relevance" | "price_asc" | "price_desc" | "newest";
+  page?: number;
+  limit?: number;
 }): Promise<{
-  products: ProductCard[]
-  totalCount: number
-  query: string
-}>
+  products: ProductCard[];
+  totalCount: number;
+  query: string;
+}>;
 
 export async function searchAutocomplete(query: string): Promise<{
-  products: Array<{ id: string; title: string; slug: string; price: number; image: string | null }>
-}>
+  products: Array<{ id: string; title: string; slug: string; price: number; image: string | null }>;
+}>;
 
 // Premium only
 export async function getSearchAnalytics(days: number): Promise<{
-  topQueries: Array<{ query: string; count: number; avgResults: number }>
-  zeroResultQueries: Array<{ query: string; count: number }>
-  totalSearches: number
-  avgResultsPerSearch: number
-}>
+  topQueries: Array<{ query: string; count: number; avgResults: number }>;
+  zeroResultQueries: Array<{ query: string; count: number }>;
+  totalSearches: number;
+  avgResultsPerSearch: number;
+}>;
 ```
 
 **Search logic:**
@@ -1460,48 +1462,48 @@ New file: `src/lib/actions/reviews.ts`
 
 ```typescript
 export async function submitReview(input: {
-  productId: string
-  rating: number // 1-5
-  title?: string
-  body: string
-}): Promise<Review>
+  productId: string;
+  rating: number; // 1-5
+  title?: string;
+  body: string;
+}): Promise<Review>;
 
 export async function updateReview(
   id: string,
   input: {
-    rating?: number
-    title?: string
-    body?: string
+    rating?: number;
+    title?: string;
+    body?: string;
   },
-): Promise<Review>
+): Promise<Review>;
 
-export async function deleteReview(id: string): Promise<void>
+export async function deleteReview(id: string): Promise<void>;
 
 export async function getProductReviews(
   productId: string,
   params: {
-    page?: number
-    limit?: number
-    sortBy?: "newest" | "highest" | "lowest"
+    page?: number;
+    limit?: number;
+    sortBy?: "newest" | "highest" | "lowest";
   },
-): Promise<{ reviews: ReviewWithUser[]; stats: ReviewStats; totalCount: number }>
+): Promise<{ reviews: ReviewWithUser[]; stats: ReviewStats; totalCount: number }>;
 
 // Admin actions
 export async function adminModerateReview(
   id: string,
   status: "approved" | "rejected",
-): Promise<void>
-export async function adminReplyToReview(id: string, reply: string): Promise<void>
+): Promise<void>;
+export async function adminReplyToReview(id: string, reply: string): Promise<void>;
 export async function adminGetPendingReviews(params: {
-  page?: number
-  limit?: number
-}): Promise<PaginatedResult<ReviewWithProduct>>
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedResult<ReviewWithProduct>>;
 export async function adminGetReviewStats(): Promise<{
-  pending: number
-  approved: number
-  rejected: number
-  avgRating: number
-}>
+  pending: number;
+  approved: number;
+  rejected: number;
+  avgRating: number;
+}>;
 ```
 
 **Verified purchase logic:**
@@ -1611,9 +1613,9 @@ New or modify: `src/lib/actions/settings.ts` (if admin settings page exists):
 
 ```typescript
 export async function updateAnalyticsSettings(input: {
-  ga4MeasurementId?: string
-  metaPixelId?: string
-}): Promise<void>
+  ga4MeasurementId?: string;
+  metaPixelId?: string;
+}): Promise<void>;
 ```
 
 Alternatively, store in `shop_settings` table or environment variables.
@@ -1630,11 +1632,11 @@ interface EcommerceEvent {
     | "add_to_cart"
     | "remove_from_cart"
     | "begin_checkout"
-    | "purchase"
-  data?: Record<string, unknown>
+    | "purchase";
+  data?: Record<string, unknown>;
 }
 
-export function trackEvent(event: EcommerceEvent): void
+export function trackEvent(event: EcommerceEvent): void;
 // Dispatches to GA4 and/or Meta Pixel based on consent + plan
 ```
 
@@ -1739,12 +1741,12 @@ Modify/extend `src/lib/actions/email.ts`:
 
 ```typescript
 export async function updateNotificationSettings(input: {
-  orderNotificationEmails: string[] // Array of email addresses
-  enableDailyDigest: boolean // Premium only
-  digestTime: string // "08:00" format, Premium only
-}): Promise<void>
+  orderNotificationEmails: string[]; // Array of email addresses
+  enableDailyDigest: boolean; // Premium only
+  digestTime: string; // "08:00" format, Premium only
+}): Promise<void>;
 
-export async function sendDailyOrderDigest(): Promise<void> // Called by cron/Edge Function
+export async function sendDailyOrderDigest(): Promise<void>; // Called by cron/Edge Function
 ```
 
 **UI/UX Specification:**
@@ -1823,12 +1825,12 @@ New or add to `src/lib/actions/orders.ts`:
 
 ```typescript
 export async function trackGuestOrder(input: { orderNumber: string; email: string }): Promise<{
-  status: OrderStatus
-  createdAt: string
-  shippingMethod: string
-  trackingNumber?: string
-  timeline: Array<{ status: string; date: string }>
-} | null>
+  status: OrderStatus;
+  createdAt: string;
+  shippingMethod: string;
+  trackingNumber?: string;
+  timeline: Array<{ status: string; date: string }>;
+} | null>;
 ```
 
 - Validates `orderNumber` + `email` pair.
@@ -1908,8 +1910,8 @@ Physical packing slips are needed for every shipped order. Without a print-optim
 Add to `src/lib/actions/orders.ts`:
 
 ```typescript
-export async function getOrderPrintData(orderId: string): Promise<OrderPrintData>
-export async function getMultipleOrderPrintData(orderIds: string[]): Promise<OrderPrintData[]>
+export async function getOrderPrintData(orderId: string): Promise<OrderPrintData>;
+export async function getMultipleOrderPrintData(orderIds: string[]): Promise<OrderPrintData[]>;
 ```
 
 **UI/UX Specification:**
@@ -2025,16 +2027,16 @@ New file: `src/lib/actions/product-relations.ts`
 export async function getRelatedProducts(
   productId: string,
   type?: RelationType,
-): Promise<ProductCard[]>
+): Promise<ProductCard[]>;
 export async function adminSetProductRelations(
   productId: string,
   relations: Array<{
-    relatedProductId: string
-    relationType: "related" | "upsell" | "cross_sell"
-    sortOrder: number
+    relatedProductId: string;
+    relationType: "related" | "upsell" | "cross_sell";
+    sortOrder: number;
   }>,
-): Promise<void>
-export async function getCartCrossSellProducts(productIds: string[]): Promise<ProductCard[]>
+): Promise<void>;
+export async function getCartCrossSellProducts(productIds: string[]): Promise<ProductCard[]>;
 ```
 
 **Fallback logic (Basic plan or no manual relations):**
@@ -2244,13 +2246,13 @@ CREATE TABLE shop_branding (
 New file: `src/lib/actions/branding.ts`
 
 ```typescript
-export async function getShopBranding(): Promise<ShopBranding>
+export async function getShopBranding(): Promise<ShopBranding>;
 export async function updateShopBranding(input: {
-  logoText?: string
-  logoUrl?: string
-  theme?: Partial<ThemeConfig>
-  customCss?: string
-}): Promise<ShopBranding>
+  logoText?: string;
+  logoUrl?: string;
+  theme?: Partial<ThemeConfig>;
+  customCss?: string;
+}): Promise<ShopBranding>;
 ```
 
 **UI/UX Specification:**
@@ -2352,9 +2354,9 @@ CREATE INDEX idx_order_notes_order ON order_notes (order_id, created_at DESC);
 Add to `src/lib/actions/orders.ts`:
 
 ```typescript
-export async function addOrderNote(orderId: string, content: string): Promise<OrderNote>
-export async function getOrderNotes(orderId: string): Promise<OrderNote[]>
-export async function deleteOrderNote(noteId: string): Promise<void>
+export async function addOrderNote(orderId: string, content: string): Promise<OrderNote>;
+export async function getOrderNotes(orderId: string): Promise<OrderNote[]>;
+export async function deleteOrderNote(noteId: string): Promise<void>;
 ```
 
 **UI/UX Specification:**
@@ -2441,18 +2443,18 @@ CREATE INDEX idx_wishlists_product ON wishlists (product_id);
 New file: `src/lib/actions/wishlist.ts`
 
 ```typescript
-export async function addToWishlist(productId: string): Promise<void>
-export async function removeFromWishlist(productId: string): Promise<void>
-export async function getWishlist(): Promise<WishlistItem[]>
-export async function isInWishlist(productId: string): Promise<boolean>
-export async function syncGuestWishlist(productIds: string[]): Promise<void> // Merge localStorage wishlist on login
+export async function addToWishlist(productId: string): Promise<void>;
+export async function removeFromWishlist(productId: string): Promise<void>;
+export async function getWishlist(): Promise<WishlistItem[]>;
+export async function isInWishlist(productId: string): Promise<boolean>;
+export async function syncGuestWishlist(productIds: string[]): Promise<void>; // Merge localStorage wishlist on login
 
 // Premium analytics
 export async function getWishlistAnalytics(): Promise<{
-  topWishlistedProducts: Array<{ product: ProductCard; count: number }>
-  totalWishlistItems: number
-  uniqueUsers: number
-}>
+  topWishlistedProducts: Array<{ product: ProductCard; count: number }>;
+  totalWishlistItems: number;
+  uniqueUsers: number;
+}>;
 ```
 
 **Guest wishlist (Zustand):**
@@ -2546,21 +2548,21 @@ Bulk product management is essential for shops with large catalogs. CSV import l
 New file: `src/lib/actions/csv.ts`
 
 ```typescript
-export async function exportProductsCsv(): Promise<string> // Returns CSV string
+export async function exportProductsCsv(): Promise<string>; // Returns CSV string
 
 export async function validateCsvImport(formData: FormData): Promise<{
-  validRows: number
-  errorRows: Array<{ line: number; field: string; error: string }>
-  preview: ProductPreview[] // First 10 rows for preview
-  totalRows: number
-}>
+  validRows: number;
+  errorRows: Array<{ line: number; field: string; error: string }>;
+  preview: ProductPreview[]; // First 10 rows for preview
+  totalRows: number;
+}>;
 
 export async function commitCsvImport(formData: FormData): Promise<{
-  created: number
-  updated: number
-  skipped: number
-  errors: Array<{ line: number; error: string }>
-}>
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: Array<{ line: number; error: string }>;
+}>;
 ```
 
 **CSV format:**
@@ -2687,22 +2689,22 @@ New file: `src/lib/actions/stock-notifications.ts`
 
 ```typescript
 export async function subscribeStockNotification(input: {
-  email: string
-  productId: string
-  variantId?: string
-}): Promise<void>
+  email: string;
+  productId: string;
+  variantId?: string;
+}): Promise<void>;
 
 export async function sendStockNotifications(
   productId: string,
   variantId?: string,
 ): Promise<{
-  sent: number
-}>
+  sent: number;
+}>;
 
 export async function getStockNotificationCount(
   productId: string,
   variantId?: string,
-): Promise<number>
+): Promise<number>;
 ```
 
 **Trigger:** When admin updates stock from 0 to >0 (in `adminUpdateProduct` or `adminUpdateVariant`), call `sendStockNotifications()`. This sends emails to all subscribers for that product/variant and sets `notified_at`.
@@ -2809,18 +2811,18 @@ New file: `src/lib/actions/blog.ts`
 
 ```typescript
 export async function getPublishedPosts(params: {
-  page?: number
-  limit?: number
-  tag?: string
-}): Promise<PaginatedResult<PostSummary>>
-export async function getPostBySlug(slug: string): Promise<PostDetail | null>
+  page?: number;
+  limit?: number;
+  tag?: string;
+}): Promise<PaginatedResult<PostSummary>>;
+export async function getPostBySlug(slug: string): Promise<PostDetail | null>;
 export async function adminGetPosts(params: {
-  page?: number
-  status?: "all" | "published" | "draft"
-}): Promise<PaginatedResult<PostAdmin>>
-export async function adminCreatePost(input: CreatePostInput): Promise<Post>
-export async function adminUpdatePost(id: string, input: UpdatePostInput): Promise<Post>
-export async function adminDeletePost(id: string): Promise<void>
+  page?: number;
+  status?: "all" | "published" | "draft";
+}): Promise<PaginatedResult<PostAdmin>>;
+export async function adminCreatePost(input: CreatePostInput): Promise<Post>;
+export async function adminUpdatePost(id: string, input: UpdatePostInput): Promise<Post>;
+export async function adminDeletePost(id: string): Promise<void>;
 ```
 
 **UI/UX Specification:**
@@ -2926,22 +2928,22 @@ CREATE TABLE shop_pages (
 **Server Actions:**
 
 ```typescript
-export async function getPageContent(pageKey: string): Promise<PageContent | null>
+export async function getPageContent(pageKey: string): Promise<PageContent | null>;
 export async function adminUpdatePageContent(
   pageKey: string,
   content: AboutUsContent,
-): Promise<void>
+): Promise<void>;
 ```
 
 **About Us content structure:**
 
 ```typescript
 interface AboutUsContent {
-  hero: { title: string; subtitle: string; imageUrl: string | null }
-  story: { title: string; body: string } // Markdown body
-  team: Array<{ name: string; role: string; imageUrl: string | null; bio: string }>
-  values: Array<{ title: string; description: string; icon: string }>
-  contact: { address: string; phone: string; email: string; mapEmbedUrl: string | null }
+  hero: { title: string; subtitle: string; imageUrl: string | null };
+  story: { title: string; body: string }; // Markdown body
+  team: Array<{ name: string; role: string; imageUrl: string | null; bio: string }>;
+  values: Array<{ title: string; description: string; icon: string }>;
+  contact: { address: string; phone: string; email: string; mapEmbedUrl: string | null };
 }
 ```
 
@@ -3032,18 +3034,18 @@ New file: `src/lib/actions/refunds.ts`
 
 ```typescript
 export async function createRefund(input: {
-  orderId: string
-  amount: number
-  reason: string
-  refundMethod: "barion_api" | "manual_transfer" | "store_credit" | "other"
-  lineItems?: Array<{ productId: string; variantId?: string; quantity: number; amount: number }>
-  restoreStock: boolean
-}): Promise<Refund>
+  orderId: string;
+  amount: number;
+  reason: string;
+  refundMethod: "barion_api" | "manual_transfer" | "store_credit" | "other";
+  lineItems?: Array<{ productId: string; variantId?: string; quantity: number; amount: number }>;
+  restoreStock: boolean;
+}): Promise<Refund>;
 
-export async function getOrderRefunds(orderId: string): Promise<Refund[]>
+export async function getOrderRefunds(orderId: string): Promise<Refund[]>;
 export async function getRefundSummary(
   orderId: string,
-): Promise<{ totalRefunded: number; orderTotal: number; remainingRefundable: number }>
+): Promise<{ totalRefunded: number; orderTotal: number; remainingRefundable: number }>;
 ```
 
 **Barion API refund (Premium):**
@@ -3153,17 +3155,17 @@ CREATE INDEX idx_product_extras_product ON product_extras (product_id, sort_orde
 Add to product-related actions:
 
 ```typescript
-export async function getProductExtras(productId: string): Promise<ProductExtra[]>
+export async function getProductExtras(productId: string): Promise<ProductExtra[]>;
 export async function adminSetProductExtras(
   productId: string,
   extras: Array<{
-    extraProductId: string
-    extraVariantId?: string
-    label: string
-    isDefaultChecked: boolean
-    sortOrder: number
+    extraProductId: string;
+    extraVariantId?: string;
+    label: string;
+    isDefaultChecked: boolean;
+    sortOrder: number;
   }>,
-): Promise<void>
+): Promise<void>;
 ```
 
 **UI/UX Specification:**
@@ -3231,10 +3233,10 @@ Add to `src/lib/actions/orders.ts`:
 
 ```typescript
 export async function exportOrdersCsv(filters: {
-  dateFrom?: string
-  dateTo?: string
-  status?: OrderStatus
-}): Promise<string> // CSV string
+  dateFrom?: string;
+  dateTo?: string;
+  status?: OrderStatus;
+}): Promise<string>; // CSV string
 ```
 
 **CSV columns:**
@@ -3315,15 +3317,15 @@ CREATE TABLE stock_alert_log (
 **Server Actions:**
 
 ```typescript
-export async function checkAndSendLowStockAlerts(): Promise<{ alertsSent: number }>
+export async function checkAndSendLowStockAlerts(): Promise<{ alertsSent: number }>;
 export async function getLowStockProducts(): Promise<
   Array<{
-    product: ProductSummary
-    variant?: VariantSummary
-    currentStock: number
-    threshold: number
+    product: ProductSummary;
+    variant?: VariantSummary;
+    currentStock: number;
+    threshold: number;
   }>
->
+>;
 ```
 
 **Trigger:** Run `checkAndSendLowStockAlerts()` when:
@@ -3422,25 +3424,25 @@ New file: `src/lib/actions/shipping.ts` (or extend existing):
 
 ```typescript
 export async function getShippingRates(input: {
-  destinationZip: string
-  weightKg: number
-  carrierType: "home_delivery" | "pickup_point"
-}): Promise<ShippingRate[]>
+  destinationZip: string;
+  weightKg: number;
+  carrierType: "home_delivery" | "pickup_point";
+}): Promise<ShippingRate[]>;
 
 export async function getPickupPoints(input: {
-  provider: PickupPointProvider
-  city?: string
-  zip?: string
-  lat?: number
-  lng?: number
-}): Promise<PickupPoint[]>
+  provider: PickupPointProvider;
+  city?: string;
+  zip?: string;
+  lat?: number;
+  lng?: number;
+}): Promise<PickupPoint[]>;
 
 export async function generateShippingLabel(orderId: string): Promise<{
-  labelUrl: string
-  trackingNumber: string
-}>
+  labelUrl: string;
+  trackingNumber: string;
+}>;
 
-export async function getTrackingInfo(trackingNumber: string): Promise<TrackingEvent[]>
+export async function getTrackingInfo(trackingNumber: string): Promise<TrackingEvent[]>;
 ```
 
 **Carrier adapter pattern:**
@@ -3448,10 +3450,10 @@ export async function getTrackingInfo(trackingNumber: string): Promise<TrackingE
 ```typescript
 // src/lib/integrations/shipping/adapter.ts
 interface ShippingAdapter {
-  getRates(params: RateRequest): Promise<ShippingRate[]>
-  getPickupPoints(params: PickupPointRequest): Promise<PickupPoint[]>
-  createShipment(params: ShipmentRequest): Promise<ShipmentResponse>
-  getTracking(trackingNumber: string): Promise<TrackingEvent[]>
+  getRates(params: RateRequest): Promise<ShippingRate[]>;
+  getPickupPoints(params: PickupPointRequest): Promise<PickupPoint[]>;
+  createShipment(params: ShipmentRequest): Promise<ShipmentResponse>;
+  getTracking(trackingNumber: string): Promise<TrackingEvent[]>;
 }
 
 // Implementations:
@@ -3644,8 +3646,8 @@ Structure:
 ```typescript
 export async function adminUpdateComponentVariants(
   variants: Partial<ComponentVariants>,
-): Promise<void>
-export async function getComponentVariants(): Promise<ComponentVariants>
+): Promise<void>;
+export async function getComponentVariants(): Promise<ComponentVariants>;
 ```
 
 **UI/UX Specification:**
@@ -3741,14 +3743,14 @@ Modify existing product listing action to support filters:
 
 ```typescript
 export async function getProducts(params: {
-  categorySlug?: string
-  minPrice?: number
-  maxPrice?: number
-  inStock?: boolean
-  sortBy?: "newest" | "price_asc" | "price_desc" | "name_asc"
-  page?: number
-  limit?: number
-}): Promise<PaginatedResult<ProductCard>>
+  categorySlug?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  sortBy?: "newest" | "price_asc" | "price_desc" | "name_asc";
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedResult<ProductCard>>;
 ```
 
 **UI/UX Specification:**
@@ -3863,19 +3865,19 @@ CREATE INDEX idx_flash_sales_active ON flash_sales (starts_at, ends_at) WHERE is
 New file: `src/lib/actions/flash-sales.ts`
 
 ```typescript
-export async function getActiveFlashSales(): Promise<FlashSale[]>
+export async function getActiveFlashSales(): Promise<FlashSale[]>;
 export async function getFlashSalePrice(
   productId: string,
-): Promise<{ originalPrice: number; salePrice: number; endsAt: string } | null>
-export async function adminCreateFlashSale(input: CreateFlashSaleInput): Promise<FlashSale>
+): Promise<{ originalPrice: number; salePrice: number; endsAt: string } | null>;
+export async function adminCreateFlashSale(input: CreateFlashSaleInput): Promise<FlashSale>;
 export async function adminUpdateFlashSale(
   id: string,
   input: UpdateFlashSaleInput,
-): Promise<FlashSale>
-export async function adminDeleteFlashSale(id: string): Promise<void>
+): Promise<FlashSale>;
+export async function adminDeleteFlashSale(id: string): Promise<void>;
 export async function adminGetFlashSales(params: {
-  status?: "active" | "upcoming" | "ended" | "all"
-}): Promise<FlashSale[]>
+  status?: "active" | "upcoming" | "ended" | "all";
+}): Promise<FlashSale[]>;
 ```
 
 **Price resolution logic:**
@@ -3986,18 +3988,18 @@ CREATE INDEX idx_bundle_items_bundle ON bundle_items (bundle_id, sort_order);
 New file: `src/lib/actions/bundles.ts`
 
 ```typescript
-export async function getActiveBundles(): Promise<BundleWithItems[]>
-export async function getBundleBySlug(slug: string): Promise<BundleWithItems | null>
+export async function getActiveBundles(): Promise<BundleWithItems[]>;
+export async function getBundleBySlug(slug: string): Promise<BundleWithItems | null>;
 export async function getBundlePrice(bundleId: string): Promise<{
-  originalTotal: number
-  bundlePrice: number
-  savings: number
-  savingsPercent: number
-}>
-export async function addBundleToCart(bundleId: string): Promise<void>
-export async function adminCreateBundle(input: CreateBundleInput): Promise<Bundle>
-export async function adminUpdateBundle(id: string, input: UpdateBundleInput): Promise<Bundle>
-export async function adminDeleteBundle(id: string): Promise<void>
+  originalTotal: number;
+  bundlePrice: number;
+  savings: number;
+  savingsPercent: number;
+}>;
+export async function addBundleToCart(bundleId: string): Promise<void>;
+export async function adminCreateBundle(input: CreateBundleInput): Promise<Bundle>;
+export async function adminUpdateBundle(id: string, input: UpdateBundleInput): Promise<Bundle>;
+export async function adminDeleteBundle(id: string): Promise<void>;
 ```
 
 **UI/UX Specification:**
@@ -4100,34 +4102,34 @@ New file: `src/lib/actions/gift-cards.ts`
 
 ```typescript
 export async function purchaseGiftCard(input: {
-  value: number // Predefined values: 5000, 10000, 20000, 50000
-  recipientEmail: string
-  recipientName?: string
-  senderName?: string
-  message?: string
-}): Promise<GiftCard>
+  value: number; // Predefined values: 5000, 10000, 20000, 50000
+  recipientEmail: string;
+  recipientName?: string;
+  senderName?: string;
+  message?: string;
+}): Promise<GiftCard>;
 
 export async function redeemGiftCard(
   code: string,
   orderTotal: number,
 ): Promise<{
-  amountApplied: number
-  remainingBalance: number
-}>
+  amountApplied: number;
+  remainingBalance: number;
+}>;
 
 export async function getGiftCardBalance(code: string): Promise<{
-  initialValue: number
-  remainingValue: number
-  isActive: boolean
-  expiresAt: string | null
-}>
+  initialValue: number;
+  remainingValue: number;
+  isActive: boolean;
+  expiresAt: string | null;
+}>;
 
 // Admin
 export async function adminGetGiftCards(params: {
-  status?: "active" | "used" | "expired" | "all"
-}): Promise<PaginatedResult<GiftCard>>
-export async function adminDeactivateGiftCard(id: string): Promise<void>
-export async function adminCreateGiftCard(input: ManualGiftCardInput): Promise<GiftCard> // For manual/promotional cards
+  status?: "active" | "used" | "expired" | "all";
+}): Promise<PaginatedResult<GiftCard>>;
+export async function adminDeactivateGiftCard(id: string): Promise<void>;
+export async function adminCreateGiftCard(input: ManualGiftCardInput): Promise<GiftCard>; // For manual/promotional cards
 ```
 
 **Gift card code generation:** Random 16-character alphanumeric, formatted as `XXXX-XXXX-XXXX-XXXX`. Collision check before insert.
@@ -4245,16 +4247,16 @@ New file: `src/lib/actions/customers.ts`
 
 ```typescript
 export async function adminGetCustomers(params: {
-  search?: string
-  tags?: string[]
-  sortBy?: "name" | "orders" | "spent" | "last_order"
-  page?: number
-}): Promise<PaginatedResult<CustomerWithStats>>
+  search?: string;
+  tags?: string[];
+  sortBy?: "name" | "orders" | "spent" | "last_order";
+  page?: number;
+}): Promise<PaginatedResult<CustomerWithStats>>;
 
-export async function adminGetCustomer(userId: string): Promise<CustomerDetail>
-export async function adminUpdateCustomerTags(userId: string, tags: string[]): Promise<void>
-export async function adminRunAutoTagging(): Promise<{ updated: number }>
-export async function getCustomerSegments(): Promise<Array<{ tag: string; count: number }>>
+export async function adminGetCustomer(userId: string): Promise<CustomerDetail>;
+export async function adminUpdateCustomerTags(userId: string, tags: string[]): Promise<void>;
+export async function adminRunAutoTagging(): Promise<{ updated: number }>;
+export async function getCustomerSegments(): Promise<Array<{ tag: string; count: number }>>;
 ```
 
 **UI/UX Specification:**
@@ -4343,19 +4345,19 @@ Add to existing action files:
 export async function adminBulkUpdateOrderStatus(
   orderIds: string[],
   status: OrderStatus,
-): Promise<{ updated: number }>
-export async function adminBulkPrintOrders(orderIds: string[]): Promise<string> // Returns print page URL
+): Promise<{ updated: number }>;
+export async function adminBulkPrintOrders(orderIds: string[]): Promise<string>; // Returns print page URL
 
 // Products
 export async function adminBulkToggleProducts(
   productIds: string[],
   isActive: boolean,
-): Promise<{ updated: number }>
-export async function adminBulkDeleteProducts(productIds: string[]): Promise<{ deleted: number }>
+): Promise<{ updated: number }>;
+export async function adminBulkDeleteProducts(productIds: string[]): Promise<{ deleted: number }>;
 export async function adminBulkUpdateCategory(
   productIds: string[],
   categoryId: string,
-): Promise<{ updated: number }>
+): Promise<{ updated: number }>;
 ```
 
 **UI/UX Specification:**
@@ -4518,17 +4520,23 @@ CREATE INDEX idx_webhook_logs_webhook ON webhook_logs (webhook_id, created_at DE
 New file: `src/lib/actions/webhooks.ts`
 
 ```typescript
-export async function adminGetWebhooks(): Promise<Webhook[]>
-export async function adminCreateWebhook(input: { url: string; events: string[] }): Promise<Webhook> // Auto-generates secret
-export async function adminUpdateWebhook(id: string, input: Partial<WebhookInput>): Promise<Webhook>
-export async function adminDeleteWebhook(id: string): Promise<void>
+export async function adminGetWebhooks(): Promise<Webhook[]>;
+export async function adminCreateWebhook(input: {
+  url: string;
+  events: string[];
+}): Promise<Webhook>; // Auto-generates secret
+export async function adminUpdateWebhook(
+  id: string,
+  input: Partial<WebhookInput>,
+): Promise<Webhook>;
+export async function adminDeleteWebhook(id: string): Promise<void>;
 export async function adminGetWebhookLogs(
   webhookId: string,
   params: { page?: number },
-): Promise<PaginatedResult<WebhookLog>>
+): Promise<PaginatedResult<WebhookLog>>;
 export async function adminTestWebhook(
   id: string,
-): Promise<{ success: boolean; statusCode: number }>
+): Promise<{ success: boolean; statusCode: number }>;
 ```
 
 **Webhook dispatcher:** `src/lib/integrations/webhooks/dispatcher.ts`
@@ -4537,7 +4545,7 @@ export async function adminTestWebhook(
 export async function dispatchWebhookEvent(
   event: string,
   payload: Record<string, unknown>,
-): Promise<void>
+): Promise<void>;
 // 1. Find all active webhooks subscribed to this event
 // 2. For each: POST payload with HMAC-SHA256 signature in X-Webhook-Signature header
 // 3. Retry 3 times with exponential backoff (1s, 10s, 60s)
@@ -4656,23 +4664,23 @@ $$ LANGUAGE sql STABLE;
 New file: `src/lib/actions/loyalty.ts`
 
 ```typescript
-export async function getLoyaltyBalance(): Promise<{ balance: number; pendingExpiry: number }>
+export async function getLoyaltyBalance(): Promise<{ balance: number; pendingExpiry: number }>;
 export async function getLoyaltyHistory(params: {
-  page?: number
-}): Promise<PaginatedResult<LoyaltyTransaction>>
-export async function redeemPoints(points: number): Promise<{ discountAmount: number }>
-export async function awardOrderPoints(orderId: string): Promise<{ pointsAwarded: number }>
+  page?: number;
+}): Promise<PaginatedResult<LoyaltyTransaction>>;
+export async function redeemPoints(points: number): Promise<{ discountAmount: number }>;
+export async function awardOrderPoints(orderId: string): Promise<{ pointsAwarded: number }>;
 export async function adminGrantPoints(
   userId: string,
   points: number,
   reason: string,
-): Promise<void>
+): Promise<void>;
 export async function adminRevokePoints(
   userId: string,
   points: number,
   reason: string,
-): Promise<void>
-export async function expireOldPoints(): Promise<{ expired: number }> // Scheduled job
+): Promise<void>;
+export async function expireOldPoints(): Promise<{ expired: number }>; // Scheduled job
 ```
 
 **Points calculation:**
@@ -4842,12 +4850,12 @@ i18n: {
 ```typescript
 export async function getRecentPurchases(limit: number): Promise<
   Array<{
-    productTitle: string
-    productSlug: string
-    city: string // From shipping address, never full name/email
-    minutesAgo: number
+    productTitle: string;
+    productSlug: string;
+    city: string; // From shipping address, never full name/email
+    minutesAgo: number;
   }>
->
+>;
 ```
 
 **UI/UX Specification:**
@@ -4939,24 +4947,24 @@ CREATE TABLE b2b_minimum_orders (
 
 ```typescript
 export async function registerB2B(input: {
-  companyName: string
-  taxNumber: string
+  companyName: string;
+  taxNumber: string;
   // ... standard registration fields
-}): Promise<void>
+}): Promise<void>;
 
-export async function adminApproveB2B(userId: string): Promise<void>
-export async function adminRejectB2B(userId: string): Promise<void>
-export async function adminGetB2BRequests(): Promise<B2BRequest[]>
+export async function adminApproveB2B(userId: string): Promise<void>;
+export async function adminRejectB2B(userId: string): Promise<void>;
+export async function adminGetB2BRequests(): Promise<B2BRequest[]>;
 
 export async function getProductPrice(
   productId: string,
   variantId?: string,
 ): Promise<{
-  retailPrice: number
-  wholesalePrice: number | null
-  isB2BUser: boolean
-  showNet: boolean
-}>
+  retailPrice: number;
+  wholesalePrice: number | null;
+  isB2BUser: boolean;
+  showNet: boolean;
+}>;
 ```
 
 **UI/UX Specification:**
@@ -5039,7 +5047,7 @@ ALTER TABLE orders ADD COLUMN review_email_sent_at timestamptz;
 **Server Actions:**
 
 ```typescript
-export async function sendReviewRequestEmails(): Promise<{ sent: number }>
+export async function sendReviewRequestEmails(): Promise<{ sent: number }>;
 // Called by scheduled job (Edge Function or cron)
 // Query: orders WHERE status = 'shipped' AND review_email_sent = false
 //   AND shipped_at < now() - interval '7 days'
@@ -5122,9 +5130,9 @@ Modify shipping fee calculation:
 
 ```typescript
 export function calculateShippingFee(params: {
-  cartItems: Array<{ productId: string; variantId?: string; quantity: number }>
-  shippingMethod: string
-}): Promise<number> // Returns fee in HUF
+  cartItems: Array<{ productId: string; variantId?: string; quantity: number }>;
+  shippingMethod: string;
+}): Promise<number>; // Returns fee in HUF
 
 // Logic:
 // 1. Sum total weight of all cart items (variant weight ?? product weight ?? default weight)

@@ -1,102 +1,102 @@
-"use client"
+"use client";
 
-import { useEffect, useRef, useCallback } from "react"
-import { ShoppingBag, ShoppingCart, X, Check } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useEffect, useRef, useCallback } from "react";
+import { ShoppingBag, ShoppingCart, X, Check } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { useCartStore } from "@/lib/store/cart"
-import { useUIStore } from "@/lib/store/ui"
-import { CartLineItem } from "@/components/cart/cart-line-item"
-import { CartCount } from "@/components/shared/cart-count"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetTrigger, SheetContent, SheetTitle, SheetClose } from "@/components/ui/sheet"
-import { formatHUF } from "@/lib/utils/format"
-import { siteConfig } from "@/lib/config/site.config"
-import { cn } from "@/lib/utils"
+import { useCartStore } from "@/lib/store/cart";
+import { useUIStore } from "@/lib/store/ui";
+import { CartLineItem } from "@/components/cart/cart-line-item";
+import { CartCount } from "@/components/shared/cart-count";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetTrigger, SheetContent, SheetTitle, SheetClose } from "@/components/ui/sheet";
+import { formatHUF } from "@/lib/utils/format";
+import { siteConfig } from "@/lib/config/site.config";
+import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /*  CartDrawer — slide-out cart panel                                  */
 /* ------------------------------------------------------------------ */
 
-const FREE_SHIPPING_THRESHOLD = siteConfig.shipping.rules.freeOver
+const FREE_SHIPPING_THRESHOLD = siteConfig.shipping.rules.freeOver;
 
 export function CartDrawer() {
-  const router = useRouter()
-  const cartDrawerOpen = useUIStore((s) => s.cartDrawerOpen)
-  const items = useCartStore((s) => s.items)
-  const subtotal = useCartStore((s) => s.subtotal())
-  const itemCount = useCartStore((s) => s.itemCount())
+  const router = useRouter();
+  const cartDrawerOpen = useUIStore((s) => s.cartDrawerOpen);
+  const items = useCartStore((s) => s.items);
+  const subtotal = useCartStore((s) => s.subtotal());
+  const itemCount = useCartStore((s) => s.itemCount());
 
-  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isAutoOpenedRef = useRef(false)
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isAutoOpenedRef = useRef(false);
 
   /* ── Auto-open when items are added to the cart ──────────────────── */
   useEffect(() => {
     const unsub = useCartStore.subscribe((state, prevState) => {
       if (state.items.length > prevState.items.length) {
-        isAutoOpenedRef.current = true
-        useUIStore.getState().openCartDrawer()
+        isAutoOpenedRef.current = true;
+        useUIStore.getState().openCartDrawer();
 
-        if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current)
+        if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
         autoCloseTimerRef.current = setTimeout(() => {
-          useUIStore.getState().closeCartDrawer()
-          isAutoOpenedRef.current = false
-        }, 3000)
+          useUIStore.getState().closeCartDrawer();
+          isAutoOpenedRef.current = false;
+        }, 3000);
       }
-    })
+    });
 
     return () => {
-      unsub()
-      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current)
-    }
-  }, [])
+      unsub();
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    };
+  }, []);
 
   /* ── Handlers ────────────────────────────────────────────────────── */
 
   // Clear auto-close timer on any drawer state change initiated by user
   const handleOpenChange = useCallback((open: boolean) => {
     if (autoCloseTimerRef.current) {
-      clearTimeout(autoCloseTimerRef.current)
-      autoCloseTimerRef.current = null
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
     }
-    isAutoOpenedRef.current = false
+    isAutoOpenedRef.current = false;
 
     if (open) {
-      useUIStore.getState().openCartDrawer()
+      useUIStore.getState().openCartDrawer();
     } else {
-      useUIStore.getState().closeCartDrawer()
+      useUIStore.getState().closeCartDrawer();
     }
-  }, [])
+  }, []);
 
   // Cancel auto-close when user hovers over the drawer
   const handleMouseEnter = useCallback(() => {
     if (isAutoOpenedRef.current && autoCloseTimerRef.current) {
-      clearTimeout(autoCloseTimerRef.current)
-      autoCloseTimerRef.current = null
-      isAutoOpenedRef.current = false
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+      isAutoOpenedRef.current = false;
     }
-  }, [])
+  }, []);
 
   const handleCheckout = useCallback(() => {
     if (autoCloseTimerRef.current) {
-      clearTimeout(autoCloseTimerRef.current)
-      autoCloseTimerRef.current = null
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
     }
-    useUIStore.getState().closeCartDrawer()
-    router.push("/checkout")
-  }, [router])
+    useUIStore.getState().closeCartDrawer();
+    router.push("/checkout");
+  }, [router]);
 
   const handleBrowse = useCallback(() => {
-    useUIStore.getState().closeCartDrawer()
-    router.push("/products")
-  }, [router])
+    useUIStore.getState().closeCartDrawer();
+    router.push("/products");
+  }, [router]);
 
   /* ── Free shipping calculations ──────────────────────────────────── */
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal)
-  const progress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)
-  const isFreeShipping = remaining === 0
+  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const progress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const isFreeShipping = remaining === 0;
 
   /* ── Render ──────────────────────────────────────────────────────── */
   return (
@@ -124,7 +124,7 @@ export function CartDrawer() {
           <SheetTitle className="text-base font-semibold tracking-tight">
             Kosár
             {itemCount > 0 && (
-              <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+              <span className="text-muted-foreground ml-1.5 text-sm font-normal">
                 ({itemCount} termék)
               </span>
             )}
@@ -146,12 +146,12 @@ export function CartDrawer() {
         {items.length === 0 ? (
           /* ── Empty state ─────────────────────────────────────────── */
           <div className="flex flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
-            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-              <ShoppingCart className="size-7 text-muted-foreground/60" />
+            <div className="bg-muted flex size-16 items-center justify-center rounded-full">
+              <ShoppingCart className="text-muted-foreground/60 size-7" />
             </div>
             <div className="space-y-1">
               <p className="font-medium tracking-tight">A kosarad üres</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Böngéssz a termékek között és adj valamit a kosárba!
               </p>
             </div>
@@ -163,7 +163,7 @@ export function CartDrawer() {
           <>
             {/* ── Items list (scrollable) ───────────────────────────── */}
             <div className="flex-1 overflow-y-auto">
-              <ul className="divide-y divide-border px-5">
+              <ul className="divide-border divide-y px-5">
                 {items.map((item) => (
                   <li key={`${item.productId}-${item.variantId ?? "base"}`}>
                     <CartLineItem item={item} />
@@ -185,12 +185,12 @@ export function CartDrawer() {
                   ) : (
                     <span className="text-muted-foreground">
                       Még{" "}
-                      <span className="font-medium text-foreground">{formatHUF(remaining)}</span> és
+                      <span className="text-foreground font-medium">{formatHUF(remaining)}</span> és
                       ingyenes a szállítás!
                     </span>
                   )}
                 </p>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500 ease-out",
@@ -205,7 +205,7 @@ export function CartDrawer() {
 
               {/* Subtotal row */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Részösszeg</span>
+                <span className="text-muted-foreground text-sm">Részösszeg</span>
                 <span className="text-base font-semibold tabular-nums">{formatHUF(subtotal)}</span>
               </div>
 
@@ -219,7 +219,7 @@ export function CartDrawer() {
                 render={
                   <Link
                     href="/cart"
-                    className="text-center text-sm text-muted-foreground underline-offset-4 transition-colors duration-300 hover:text-foreground hover:underline"
+                    className="text-muted-foreground hover:text-foreground text-center text-sm underline-offset-4 transition-colors duration-300 hover:underline"
                   />
                 }
               >
@@ -230,5 +230,5 @@ export function CartDrawer() {
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }

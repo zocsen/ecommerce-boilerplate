@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
-import { useSearchParams, useRouter } from "next/navigation"
-import { Search, Download, Loader2 } from "lucide-react"
-import { AdminPagination } from "@/components/admin/pagination"
-import { adminListOrders, exportOrdersCsv } from "@/lib/actions/orders"
-import { formatHUF, formatDateTime } from "@/lib/utils/format"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { OrderStatusBadge } from "@/components/admin/order-status-badge"
-import { ORDER_STATUS_LABELS } from "@/lib/constants/order-status"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Search, Download, Loader2 } from "lucide-react";
+import { AdminPagination } from "@/components/admin/pagination";
+import { adminListOrders, exportOrdersCsv } from "@/lib/actions/orders";
+import { formatHUF, formatDateTime } from "@/lib/utils/format";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
+import { ORDER_STATUS_LABELS } from "@/lib/constants/order-status";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -21,14 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -36,9 +36,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
-import type { OrderStatus } from "@/lib/types/database"
+import type { OrderStatus } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Orders List (client component)                                */
@@ -49,22 +49,22 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   ...Object.entries(ORDER_STATUS_LABELS)
     .filter(([key]) => key !== "draft")
     .map(([value, label]) => ({ value, label })),
-]
+];
 
 const EXPORT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "all", label: "Összes státusz" },
   ...Object.entries(ORDER_STATUS_LABELS)
     .filter(([key]) => key !== "draft")
     .map(([value, label]) => ({ value, label })),
-]
+];
 
 interface OrderRow {
-  id: string
-  email: string
-  status: string
-  total_amount: number
-  created_at: string
-  shipping_method: string
+  id: string;
+  email: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+  shipping_method: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -72,25 +72,25 @@ interface OrderRow {
 /* ------------------------------------------------------------------ */
 
 function ExportDialog() {
-  const [open, setOpen] = useState(false)
-  const [dateFrom, setDateFrom] = useState("")
-  const [dateTo, setDateTo] = useState("")
-  const [exportStatus, setExportStatus] = useState("all")
-  const [includeLineItems, setIncludeLineItems] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const [exportError, setExportError] = useState("")
+  const [open, setOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [exportStatus, setExportStatus] = useState("all");
+  const [includeLineItems, setIncludeLineItems] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   function resetForm() {
-    setDateFrom("")
-    setDateTo("")
-    setExportStatus("all")
-    setIncludeLineItems(false)
-    setExportError("")
+    setDateFrom("");
+    setDateTo("");
+    setExportStatus("all");
+    setIncludeLineItems(false);
+    setExportError("");
   }
 
   async function handleExport() {
-    setExporting(true)
-    setExportError("")
+    setExporting(true);
+    setExportError("");
 
     try {
       const result = await exportOrdersCsv({
@@ -98,32 +98,32 @@ function ExportDialog() {
         dateTo: dateTo || undefined,
         status: exportStatus === "all" ? undefined : exportStatus,
         includeLineItems,
-      })
+      });
 
       if (!result.success || !result.data) {
-        setExportError(result.error ?? "Ismeretlen hiba történt.")
-        return
+        setExportError(result.error ?? "Ismeretlen hiba történt.");
+        return;
       }
 
       // Trigger browser download
       const blob = new Blob([result.data.csv], {
         type: "text/csv;charset=utf-8",
-      })
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement("a")
-      anchor.href = url
-      anchor.download = result.data.filename
-      document.body.appendChild(anchor)
-      anchor.click()
-      document.body.removeChild(anchor)
-      URL.revokeObjectURL(url)
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = result.data.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
 
-      setOpen(false)
-      resetForm()
+      setOpen(false);
+      resetForm();
     } catch {
-      setExportError("Váratlan hiba történt az exportálás során.")
+      setExportError("Váratlan hiba történt az exportálás során.");
     } finally {
-      setExporting(false)
+      setExporting(false);
     }
   }
 
@@ -131,8 +131,8 @@ function ExportDialog() {
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        setOpen(nextOpen)
-        if (!nextOpen) resetForm()
+        setOpen(nextOpen);
+        if (!nextOpen) resetForm();
       }}
     >
       <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5" />}>
@@ -206,7 +206,7 @@ function ExportDialog() {
 
           {/* Error banner */}
           {exportError && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
               {exportError}
             </div>
           )}
@@ -229,7 +229,7 @@ function ExportDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -237,50 +237,50 @@ function ExportDialog() {
 /* ------------------------------------------------------------------ */
 
 export function AdminOrdersClient() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [orders, setOrders] = useState<OrderRow[]>([])
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const page = Number(searchParams.get("page") ?? "1")
-  const status = searchParams.get("status") ?? ""
-  const search = searchParams.get("search") ?? ""
+  const page = Number(searchParams.get("page") ?? "1");
+  const status = searchParams.get("status") ?? "";
+  const search = searchParams.get("search") ?? "";
 
   const fetchOrders = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     const result = await adminListOrders({
       page,
       perPage: 20,
       status: status || undefined,
       search: search || undefined,
-    })
+    });
     if (result.success && result.data) {
-      setOrders(result.data.orders as OrderRow[])
-      setTotal(result.data.total)
-      setTotalPages(result.data.totalPages)
+      setOrders(result.data.orders as OrderRow[]);
+      setTotal(result.data.total);
+      setTotalPages(result.data.totalPages);
     }
-    setLoading(false)
-  }, [page, status, search])
+    setLoading(false);
+  }, [page, status, search]);
 
   useEffect(() => {
-    fetchOrders()
-  }, [fetchOrders])
+    fetchOrders();
+  }, [fetchOrders]);
 
   function updateParam(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams.toString());
     if (value) {
-      params.set(key, value)
+      params.set(key, value);
     } else {
-      params.delete(key)
+      params.delete(key);
     }
     // Reset page when filters change
     if (key !== "page") {
-      params.delete("page")
+      params.delete("page");
     }
-    router.push(`/admin/orders?${params.toString()}`)
+    router.push(`/admin/orders?${params.toString()}`);
   }
 
   return (
@@ -288,7 +288,7 @@ export function AdminOrdersClient() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Rendelések</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{total} rendelés összesen</p>
+          <p className="text-muted-foreground mt-1 text-sm">{total} rendelés összesen</p>
         </div>
         <ExportDialog />
       </div>
@@ -296,14 +296,14 @@ export function AdminOrdersClient() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
             placeholder="Keresés email vagy rendelés ID..."
             className="h-8 w-64 pl-8"
             defaultValue={search}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                updateParam("search", e.currentTarget.value)
+                updateParam("search", e.currentTarget.value);
               }
             }}
           />
@@ -326,11 +326,11 @@ export function AdminOrdersClient() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
           Betöltés...
         </div>
       ) : orders.length === 0 ? (
-        <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
           Nincs találat.
         </div>
       ) : (
@@ -370,7 +370,7 @@ export function AdminOrdersClient() {
                 <TableCell className="text-right font-medium tabular-nums">
                   {formatHUF(order.total_amount)}
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground">
+                <TableCell className="text-muted-foreground text-right">
                   {formatDateTime(order.created_at)}
                 </TableCell>
               </TableRow>
@@ -386,5 +386,5 @@ export function AdminOrdersClient() {
         onPageChange={(n) => updateParam("page", String(n))}
       />
     </div>
-  )
+  );
 }

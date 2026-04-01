@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { Search, Tag, Send, Users, Loader2, Mail, Eye, Filter, AlertTriangle } from "lucide-react"
-import { AdminPagination } from "@/components/admin/pagination"
-import { StatusBadge, SUBSCRIBER_STATUS_CONFIG } from "@/components/admin/status-badge"
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Search, Tag, Send, Users, Loader2, Mail, Eye, Filter, AlertTriangle } from "lucide-react";
+import { AdminPagination } from "@/components/admin/pagination";
+import { StatusBadge, SUBSCRIBER_STATUS_CONFIG } from "@/components/admin/status-badge";
 import {
   adminListSubscribers,
   adminTagSubscriber,
   adminGetAllActiveSubscriberEmails,
   adminGetAllTags,
-} from "@/lib/actions/subscribers"
-import { sendNewsletterCampaign, renderNewsletterPreview } from "@/lib/integrations/email/actions"
-import type { NewsletterContent } from "@/lib/integrations/email/templates"
-import { formatDate, formatDateTime } from "@/lib/utils/format"
-import { siteConfig } from "@/lib/config/site.config"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+} from "@/lib/actions/subscribers";
+import { sendNewsletterCampaign, renderNewsletterPreview } from "@/lib/integrations/email/actions";
+import type { NewsletterContent } from "@/lib/integrations/email/templates";
+import { formatDate, formatDateTime } from "@/lib/utils/format";
+import { siteConfig } from "@/lib/config/site.config";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -26,15 +26,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import type { SubscriberRow } from "@/lib/types/database"
+} from "@/components/ui/select";
+import type { SubscriberRow } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Marketing Page                                               */
@@ -45,25 +45,25 @@ export default function AdminMarketingPage() {
   if (!siteConfig.features.enableMarketingModule) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <AlertTriangle className="size-10 text-muted-foreground/50" />
+        <AlertTriangle className="text-muted-foreground/50 size-10" />
         <div>
           <h1 className="text-lg font-semibold">Marketing modul kikapcsolva</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-1 text-sm">
             A marketing modul jelenleg nincs engedélyezve a konfigurációban.
             <br />
             Módosítsd az{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
               enableMarketingModule
             </code>{" "}
-            értéket a <code className="rounded bg-muted px-1.5 py-0.5 text-xs">site.config.ts</code>{" "}
+            értéket a <code className="bg-muted rounded px-1.5 py-0.5 text-xs">site.config.ts</code>{" "}
             fájlban.
           </p>
         </div>
       </div>
-    )
+    );
   }
 
-  return <MarketingPageContent />
+  return <MarketingPageContent />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -72,180 +72,180 @@ export default function AdminMarketingPage() {
 
 function MarketingPageContent() {
   // ── Subscribers tab ───────────────────────────────────────────
-  const [subscribers, setSubscribers] = useState<SubscriberRow[]>([])
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("")
-  const [loading, setLoading] = useState(true)
+  const [subscribers, setSubscribers] = useState<SubscriberRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   // ── Tag management ────────────────────────────────────────────
-  const [tagEmail, setTagEmail] = useState<string | null>(null)
-  const [tagInput, setTagInput] = useState("")
-  const [tagging, setTagging] = useState(false)
+  const [tagEmail, setTagEmail] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState("");
+  const [tagging, setTagging] = useState(false);
 
   // ── Campaign state ────────────────────────────────────────────
-  const [campaignSubject, setCampaignSubject] = useState("")
-  const [campaignHeadline, setCampaignHeadline] = useState("")
-  const [campaignBody, setCampaignBody] = useState("")
-  const [campaignCtaText, setCampaignCtaText] = useState("Vásárlás most")
-  const [campaignCtaUrl, setCampaignCtaUrl] = useState("")
-  const [sending, setSending] = useState(false)
-  const [campaignResult, setCampaignResult] = useState<string | null>(null)
+  const [campaignSubject, setCampaignSubject] = useState("");
+  const [campaignHeadline, setCampaignHeadline] = useState("");
+  const [campaignBody, setCampaignBody] = useState("");
+  const [campaignCtaText, setCampaignCtaText] = useState("Vásárlás most");
+  const [campaignCtaUrl, setCampaignCtaUrl] = useState("");
+  const [sending, setSending] = useState(false);
+  const [campaignResult, setCampaignResult] = useState<string | null>(null);
 
   // ── Tag targeting ─────────────────────────────────────────────
-  const [availableTags, setAvailableTags] = useState<string[]>([])
-  const [targetTag, setTargetTag] = useState<string>("")
-  const [targetCount, setTargetCount] = useState<number | null>(null)
-  const [targetCountLoading, setTargetCountLoading] = useState(false)
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [targetTag, setTargetTag] = useState<string>("");
+  const [targetCount, setTargetCount] = useState<number | null>(null);
+  const [targetCountLoading, setTargetCountLoading] = useState(false);
 
   // ── Preview ───────────────────────────────────────────────────
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null)
-  const [previewLoading, setPreviewLoading] = useState(false)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // ── Error ─────────────────────────────────────────────────────
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null);
 
   // ── Active view ───────────────────────────────────────────────
-  const [activeView, setActiveView] = useState<"subscribers" | "campaign">("subscribers")
+  const [activeView, setActiveView] = useState<"subscribers" | "campaign">("subscribers");
 
   // ── Fetch subscribers ─────────────────────────────────────────
   const fetchSubscribers = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     const res = await adminListSubscribers({
       page,
       perPage: 20,
       search: search || undefined,
       status: statusFilter || undefined,
-    })
+    });
     if (res.success && res.data) {
-      setSubscribers(res.data.subscribers)
-      setTotal(res.data.total)
-      setTotalPages(res.data.totalPages)
+      setSubscribers(res.data.subscribers);
+      setTotal(res.data.total);
+      setTotalPages(res.data.totalPages);
     }
-    setLoading(false)
-  }, [page, search, statusFilter])
+    setLoading(false);
+  }, [page, search, statusFilter]);
 
   useEffect(() => {
-    fetchSubscribers()
-  }, [fetchSubscribers])
+    fetchSubscribers();
+  }, [fetchSubscribers]);
 
   // ── Fetch available tags on mount ─────────────────────────────
   useEffect(() => {
     async function loadTags() {
-      const res = await adminGetAllTags()
+      const res = await adminGetAllTags();
       if (res.success && res.data) {
-        setAvailableTags(res.data)
+        setAvailableTags(res.data);
       }
     }
-    loadTags()
-  }, [])
+    loadTags();
+  }, []);
 
   // ── Fetch target count when tag changes ───────────────────────
   useEffect(() => {
     async function loadTargetCount() {
-      setTargetCountLoading(true)
-      const res = await adminGetAllActiveSubscriberEmails(targetTag || undefined)
+      setTargetCountLoading(true);
+      const res = await adminGetAllActiveSubscriberEmails(targetTag || undefined);
       if (res.success && res.data) {
-        setTargetCount(res.data.total)
+        setTargetCount(res.data.total);
       } else {
-        setTargetCount(null)
+        setTargetCount(null);
       }
-      setTargetCountLoading(false)
+      setTargetCountLoading(false);
     }
-    loadTargetCount()
-  }, [targetTag])
+    loadTargetCount();
+  }, [targetTag]);
 
   // ── Tag subscriber ────────────────────────────────────────────
   async function handleTag() {
-    if (!tagEmail || !tagInput.trim()) return
+    if (!tagEmail || !tagInput.trim()) return;
 
-    setTagging(true)
-    setError(null)
+    setTagging(true);
+    setError(null);
 
     const tags = tagInput
       .split(",")
       .map((t) => t.trim())
-      .filter(Boolean)
+      .filter(Boolean);
 
-    const res = await adminTagSubscriber(tagEmail, tags)
+    const res = await adminTagSubscriber(tagEmail, tags);
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a címkézéskor.")
+      setError(res.error ?? "Hiba a címkézéskor.");
     }
 
-    setTagging(false)
-    setTagEmail(null)
-    setTagInput("")
-    fetchSubscribers()
+    setTagging(false);
+    setTagEmail(null);
+    setTagInput("");
+    fetchSubscribers();
 
     // Refresh available tags
-    const tagsRes = await adminGetAllTags()
+    const tagsRes = await adminGetAllTags();
     if (tagsRes.success && tagsRes.data) {
-      setAvailableTags(tagsRes.data)
+      setAvailableTags(tagsRes.data);
     }
   }
 
   // ── Preview campaign ──────────────────────────────────────────
   async function handlePreview() {
     if (!campaignHeadline.trim() || !campaignBody.trim()) {
-      setError("A címsor és szövegtörzs szükséges az előnézethez.")
-      return
+      setError("A címsor és szövegtörzs szükséges az előnézethez.");
+      return;
     }
 
-    setPreviewLoading(true)
-    setError(null)
+    setPreviewLoading(true);
+    setError(null);
 
     const content: NewsletterContent = {
       headline: campaignHeadline,
       body: campaignBody,
       ctaText: campaignCtaText || "Vásárlás",
       ctaUrl: campaignCtaUrl || "/",
-    }
+    };
 
-    const res = await renderNewsletterPreview(content)
+    const res = await renderNewsletterPreview(content);
 
     if (res.success && res.html) {
-      setPreviewHtml(res.html)
+      setPreviewHtml(res.html);
     } else {
-      setError(res.error ?? "Hiba az előnézet generálásakor.")
+      setError(res.error ?? "Hiba az előnézet generálásakor.");
     }
 
-    setPreviewLoading(false)
+    setPreviewLoading(false);
   }
 
   // ── Send campaign ─────────────────────────────────────────────
   async function handleSendCampaign() {
     if (!campaignSubject.trim() || !campaignHeadline.trim() || !campaignBody.trim()) {
-      setError("A tárgy, címsor és szövegtörzs kötelező.")
-      return
+      setError("A tárgy, címsor és szövegtörzs kötelező.");
+      return;
     }
 
-    setSending(true)
-    setError(null)
-    setCampaignResult(null)
+    setSending(true);
+    setError(null);
+    setCampaignResult(null);
 
     // Fetch all active subscriber emails (with optional tag filter)
-    const allRes = await adminGetAllActiveSubscriberEmails(targetTag || undefined)
+    const allRes = await adminGetAllActiveSubscriberEmails(targetTag || undefined);
 
     if (!allRes.success || !allRes.data) {
-      setError("Hiba a feliratkozók lekérésekor.")
-      setSending(false)
-      return
+      setError("Hiba a feliratkozók lekérésekor.");
+      setSending(false);
+      return;
     }
 
-    const emails = allRes.data.emails
+    const emails = allRes.data.emails;
 
     if (emails.length === 0) {
       setError(
         targetTag
           ? `Nincsenek aktív feliratkozók a "${targetTag}" címkével.`
           : "Nincsenek aktív feliratkozók.",
-      )
-      setSending(false)
-      return
+      );
+      setSending(false);
+      return;
     }
 
     const content: NewsletterContent = {
@@ -253,12 +253,12 @@ function MarketingPageContent() {
       body: campaignBody,
       ctaText: campaignCtaText || "Vásárlás",
       ctaUrl: campaignCtaUrl || "/",
-    }
+    };
 
-    const result = await sendNewsletterCampaign(emails, campaignSubject, content)
+    const result = await sendNewsletterCampaign(emails, campaignSubject, content);
 
-    setCampaignResult(`Sikeresen elküldve: ${result.totalSent}, Sikertelen: ${result.totalFailed}`)
-    setSending(false)
+    setCampaignResult(`Sikeresen elküldve: ${result.totalSent}, Sikertelen: ${result.totalFailed}`);
+    setSending(false);
   }
 
   // ── Status filter options ─────────────────────────────────────
@@ -268,21 +268,21 @@ function MarketingPageContent() {
     { value: "unsubscribed", label: "Leiratkozott" },
     { value: "bounced", label: "Visszapattant" },
     { value: "complained", label: "Panasz" },
-  ]
+  ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Marketing</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-1 text-sm">
             Feliratkozók kezelése és hírlevél küldés
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -319,12 +319,12 @@ function MarketingPageContent() {
           {/* Search + filter */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative max-w-sm flex-1">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 value={search}
                 onChange={(e) => {
-                  setSearch(e.target.value)
-                  setPage(1)
+                  setSearch(e.target.value);
+                  setPage(1);
                 }}
                 placeholder="Keresés e-mail alapján..."
                 className="pl-9"
@@ -338,8 +338,8 @@ function MarketingPageContent() {
                   size="sm"
                   className="h-7 text-xs"
                   onClick={() => {
-                    setStatusFilter(opt.value)
-                    setPage(1)
+                    setStatusFilter(opt.value);
+                    setPage(1);
                   }}
                 >
                   {opt.label}
@@ -349,12 +349,12 @@ function MarketingPageContent() {
           </div>
 
           {loading ? (
-            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
               Betöltés...
             </div>
           ) : subscribers.length === 0 ? (
-            <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Users className="size-8 text-muted-foreground/50" />
+            <div className="text-muted-foreground flex h-40 flex-col items-center justify-center gap-2 text-sm">
+              <Users className="text-muted-foreground/50 size-8" />
               <p>Nincsenek feliratkozók.</p>
             </div>
           ) : (
@@ -389,23 +389,23 @@ function MarketingPageContent() {
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
+                            <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center text-xs tabular-nums text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-center text-xs tabular-nums">
                         {sub.open_count ?? 0}
                       </TableCell>
-                      <TableCell className="text-center text-xs tabular-nums text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-center text-xs tabular-nums">
                         {sub.click_count ?? 0}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-xs">
                         {sub.last_opened_at ? formatDateTime(sub.last_opened_at) : "—"}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-xs">
                         {sub.source ?? "—"}
                       </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-right text-xs">
                         {formatDate(sub.created_at)}
                       </TableCell>
                       <TableCell className="text-right">
@@ -418,8 +418,8 @@ function MarketingPageContent() {
                               className="h-7 w-36 text-xs"
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
-                                  e.preventDefault()
-                                  handleTag()
+                                  e.preventDefault();
+                                  handleTag();
                                 }
                               }}
                             />
@@ -443,8 +443,8 @@ function MarketingPageContent() {
                             size="sm"
                             className="h-7"
                             onClick={() => {
-                              setTagEmail(sub.email)
-                              setTagInput("")
+                              setTagEmail(sub.email);
+                              setTagInput("");
                             }}
                           >
                             <Tag className="size-3.5" />
@@ -495,13 +495,13 @@ function MarketingPageContent() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {targetCountLoading ? (
                     "Címzettek száma betöltés alatt..."
                   ) : targetCount !== null ? (
                     <>
                       Címzettek száma:{" "}
-                      <span className="font-medium text-foreground">{targetCount}</span> aktív
+                      <span className="text-foreground font-medium">{targetCount}</span> aktív
                       feliratkozó
                       {targetTag ? ` a "${targetTag}" címkével` : ""}
                     </>
@@ -535,7 +535,7 @@ function MarketingPageContent() {
                   value={campaignBody}
                   onChange={(e) => setCampaignBody(e.target.value)}
                   rows={6}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                   placeholder="A hírlevél szövege..."
                 />
               </div>
@@ -560,7 +560,7 @@ function MarketingPageContent() {
               </div>
 
               <div className="flex items-center justify-between border-t pt-4">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {targetCountLoading
                     ? "Betöltés..."
                     : targetCount !== null
@@ -617,5 +617,5 @@ function MarketingPageContent() {
         </div>
       )}
     </div>
-  )
+  );
 }

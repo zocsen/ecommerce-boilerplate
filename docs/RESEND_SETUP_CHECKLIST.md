@@ -3,6 +3,7 @@
 ## Quick Start (Local Development)
 
 ### Step 1: Create Resend Account
+
 - [ ] Go to https://resend.com
 - [ ] Create free account
 - [ ] You'll receive a test email address (e.g., `onboarding@resend.dev`)
@@ -23,21 +24,24 @@ RESEND_TEST_RECIPIENT=your-email@example.com
 ### Step 3: Test Email Sending
 
 #### Option A: Send via Server Action
+
 ```typescript
 // In your server action or API route
-import { sendReceipt } from '@/lib/integrations/email/actions';
+import { sendReceipt } from "@/lib/integrations/email/actions";
 
 const result = await sendReceipt(orderId);
-console.log('Email sent:', result);
+console.log("Email sent:", result);
 ```
 
 #### Option B: Preview Email Template
+
 ```bash
 # View email previews at http://localhost:3000/emails (if using React Email dev server)
 npm run email
 ```
 
 #### Option C: Send via Development Endpoint (if created)
+
 ```bash
 curl -X POST http://localhost:3000/api/dev/send-test-email \
   -H "Content-Type: application/json" \
@@ -77,6 +81,7 @@ RESEND_MARKETING_FROM_EMAIL=marketing@yourdomain.com
 ```
 
 Benefits:
+
 - Separate sender reputation for transactional vs. marketing
 - Better email deliverability
 - Independent bounce/complaint tracking
@@ -124,6 +129,7 @@ features: {
 ### Email Types
 
 #### Transactional (Functional)
+
 - Order receipts
 - Shipping updates
 - Password resets
@@ -131,6 +137,7 @@ features: {
 - **Sender:** `orders@yourdomain.com`
 
 #### Marketing
+
 - Newsletters
 - Abandoned cart reminders
 - Promotional offers
@@ -184,6 +191,7 @@ Update subscriber status in Supabase
 ## Testing Checklist
 
 ### Local Development
+
 - [ ] Email sends successfully to `RESEND_TEST_RECIPIENT`
 - [ ] Email renders correctly (check Resend dashboard)
 - [ ] All template variables are populated
@@ -191,6 +199,7 @@ Update subscriber status in Supabase
 - [ ] "Unsubscribe" link is present in marketing emails
 
 ### Production
+
 - [ ] Domain is verified in Resend
 - [ ] Custom sender addresses work (`orders@yourdomain.com`)
 - [ ] SPF/DKIM records are added
@@ -203,6 +212,7 @@ Update subscriber status in Supabase
 ## Troubleshooting
 
 ### Email not sending
+
 1. Check `RESEND_API_KEY` is set correctly
 2. Verify `RESEND_FROM_EMAIL` is valid
 3. In dev, check `RESEND_TEST_RECIPIENT` if using redirect
@@ -210,18 +220,21 @@ Update subscriber status in Supabase
 5. View Resend dashboard for failed sends
 
 ### Email rendering looks broken
+
 1. Verify React Email components are used (not plain HTML)
 2. Inline all styles (no external CSS)
 3. Test in multiple email clients
 4. Use Resend's email preview feature
 
 ### Webhook not receiving events
+
 1. Verify endpoint is publicly accessible: `curl https://yourdomain.com/api/email/webhook/resend`
 2. Check `RESEND_WEBHOOK_SECRET` matches Resend dashboard
 3. Check server logs for 401 (signature error) or 500 (handler error)
 4. Test with Resend CLI: `resend webhook test`
 
 ### Low email deliverability
+
 1. Verify domain in Resend (SPF/DKIM)
 2. Check bounce rates in Resend dashboard
 3. Implement webhook to automatically unsubscribe bounces
@@ -243,25 +256,33 @@ Update subscriber status in Supabase
 ## Common Questions
 
 ### Q: Can I test emails locally without Resend?
+
 A: Yes, use environment-based redirect:
+
 ```env
 RESEND_TEST_RECIPIENT=your-email@example.com
 ```
+
 All emails will be sent to this address instead.
 
 ### Q: What's the difference between transactional and marketing?
+
 A: Transactional emails are triggered by user actions (orders, shipping updates). Marketing emails are sent to your subscriber list (newsletters, promotions). Keeping them separate improves deliverability.
 
 ### Q: How do I handle unsubscribes?
+
 A: Resend webhooks automatically detect complaints and bounces. Each marketing email includes an unsubscribe link that updates the `subscribers` table status to `unsubscribed`.
 
 ### Q: Do I need the webhook in production?
+
 A: Optional but recommended. It automatically prevents sending to bounced/complaint addresses, improving deliverability.
 
 ### Q: Can I use HTML email templates instead of React Email?
+
 A: Yes, but React Email provides better type safety and component reusability. The provider accepts any HTML string via the `html` parameter.
 
 ### Q: What if I want to send from multiple domains?
+
 A: Verify each domain in Resend, then use different `RESEND_FROM_EMAIL` values in your config for different campaigns.
 
 ---

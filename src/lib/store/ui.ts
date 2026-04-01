@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { create } from "zustand"
+import { create } from "zustand";
 
 /* ------------------------------------------------------------------ */
 /*  UI Store — ephemeral UI state (no persistence)                    */
 /* ------------------------------------------------------------------ */
 
 interface UIState {
-  cartDrawerOpen: boolean
-  openCartDrawer: () => void
-  closeCartDrawer: () => void
-  toggleCartDrawer: () => void
+  cartDrawerOpen: boolean;
+  openCartDrawer: () => void;
+  closeCartDrawer: () => void;
+  toggleCartDrawer: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -18,4 +18,4 @@ export const useUIStore = create<UIState>((set) => ({
   openCartDrawer: () => set({ cartDrawerOpen: true }),
   closeCartDrawer: () => set({ cartDrawerOpen: false }),
   toggleCartDrawer: () => set((s) => ({ cartDrawerOpen: !s.cartDrawerOpen })),
-}))
+}));

@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation"
-import { AgencyShell } from "@/components/shared/agency-sidebar"
-import { getCurrentProfile, isAgencyOwner } from "@/lib/security/roles"
-import { siteConfig } from "@/lib/config/site.config"
+import { redirect } from "next/navigation";
+import { AgencyShell } from "@/components/shared/agency-sidebar";
+import { getCurrentProfile, isAgencyOwner } from "@/lib/security/roles";
+import { siteConfig } from "@/lib/config/site.config";
 
 /* ------------------------------------------------------------------ */
 /*  Agency layout                                                      */
@@ -12,19 +12,19 @@ import { siteConfig } from "@/lib/config/site.config"
 export default async function AgencyLayout({ children }: { children: React.ReactNode }) {
   // Gate: agency mode must be enabled in config
   if (!siteConfig.admin.enableAgencyMode) {
-    redirect("/admin")
+    redirect("/admin");
   }
 
   // Gate: must be authenticated and an agency owner
-  const profile = await getCurrentProfile()
+  const profile = await getCurrentProfile();
 
   if (!profile) {
-    redirect("/login?redirectTo=/agency")
+    redirect("/login?redirectTo=/agency");
   }
 
   if (!isAgencyOwner(profile)) {
-    redirect("/unauthorized")
+    redirect("/unauthorized");
   }
 
-  return <AgencyShell>{children}</AgencyShell>
+  return <AgencyShell>{children}</AgencyShell>;
 }

@@ -81,13 +81,13 @@ export default function CookiePolicyPage() {
     <article className="mx-auto max-w-3xl px-6 py-16 lg:py-24">
       <header className="mb-16">
         <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">Cookie (Süti) Szabályzat</h1>
-        <p className="mt-4 text-muted-foreground">Hatályos: 2024. január 1-től</p>
+        <p className="text-muted-foreground mt-4">Hatályos: 2024. január 1-től</p>
       </header>
 
-      <div className="space-y-12 text-[15px] leading-relaxed text-foreground/80">
+      <div className="text-foreground/80 space-y-12 text-[15px] leading-relaxed">
         {/* 1 — Bevezetés */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold tracking-tight">
             1. Bevezetés
           </h2>
           <p>
@@ -103,7 +103,7 @@ export default function CookiePolicyPage() {
 
         {/* 2 — Mi az a süti? */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold tracking-tight">
             2. Mi az a süti (cookie)?
           </h2>
           <p>
@@ -115,13 +115,13 @@ export default function CookiePolicyPage() {
 
         {/* 3 — Kategóriák */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold tracking-tight">
             3. Süti kategóriák
           </h2>
 
           <div className="mt-6 space-y-6">
             <div>
-              <h3 className="font-semibold text-foreground">Szükséges sütik</h3>
+              <h3 className="text-foreground font-semibold">Szükséges sütik</h3>
               <p className="mt-1">
                 Ezek a sütik elengedhetetlenek a weboldal alapvető funkcióinak működéséhez. Ide
                 tartozik a munkamenet kezelése, a kosár tartalma és a süti-hozzájárulás megjegyzése.
@@ -130,7 +130,7 @@ export default function CookiePolicyPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold text-foreground">Analitikai sütik</h3>
+              <h3 className="text-foreground font-semibold">Analitikai sütik</h3>
               <p className="mt-1">
                 Ezek a sütik segítenek megérteni, hogyan használják a látogatók a weboldalt (pl.
                 melyik oldalak a legnépszerűbbek, honnan érkeznek a látogatók). Az összegyűjtött
@@ -139,7 +139,7 @@ export default function CookiePolicyPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold text-foreground">Marketing sütik</h3>
+              <h3 className="text-foreground font-semibold">Marketing sütik</h3>
               <p className="mt-1">
                 Ezek a sütik lehetővé teszik személyre szabott hirdetések megjelenítését a látogató
                 érdeklődése alapján, valamint hirdetési kampányok hatékonyságának mérését. Csak a
@@ -151,23 +151,23 @@ export default function CookiePolicyPage() {
 
         {/* 4 — Süti táblázat */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold tracking-tight">
             4. Használt sütik
           </h2>
           <div className="mt-6 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="pb-3 pr-4 font-semibold text-foreground">Süti neve</th>
-                  <th className="pb-3 pr-4 font-semibold text-foreground">Cél</th>
-                  <th className="pb-3 pr-4 font-semibold text-foreground">Kategória</th>
-                  <th className="pb-3 pr-4 font-semibold text-foreground">Időtartam</th>
-                  <th className="pb-3 font-semibold text-foreground">Szolgáltató</th>
+                <tr className="border-border border-b text-left">
+                  <th className="text-foreground pr-4 pb-3 font-semibold">Süti neve</th>
+                  <th className="text-foreground pr-4 pb-3 font-semibold">Cél</th>
+                  <th className="text-foreground pr-4 pb-3 font-semibold">Kategória</th>
+                  <th className="text-foreground pr-4 pb-3 font-semibold">Időtartam</th>
+                  <th className="text-foreground pb-3 font-semibold">Szolgáltató</th>
                 </tr>
               </thead>
               <tbody>
                 {cookies.map((cookie) => (
-                  <tr key={cookie.name} className="border-b border-border/50">
+                  <tr key={cookie.name} className="border-border/50 border-b">
                     <td className="py-3 pr-4 font-mono text-xs">{cookie.name}</td>
                     <td className="py-3 pr-4">{cookie.purpose}</td>
                     <td className="py-3 pr-4 whitespace-nowrap">{cookie.category}</td>
@@ -182,7 +182,7 @@ export default function CookiePolicyPage() {
 
         {/* 5 — Hozzájárulás kezelése */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold tracking-tight">
             5. Hozzájárulás kezelése
           </h2>
           <p>
@@ -198,7 +198,7 @@ export default function CookiePolicyPage() {
 
         {/* 6 — Sütik törlése */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold tracking-tight">
             6. Sütik törlése
           </h2>
           <p>
@@ -210,7 +210,7 @@ export default function CookiePolicyPage() {
 
         {/* 7 — Kapcsolat */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold tracking-tight">
             7. Kapcsolat
           </h2>
           <p>A sütikkel kapcsolatos kérdéseit az alábbi elérhetőségen teheti fel:</p>
@@ -222,7 +222,7 @@ export default function CookiePolicyPage() {
             E-mail:{" "}
             <a
               href={`mailto:${store.email}`}
-              className="underline underline-offset-2 transition-colors hover:text-foreground"
+              className="hover:text-foreground underline underline-offset-2 transition-colors"
             >
               {store.email}
             </a>
@@ -230,7 +230,7 @@ export default function CookiePolicyPage() {
             Telefon:{" "}
             <a
               href={`tel:${store.phone.replace(/\s/g, "")}`}
-              className="underline underline-offset-2 transition-colors hover:text-foreground"
+              className="hover:text-foreground underline underline-offset-2 transition-colors"
             >
               {store.phone}
             </a>

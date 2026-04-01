@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
-import { useSearchParams, useRouter } from "next/navigation"
-import { Plus, Eye, EyeOff, Clock } from "lucide-react"
-import { AdminPagination } from "@/components/admin/pagination"
-import { adminListProducts } from "@/lib/actions/products"
-import { formatHUF, formatDate } from "@/lib/utils/format"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Plus, Eye, EyeOff, Clock } from "lucide-react";
+import { AdminPagination } from "@/components/admin/pagination";
+import { adminListProducts } from "@/lib/actions/products";
+import { formatHUF, formatDate } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -16,55 +16,55 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { ProductRow } from "@/lib/types/database"
+} from "@/components/ui/table";
+import type { ProductRow } from "@/lib/types/database";
 
-type ProductWithCategories = ProductRow & { categoryNames: string[] }
+type ProductWithCategories = ProductRow & { categoryNames: string[] };
 
 /* ------------------------------------------------------------------ */
 /*  Admin Products List (client component)                              */
 /* ------------------------------------------------------------------ */
 
 export function AdminProductsClient() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [products, setProducts] = useState<ProductWithCategories[]>([])
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [products, setProducts] = useState<ProductWithCategories[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const page = Number(searchParams.get("page") ?? "1")
-  const sort = searchParams.get("sort") ?? "newest"
+  const page = Number(searchParams.get("page") ?? "1");
+  const sort = searchParams.get("sort") ?? "newest";
 
   const fetchProducts = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     const result = await adminListProducts({
       page,
       perPage: 20,
       sort,
-    })
+    });
     if (result.success && result.data) {
-      setProducts(result.data.products)
-      setTotal(result.data.total)
-      setTotalPages(result.data.totalPages)
+      setProducts(result.data.products);
+      setTotal(result.data.total);
+      setTotalPages(result.data.totalPages);
     }
-    setLoading(false)
-  }, [page, sort])
+    setLoading(false);
+  }, [page, sort]);
 
   useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
+    fetchProducts();
+  }, [fetchProducts]);
 
   function updateParam(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams.toString());
     if (value) {
-      params.set(key, value)
+      params.set(key, value);
     } else {
-      params.delete(key)
+      params.delete(key);
     }
-    if (key !== "page") params.delete("page")
-    router.push(`/admin/products?${params.toString()}`)
+    if (key !== "page") params.delete("page");
+    router.push(`/admin/products?${params.toString()}`);
   }
 
   return (
@@ -72,7 +72,7 @@ export function AdminProductsClient() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Termékek</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{total} termék összesen</p>
+          <p className="text-muted-foreground mt-1 text-sm">{total} termék összesen</p>
         </div>
         <Button size="sm" nativeButton={false} render={<Link href="/admin/products/new" />}>
           <Plus className="mr-2 size-4" />
@@ -101,11 +101,11 @@ export function AdminProductsClient() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
           Betöltés...
         </div>
       ) : products.length === 0 ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex h-40 flex-col items-center justify-center gap-2 text-sm">
           <p>Nincs termék.</p>
           <Button size="sm" nativeButton={false} render={<Link href="/admin/products/new" />}>
             <Plus className="mr-2 size-4" />
@@ -133,7 +133,7 @@ export function AdminProductsClient() {
                 <TableCell>
                   <div className="flex items-center gap-3">
                     {product.main_image_url ? (
-                      <div className="size-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                      <div className="bg-muted size-10 shrink-0 overflow-hidden rounded-md">
                         <img
                           src={product.main_image_url}
                           alt=""
@@ -141,7 +141,7 @@ export function AdminProductsClient() {
                         />
                       </div>
                     ) : (
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+                      <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-md text-xs">
                         —
                       </div>
                     )}
@@ -155,21 +155,21 @@ export function AdminProductsClient() {
                         <Badge
                           key={name}
                           variant="secondary"
-                          className="text-[11px] px-1.5 py-0 font-normal"
+                          className="px-1.5 py-0 text-[11px] font-normal"
                         >
                           {name}
                         </Badge>
                       ))}
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   <div>
                     <span className="font-medium">{formatHUF(product.base_price)}</span>
                     {product.compare_at_price && (
-                      <span className="ml-2 text-xs text-muted-foreground line-through">
+                      <span className="text-muted-foreground ml-2 text-xs line-through">
                         {formatHUF(product.compare_at_price)}
                       </span>
                     )}
@@ -183,7 +183,7 @@ export function AdminProductsClient() {
                       <Clock className="size-3" />
                       <span>
                         Ütemezett{" "}
-                        <span className="font-normal text-muted-foreground">
+                        <span className="text-muted-foreground font-normal">
                           {formatDate(product.published_at)}
                         </span>
                       </span>
@@ -200,7 +200,7 @@ export function AdminProductsClient() {
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground">
+                <TableCell className="text-muted-foreground text-right">
                   {formatDate(product.created_at)}
                 </TableCell>
               </TableRow>
@@ -216,5 +216,5 @@ export function AdminProductsClient() {
         onPageChange={(n) => updateParam("page", String(n))}
       />
     </div>
-  )
+  );
 }

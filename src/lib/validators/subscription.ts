@@ -2,13 +2,13 @@
 /*  Zod schemas for plan subscription management (FE-003)              */
 /* ------------------------------------------------------------------ */
 
-import { z } from "zod"
+import { z } from "zod";
 
 // ── Shared helpers ─────────────────────────────────────────────────
 
-const billingCycleSchema = z.literal(["monthly", "annual"])
-const subscriptionStatusSchema = z.literal(["active", "past_due", "cancelled", "trialing"])
-const invoiceStatusSchema = z.literal(["pending", "paid", "failed", "refunded"])
+const billingCycleSchema = z.literal(["monthly", "annual"]);
+const subscriptionStatusSchema = z.literal(["active", "past_due", "cancelled", "trialing"]);
+const invoiceStatusSchema = z.literal(["pending", "paid", "failed", "refunded"]);
 
 // ── Plan features schema ───────────────────────────────────────────
 
@@ -27,9 +27,9 @@ export const planFeaturesSchema = z.object({
   enable_scheduled_publishing: z.boolean(),
   enable_agency_viewer: z.boolean(),
   enable_custom_pages: z.boolean(),
-})
+});
 
-export type PlanFeaturesInput = z.infer<typeof planFeaturesSchema>
+export type PlanFeaturesInput = z.infer<typeof planFeaturesSchema>;
 
 // ── Plan create/update schemas ─────────────────────────────────────
 
@@ -49,9 +49,9 @@ export const planCreateSchema = z.object({
   features: planFeaturesSchema,
   sort_order: z.int().min(0).optional(),
   is_active: z.boolean().optional(),
-})
+});
 
-export type PlanCreateInput = z.infer<typeof planCreateSchema>
+export type PlanCreateInput = z.infer<typeof planCreateSchema>;
 
 export const planUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -70,9 +70,9 @@ export const planUpdateSchema = z.object({
   features: planFeaturesSchema.partial().optional(),
   sort_order: z.int().min(0).optional(),
   is_active: z.boolean().optional(),
-})
+});
 
-export type PlanUpdateInput = z.infer<typeof planUpdateSchema>
+export type PlanUpdateInput = z.infer<typeof planUpdateSchema>;
 
 // ── Subscription create/update schemas ────────────────────────────
 
@@ -91,9 +91,9 @@ export const subscriptionCreateSchema = z.object({
   trial_ends_at: z.string().datetime().nullable().optional(),
   feature_overrides: planFeaturesSchema.partial().optional(),
   notes: z.string().max(1000).nullable().optional(),
-})
+});
 
-export type SubscriptionCreateInput = z.infer<typeof subscriptionCreateSchema>
+export type SubscriptionCreateInput = z.infer<typeof subscriptionCreateSchema>;
 
 export const subscriptionUpdateSchema = z.object({
   plan_id: z.string().uuid("Érvénytelen csomag azonosító").optional(),
@@ -108,9 +108,9 @@ export const subscriptionUpdateSchema = z.object({
   cancelled_at: z.string().datetime().nullable().optional(),
   feature_overrides: planFeaturesSchema.partial().optional(),
   notes: z.string().max(1000).nullable().optional(),
-})
+});
 
-export type SubscriptionUpdateInput = z.infer<typeof subscriptionUpdateSchema>
+export type SubscriptionUpdateInput = z.infer<typeof subscriptionUpdateSchema>;
 
 // ── Invoice create/update schemas ─────────────────────────────────
 
@@ -127,9 +127,9 @@ export const invoiceCreateSchema = z.object({
   invoice_url: z.string().url().nullable().optional(),
   payment_method: z.string().max(50).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
-})
+});
 
-export type InvoiceCreateInput = z.infer<typeof invoiceCreateSchema>
+export type InvoiceCreateInput = z.infer<typeof invoiceCreateSchema>;
 
 export const invoiceUpdateSchema = z.object({
   amount: z.int().min(1).optional(),
@@ -140,6 +140,6 @@ export const invoiceUpdateSchema = z.object({
   invoice_url: z.string().url().nullable().optional(),
   payment_method: z.string().max(50).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
-})
+});
 
-export type InvoiceUpdateInput = z.infer<typeof invoiceUpdateSchema>
+export type InvoiceUpdateInput = z.infer<typeof invoiceUpdateSchema>;

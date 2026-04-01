@@ -6,13 +6,7 @@ import { getProfile, updateProfile, changePassword } from "@/lib/actions/profile
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { ProfileRow } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
@@ -100,7 +94,7 @@ export default function ProfileSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
         <Loader2 className="mr-2 size-4 animate-spin" />
         Betöltés...
       </div>
@@ -111,9 +105,7 @@ export default function ProfileSettingsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold tracking-[-0.03em]">Beállítások</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Személyes adatok és jelszó módosítása.
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">Személyes adatok és jelszó módosítása.</p>
       </div>
 
       {/* -- Profile info -- */}
@@ -142,13 +134,11 @@ export default function ProfileSettingsPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+36 30 123 4567"
               />
-              <p className="text-xs text-muted-foreground">
-                Magyar formátum: +36 XX XXX XXXX
-              </p>
+              <p className="text-muted-foreground text-xs">Magyar formátum: +36 XX XXX XXXX</p>
             </div>
 
             {profileError && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
                 {profileError}
               </div>
             )}
@@ -191,7 +181,7 @@ export default function ProfileSettingsPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -211,7 +201,7 @@ export default function ProfileSettingsPage() {
             </div>
 
             {passwordError && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
                 {passwordError}
               </div>
             )}

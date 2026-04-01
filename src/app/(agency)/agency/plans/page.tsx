@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { Plus, Pencil, Loader2, Save, X, BookOpen, CheckCircle, XCircle } from "lucide-react"
-import { listPlans, adminCreatePlan, adminUpdatePlan } from "@/lib/actions/subscriptions"
-import { formatHUF } from "@/lib/utils/format"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Pencil, Loader2, Save, X, BookOpen, CheckCircle, XCircle } from "lucide-react";
+import { listPlans, adminCreatePlan, adminUpdatePlan } from "@/lib/actions/subscriptions";
+import { formatHUF } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -17,8 +17,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { ShopPlanRow, PlanFeaturesJson } from "@/lib/types/database"
+} from "@/components/ui/table";
+import type { ShopPlanRow, PlanFeaturesJson } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Default feature set for new plans                                  */
@@ -39,7 +39,7 @@ const DEFAULT_FEATURES: PlanFeaturesJson = {
   enable_scheduled_publishing: false,
   enable_agency_viewer: false,
   enable_custom_pages: false,
-}
+};
 
 const FEATURE_LABELS: Record<keyof PlanFeaturesJson, string> = {
   max_products: "Max. termékek (0=korlátlan)",
@@ -56,7 +56,7 @@ const FEATURE_LABELS: Record<keyof PlanFeaturesJson, string> = {
   enable_scheduled_publishing: "Ütemezett közzététel",
   enable_agency_viewer: "Agency Viewer",
   enable_custom_pages: "Egyedi oldalak",
-}
+};
 
 /* ------------------------------------------------------------------ */
 /*  Feature editor sub-component                                       */
@@ -66,23 +66,23 @@ function FeatureEditor({
   value,
   onChange,
 }: {
-  value: PlanFeaturesJson
-  onChange: (v: PlanFeaturesJson) => void
+  value: PlanFeaturesJson;
+  onChange: (v: PlanFeaturesJson) => void;
 }) {
   const numericKeys: (keyof PlanFeaturesJson)[] = [
     "max_products",
     "max_admins",
     "max_categories",
     "delivery_options",
-  ]
+  ];
   const boolKeys = (Object.keys(DEFAULT_FEATURES) as (keyof PlanFeaturesJson)[]).filter(
     (k) => !numericKeys.includes(k),
-  )
+  );
 
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
           Numerikus korlátok
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -101,14 +101,14 @@ function FeatureEditor({
         </div>
       </div>
       <div>
-        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
           Funkciók
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {boolKeys.map((key) => (
             <label
               key={key}
-              className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted/50"
+              className="border-border hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs"
             >
               <Checkbox
                 checked={value[key] as boolean}
@@ -120,7 +120,7 @@ function FeatureEditor({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -128,44 +128,44 @@ function FeatureEditor({
 /* ------------------------------------------------------------------ */
 
 export default function AgencyPlansPage() {
-  const [plans, setPlans] = useState<ShopPlanRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [plans, setPlans] = useState<ShopPlanRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Create form
-  const [showCreate, setShowCreate] = useState(false)
-  const [createName, setCreateName] = useState("")
-  const [createSlug, setCreateSlug] = useState("")
-  const [createDescription, setCreateDescription] = useState("")
-  const [createMonthlyPrice, setCreateMonthlyPrice] = useState("")
-  const [createAnnualPrice, setCreateAnnualPrice] = useState("")
-  const [createSortOrder, setCreateSortOrder] = useState("0")
-  const [createIsActive, setCreateIsActive] = useState(true)
-  const [createFeatures, setCreateFeatures] = useState<PlanFeaturesJson>({ ...DEFAULT_FEATURES })
-  const [creating, setCreating] = useState(false)
+  const [showCreate, setShowCreate] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createSlug, setCreateSlug] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createMonthlyPrice, setCreateMonthlyPrice] = useState("");
+  const [createAnnualPrice, setCreateAnnualPrice] = useState("");
+  const [createSortOrder, setCreateSortOrder] = useState("0");
+  const [createIsActive, setCreateIsActive] = useState(true);
+  const [createFeatures, setCreateFeatures] = useState<PlanFeaturesJson>({ ...DEFAULT_FEATURES });
+  const [creating, setCreating] = useState(false);
 
   // Edit
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editName, setEditName] = useState("")
-  const [editDescription, setEditDescription] = useState("")
-  const [editMonthlyPrice, setEditMonthlyPrice] = useState("")
-  const [editAnnualPrice, setEditAnnualPrice] = useState("")
-  const [editSortOrder, setEditSortOrder] = useState("0")
-  const [editIsActive, setEditIsActive] = useState(true)
-  const [editFeatures, setEditFeatures] = useState<PlanFeaturesJson>({ ...DEFAULT_FEATURES })
-  const [saving, setSaving] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editMonthlyPrice, setEditMonthlyPrice] = useState("");
+  const [editAnnualPrice, setEditAnnualPrice] = useState("");
+  const [editSortOrder, setEditSortOrder] = useState("0");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [editFeatures, setEditFeatures] = useState<PlanFeaturesJson>({ ...DEFAULT_FEATURES });
+  const [saving, setSaving] = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchPlans = useCallback(async () => {
-    setLoading(true)
-    const res = await listPlans()
-    if (res.success && res.data) setPlans(res.data)
-    setLoading(false)
-  }, [])
+    setLoading(true);
+    const res = await listPlans();
+    if (res.success && res.data) setPlans(res.data);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    fetchPlans()
-  }, [fetchPlans])
+    fetchPlans();
+  }, [fetchPlans]);
 
   // ── Auto-slug from name ─────────────────────────────────────────
   function slugify(s: string) {
@@ -174,17 +174,17 @@ export default function AgencyPlansPage() {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
+      .replace(/^-|-$/g, "");
   }
 
   // ── Create ─────────────────────────────────────────────────────
   async function handleCreate() {
     if (!createName.trim() || !createSlug.trim() || !createMonthlyPrice || !createAnnualPrice) {
-      setError("A név, slug, havi ár és éves ár kötelező.")
-      return
+      setError("A név, slug, havi ár és éves ár kötelező.");
+      return;
     }
-    setCreating(true)
-    setError(null)
+    setCreating(true);
+    setError(null);
 
     const res = await adminCreatePlan({
       name: createName.trim(),
@@ -195,45 +195,45 @@ export default function AgencyPlansPage() {
       features: createFeatures,
       sort_order: Number(createSortOrder),
       is_active: createIsActive,
-    })
+    });
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a csomag létrehozásakor.")
-      setCreating(false)
-      return
+      setError(res.error ?? "Hiba a csomag létrehozásakor.");
+      setCreating(false);
+      return;
     }
 
-    setShowCreate(false)
-    setCreateName("")
-    setCreateSlug("")
-    setCreateDescription("")
-    setCreateMonthlyPrice("")
-    setCreateAnnualPrice("")
-    setCreateSortOrder("0")
-    setCreateIsActive(true)
-    setCreateFeatures({ ...DEFAULT_FEATURES })
-    setCreating(false)
-    fetchPlans()
+    setShowCreate(false);
+    setCreateName("");
+    setCreateSlug("");
+    setCreateDescription("");
+    setCreateMonthlyPrice("");
+    setCreateAnnualPrice("");
+    setCreateSortOrder("0");
+    setCreateIsActive(true);
+    setCreateFeatures({ ...DEFAULT_FEATURES });
+    setCreating(false);
+    fetchPlans();
   }
 
   // ── Start edit ─────────────────────────────────────────────────
   function startEdit(plan: ShopPlanRow) {
-    setEditId(plan.id)
-    setEditName(plan.name)
-    setEditDescription(plan.description ?? "")
-    setEditMonthlyPrice(String(plan.base_monthly_price))
-    setEditAnnualPrice(String(plan.base_annual_price))
-    setEditSortOrder(String(plan.sort_order))
-    setEditIsActive(plan.is_active)
-    setEditFeatures({ ...DEFAULT_FEATURES, ...plan.features })
-    setError(null)
+    setEditId(plan.id);
+    setEditName(plan.name);
+    setEditDescription(plan.description ?? "");
+    setEditMonthlyPrice(String(plan.base_monthly_price));
+    setEditAnnualPrice(String(plan.base_annual_price));
+    setEditSortOrder(String(plan.sort_order));
+    setEditIsActive(plan.is_active);
+    setEditFeatures({ ...DEFAULT_FEATURES, ...plan.features });
+    setError(null);
   }
 
   // ── Save edit ──────────────────────────────────────────────────
   async function handleSave() {
-    if (!editId) return
-    setSaving(true)
-    setError(null)
+    if (!editId) return;
+    setSaving(true);
+    setError(null);
 
     const res = await adminUpdatePlan(editId, {
       name: editName.trim(),
@@ -243,17 +243,17 @@ export default function AgencyPlansPage() {
       features: editFeatures,
       sort_order: Number(editSortOrder),
       is_active: editIsActive,
-    })
+    });
 
     if (!res.success) {
-      setError(res.error ?? "Hiba a csomag frissítésekor.")
-      setSaving(false)
-      return
+      setError(res.error ?? "Hiba a csomag frissítésekor.");
+      setSaving(false);
+      return;
     }
 
-    setEditId(null)
-    setSaving(false)
-    fetchPlans()
+    setEditId(null);
+    setSaving(false);
+    fetchPlans();
   }
 
   return (
@@ -262,13 +262,13 @@ export default function AgencyPlansPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Csomagok</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Előfizetési csomagok kezelése</p>
+          <p className="text-muted-foreground mt-1 text-sm">Előfizetési csomagok kezelése</p>
         </div>
         <Button
           size="sm"
           onClick={() => {
-            setShowCreate((v) => !v)
-            setError(null)
+            setShowCreate((v) => !v);
+            setError(null);
           }}
         >
           {showCreate ? (
@@ -286,7 +286,7 @@ export default function AgencyPlansPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -304,8 +304,8 @@ export default function AgencyPlansPage() {
                 <Input
                   value={createName}
                   onChange={(e) => {
-                    setCreateName(e.target.value)
-                    setCreateSlug(slugify(e.target.value))
+                    setCreateName(e.target.value);
+                    setCreateSlug(slugify(e.target.value));
                   }}
                   placeholder="pl. Alap csomag"
                 />
@@ -455,11 +455,11 @@ export default function AgencyPlansPage() {
       {/* Plans table */}
       {loading ? (
         <div className="flex h-40 items-center justify-center">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          <Loader2 className="text-muted-foreground size-6 animate-spin" />
         </div>
       ) : plans.length === 0 ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-          <BookOpen className="size-8 text-muted-foreground/40" />
+        <div className="border-border text-muted-foreground flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm">
+          <BookOpen className="text-muted-foreground/40 size-8" />
           <p>Nincsenek csomagok.</p>
         </div>
       ) : (
@@ -481,10 +481,10 @@ export default function AgencyPlansPage() {
                 <TableCell>
                   <p className="font-medium">{plan.name}</p>
                   {plan.description && (
-                    <p className="text-xs text-muted-foreground">{plan.description}</p>
+                    <p className="text-muted-foreground text-xs">{plan.description}</p>
                   )}
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
+                <TableCell className="text-muted-foreground font-mono text-xs">
                   {plan.slug}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
@@ -527,5 +527,5 @@ export default function AgencyPlansPage() {
         </Table>
       )}
     </div>
-  )
+  );
 }

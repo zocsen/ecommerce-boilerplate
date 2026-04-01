@@ -51,12 +51,7 @@ export async function adminListAuditLogs(
       return { success: false, error: "Érvénytelen szűrő paraméterek." };
     }
 
-    const {
-      page = 1,
-      perPage = 30,
-      entityType,
-      action,
-    } = parsed.data;
+    const { page = 1, perPage = 30, entityType, action } = parsed.data;
 
     const admin = createAdminClient();
 

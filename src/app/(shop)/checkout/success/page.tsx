@@ -51,7 +51,7 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
         <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">
           {isCod ? "Rendelés visszaigazolva!" : "Sikeres fizetés!"}
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="text-muted-foreground mt-2">
           {isCod
             ? "Köszönjük a rendelését. A fizetés a csomag átvételekor történik. Hamarosan e-mailben küldjük a visszaigazolást."
             : "Köszönjük a rendelését. Hamarosan e-mailben küldjük a visszaigazolást."}
@@ -60,9 +60,9 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
 
       {/* ── Order details ───────────────────────────────── */}
       {orderData && (
-        <div className="mt-10 rounded-xl border border-border p-6">
+        <div className="border-border mt-10 rounded-xl border p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-widest uppercase">
               Rendelés részletei
             </h2>
             <OrderStatusBadge status={orderData.status as OrderStatus} />
@@ -80,11 +80,11 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
       )}
 
       {!orderData && orderId && (
-        <div className="mt-10 rounded-xl border border-border p-6 text-center">
-          <Package className="mx-auto size-8 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">
+        <div className="border-border mt-10 rounded-xl border p-6 text-center">
+          <Package className="text-muted-foreground mx-auto size-8" />
+          <p className="text-muted-foreground mt-3 text-sm">
             Rendelés azonosító:{" "}
-            <span className="font-mono font-medium text-foreground">
+            <span className="text-foreground font-mono font-medium">
               {orderId.slice(0, 8).toUpperCase()}
             </span>
           </p>
@@ -122,7 +122,7 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
 
         <Link
           href="/"
-          className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground text-sm transition-colors duration-300"
         >
           Vissza a főoldalra
         </Link>

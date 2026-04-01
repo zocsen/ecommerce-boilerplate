@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import type { UseFormRegister } from "react-hook-form"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import type { UseFormRegister } from "react-hook-form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /* ------------------------------------------------------------------ */
 /*  FormField — labelled input wrapper with error display               */
 /* ------------------------------------------------------------------ */
 
 export interface FormFieldProps {
-  label: string
-  error?: string
-  icon?: React.ReactNode
-  children: React.ReactNode
+  label: string;
+  error?: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
 }
 
 /**
@@ -28,7 +28,7 @@ export function FormField({ label, error, icon, children }: FormFieldProps) {
       {children}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -36,10 +36,10 @@ export function FormField({ label, error, icon, children }: FormFieldProps) {
 /* ------------------------------------------------------------------ */
 
 export interface AddressFieldsProps {
-  prefix: "billingAddress" | "shippingAddressOverride"
+  prefix: "billingAddress" | "shippingAddressOverride";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register: UseFormRegister<any>
-  errors?: Record<string, { message?: string }>
+  register: UseFormRegister<any>;
+  errors?: Record<string, { message?: string }>;
 }
 
 /**
@@ -95,7 +95,7 @@ export function AddressFields({ prefix, register, errors }: AddressFieldsProps) 
         </FormField>
       </div>
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -103,8 +103,8 @@ export function AddressFields({ prefix, register, errors }: AddressFieldsProps) 
 /* ------------------------------------------------------------------ */
 
 export interface ReviewSectionProps {
-  title: string
-  children: React.ReactNode
+  title: string;
+  children: React.ReactNode;
 }
 
 /**
@@ -113,11 +113,11 @@ export interface ReviewSectionProps {
  */
 export function ReviewSection({ title, children }: ReviewSectionProps) {
   return (
-    <div className="rounded-lg border border-border p-4">
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+    <div className="border-border rounded-lg border p-4">
+      <h4 className="text-muted-foreground mb-2 text-xs font-semibold tracking-widest uppercase">
         {title}
       </h4>
       <div className="space-y-0.5 text-sm">{children}</div>
     </div>
-  )
+  );
 }

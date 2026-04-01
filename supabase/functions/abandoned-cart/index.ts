@@ -14,29 +14,26 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const ENABLE_ABANDONED_CART =
-  (Deno.env.get("ENABLE_ABANDONED_CART") ?? "true") === "true";
+const ENABLE_ABANDONED_CART = (Deno.env.get("ENABLE_ABANDONED_CART") ?? "true") === "true";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_SERVICE_ROLE_KEY =
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const SITE_URL = Deno.env.get("SITE_URL") ?? "";
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
 Deno.serve(async (_req: Request): Promise<Response> => {
   if (!ENABLE_ABANDONED_CART) {
     console.log("[abandoned-cart] Feature disabled via ENABLE_ABANDONED_CART.");
-    return new Response(
-      JSON.stringify({ skipped: true, reason: "feature_disabled" }),
-      { headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ skipped: true, reason: "feature_disabled" }), {
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error("[abandoned-cart] Missing Supabase env vars.");
-    return new Response(
-      JSON.stringify({ error: "Missing Supabase configuration." }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Missing Supabase configuration." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -55,18 +52,17 @@ Deno.serve(async (_req: Request): Promise<Response> => {
 
   if (fetchError) {
     console.error("[abandoned-cart] DB fetch error:", fetchError.message);
-    return new Response(
-      JSON.stringify({ error: fetchError.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: fetchError.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   if (!orders || orders.length === 0) {
     console.log("[abandoned-cart] No eligible orders found.");
-    return new Response(
-      JSON.stringify({ processed: 0 }),
-      { headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ processed: 0 }), {
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   console.log(`[abandoned-cart] Processing ${orders.length} order(s).`);
@@ -77,17 +73,14 @@ Deno.serve(async (_req: Request): Promise<Response> => {
   for (const order of orders) {
     try {
       // Delegate email sending to the Next.js app so Resend credentials stay there
-      const res = await fetch(
-        `${SITE_URL}/api/email/abandoned-cart`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-cron-secret": CRON_SECRET,
-          },
-          body: JSON.stringify({ orderId: order.id }),
+      const res = await fetch(`${SITE_URL}/api/email/abandoned-cart`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-cron-secret": CRON_SECRET,
         },
-      );
+        body: JSON.stringify({ orderId: order.id }),
+      });
 
       if (!res.ok) {
         const body = await res.text();
@@ -105,28 +98,21 @@ Deno.serve(async (_req: Request): Promise<Response> => {
         .eq("id", order.id);
 
       if (stampError) {
-        console.error(
-          `[abandoned-cart] Failed to stamp order ${order.id}:`,
-          stampError.message,
-        );
+        console.error(`[abandoned-cart] Failed to stamp order ${order.id}:`, stampError.message);
         // Email was already sent — log but do not increment failed counter
       }
 
       sent++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(
-        `[abandoned-cart] Unexpected error for order ${order.id}:`,
-        msg,
-      );
+      console.error(`[abandoned-cart] Unexpected error for order ${order.id}:`, msg);
       failed++;
     }
   }
 
   console.log(`[abandoned-cart] Done. Sent: ${sent}, Failed: ${failed}.`);
 
-  return new Response(
-    JSON.stringify({ processed: orders.length, sent, failed }),
-    { headers: { "Content-Type": "application/json" } },
-  );
+  return new Response(JSON.stringify({ processed: orders.length, sent, failed }), {
+    headers: { "Content-Type": "application/json" },
+  });
 });

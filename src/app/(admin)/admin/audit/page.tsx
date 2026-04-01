@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { FileText, Filter } from "lucide-react"
-import { AdminPagination } from "@/components/admin/pagination"
-import { adminListAuditLogs } from "@/lib/actions/audit"
-import { formatDateTime } from "@/lib/utils/format"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, useCallback } from "react";
+import { FileText, Filter } from "lucide-react";
+import { AdminPagination } from "@/components/admin/pagination";
+import { adminListAuditLogs } from "@/lib/actions/audit";
+import { formatDateTime } from "@/lib/utils/format";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -15,18 +15,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { AuditLogRow } from "@/lib/types/database"
+} from "@/components/ui/table";
+import type { AuditLogRow } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Action → color mapping                                             */
 /* ------------------------------------------------------------------ */
 
 function actionVariant(action: string): "default" | "secondary" | "destructive" | "outline" {
-  if (action.includes("create")) return "default"
-  if (action.includes("update") || action.includes("tag")) return "secondary"
-  if (action.includes("delete") || action.includes("soft_delete")) return "destructive"
-  return "outline"
+  if (action.includes("create")) return "default";
+  if (action.includes("update") || action.includes("tag")) return "secondary";
+  if (action.includes("delete") || action.includes("soft_delete")) return "destructive";
+  return "outline";
 }
 
 /* ------------------------------------------------------------------ */
@@ -34,58 +34,58 @@ function actionVariant(action: string): "default" | "secondary" | "destructive" 
 /* ------------------------------------------------------------------ */
 
 export default function AdminAuditPage() {
-  const [logs, setLogs] = useState<AuditLogRow[]>([])
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [page, setPage] = useState(1)
-  const [entityType, setEntityType] = useState("")
-  const [actionFilter, setActionFilter] = useState("")
-  const [loading, setLoading] = useState(true)
+  const [logs, setLogs] = useState<AuditLogRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(1);
+  const [entityType, setEntityType] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchLogs = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     const res = await adminListAuditLogs({
       page,
       perPage: 30,
       entityType: entityType || undefined,
       action: actionFilter || undefined,
-    })
+    });
     if (res.success && res.data) {
-      setLogs(res.data.logs)
-      setTotal(res.data.total)
-      setTotalPages(res.data.totalPages)
+      setLogs(res.data.logs);
+      setTotal(res.data.total);
+      setTotalPages(res.data.totalPages);
     }
-    setLoading(false)
-  }, [page, entityType, actionFilter])
+    setLoading(false);
+  }, [page, entityType, actionFilter]);
 
   useEffect(() => {
-    fetchLogs()
-  }, [fetchLogs])
+    fetchLogs();
+  }, [fetchLogs]);
 
   // ── Unique entity types + actions (from current page) ──────────
-  const entityTypes = ["product", "category", "coupon", "order", "subscriber"]
+  const entityTypes = ["product", "category", "coupon", "order", "subscriber"];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Audit napló</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{total} bejegyzés összesen</p>
+        <p className="text-muted-foreground mt-1 text-sm">{total} bejegyzés összesen</p>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <Filter className="size-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Entitás:</span>
+          <Filter className="text-muted-foreground size-4" />
+          <span className="text-muted-foreground text-sm">Entitás:</span>
           <div className="flex items-center gap-1">
             <Button
               variant={entityType === "" ? "default" : "outline"}
               size="sm"
               className="h-7 text-xs"
               onClick={() => {
-                setEntityType("")
-                setPage(1)
+                setEntityType("");
+                setPage(1);
               }}
             >
               Mind
@@ -97,8 +97,8 @@ export default function AdminAuditPage() {
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => {
-                  setEntityType(type)
-                  setPage(1)
+                  setEntityType(type);
+                  setPage(1);
                 }}
               >
                 {type}
@@ -110,12 +110,12 @@ export default function AdminAuditPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
           Betöltés...
         </div>
       ) : logs.length === 0 ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-          <FileText className="size-8 text-muted-foreground/50" />
+        <div className="text-muted-foreground flex h-40 flex-col items-center justify-center gap-2 text-sm">
+          <FileText className="text-muted-foreground/50 size-8" />
           <p>Nincsenek audit bejegyzések.</p>
         </div>
       ) : (
@@ -134,19 +134,19 @@ export default function AdminAuditPage() {
           <TableBody>
             {logs.map((log) => (
               <TableRow key={log.id}>
-                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                   {formatDateTime(log.created_at)}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={actionVariant(log.action)} className="text-xs font-mono">
+                  <Badge variant={actionVariant(log.action)} className="font-mono text-xs">
                     {log.action}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm">{log.entity_type}</TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
+                <TableCell className="text-muted-foreground font-mono text-xs">
                   {log.entity_id ? log.entity_id.slice(0, 8) : "—"}
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
+                <TableCell className="text-muted-foreground font-mono text-xs">
                   {log.actor_id ? log.actor_id.slice(0, 8) : "rendszer"}
                 </TableCell>
                 <TableCell>
@@ -155,16 +155,16 @@ export default function AdminAuditPage() {
                       {log.actor_role}
                     </Badge>
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
                 <TableCell className="max-w-xs">
                   {Object.keys(log.metadata).length > 0 ? (
-                    <code className="block truncate text-xs text-muted-foreground">
+                    <code className="text-muted-foreground block truncate text-xs">
                       {JSON.stringify(log.metadata)}
                     </code>
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
               </TableRow>
@@ -176,5 +176,5 @@ export default function AdminAuditPage() {
       {/* Pagination */}
       <AdminPagination page={page} totalPages={totalPages} onPageChange={(n) => setPage(n)} />
     </div>
-  )
+  );
 }

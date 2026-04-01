@@ -450,7 +450,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   // ── Loading / Not found states ─────────────────────────────────
   if (loading) {
     return (
-      <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-60 items-center justify-center text-sm">
         <Loader2 className="mr-2 size-4 animate-spin" />
         Betöltés...
       </div>
@@ -459,7 +459,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
 
   if (notFound) {
     return (
-      <div className="flex h-60 flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-60 flex-col items-center justify-center gap-4 text-sm">
         <p>A termék nem található.</p>
       </div>
     );
@@ -471,7 +471,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Termék szerkesztése</h1>
-          <p className="mt-1 text-sm text-muted-foreground font-mono">{product?.slug}</p>
+          <p className="text-muted-foreground mt-1 font-mono text-sm">{product?.slug}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Toggle active / inactive */}
@@ -519,7 +519,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -531,7 +531,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       )}
 
       {confirmDelete && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive flex items-center gap-2">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
           <AlertTriangle className="size-4 shrink-0" />
           Biztosan törölni szeretné ezt a terméket? Kattintson ismét a Megerősítés gombra.
           <button
@@ -575,7 +575,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={5}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 />
               </div>
             </CardContent>
@@ -651,7 +651,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                     onChange={(e) => setWeightGrams(e.target.value)}
                     placeholder={String(siteConfig.shipping.rules.defaultProductWeightGrams)}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Üresen hagyva az alapértelmezett (
                     {siteConfig.shipping.rules.defaultProductWeightGrams} g) kerül alkalmazásra. A
                     variánsok felülírhatják.
@@ -700,12 +700,12 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
             {variants.length > 0 && (
               <CardContent className="space-y-4">
                 {variants.map((v, idx) => (
-                  <div key={v.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div key={v.key} className="bg-muted/30 space-y-3 rounded-lg border p-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">
                         Variáns #{idx + 1}
                         {v.id && (
-                          <span className="ml-2 text-xs text-muted-foreground font-mono">
+                          <span className="text-muted-foreground ml-2 font-mono text-xs">
                             {v.id.slice(0, 8)}
                           </span>
                         )}
@@ -713,7 +713,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                       <button
                         type="button"
                         onClick={() => removeVariant(v.key)}
-                        className="cursor-pointer text-muted-foreground hover:text-destructive"
+                        className="text-muted-foreground hover:text-destructive cursor-pointer"
                       >
                         <Trash2 className="size-4" />
                       </button>
@@ -831,7 +831,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
               <div className="space-y-2">
                 <Label className="text-xs">Termék keresése</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="text-muted-foreground absolute top-1/2 left-3 size-3.5 -translate-y-1/2" />
                   <Input
                     value={extraSearch}
                     onChange={(e) => searchExtraProducts(e.target.value)}
@@ -839,19 +839,19 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                     className="h-8 pl-9 text-xs"
                   />
                   {extraSearching && (
-                    <Loader2 className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-3.5 -translate-y-1/2 animate-spin" />
                   )}
                 </div>
 
                 {/* Search results dropdown */}
                 {extraSearchResults.length > 0 && (
-                  <div className="rounded-md border bg-background shadow-md">
+                  <div className="bg-background rounded-md border shadow-md">
                     {extraSearchResults.map((p) => (
                       <button
                         key={p.id}
                         type="button"
                         onClick={() => addExtra(p)}
-                        className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-xs hover:bg-muted/50 transition-colors"
+                        className="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between px-3 py-2 text-xs transition-colors"
                       >
                         <span className="font-medium">{p.title}</span>
                         <span className="text-muted-foreground font-mono">
@@ -867,16 +867,16 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
               {extras.length > 0 && (
                 <div className="space-y-3">
                   {extras.map((extra, idx) => (
-                    <div key={extra.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                    <div key={extra.key} className="bg-muted/30 space-y-3 rounded-lg border p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <GripVertical className="size-4 text-muted-foreground" />
+                          <GripVertical className="text-muted-foreground size-4" />
                           <span className="text-sm font-medium">{extra.extraProductTitle}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeExtra(extra.key)}
-                          className="cursor-pointer text-muted-foreground hover:text-destructive"
+                          className="text-muted-foreground hover:text-destructive cursor-pointer"
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -922,7 +922,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
               )}
 
               {extras.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Nincs kiegészítő termék hozzárendelve. Keressen fent egy terméket a hozzáadáshoz.
                 </p>
               )}
@@ -958,7 +958,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                   value={publishedAt}
                   onChange={(e) => setPublishedAt(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Hagyja üresen az azonnali megjelenéshez. Jövőbeli dátum esetén a termék addig
                   rejtett marad a webshopban.
                 </p>
@@ -978,9 +978,9 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
             </CardHeader>
             <CardContent>
               {categories.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nincsenek kategóriák.</p>
+                <p className="text-muted-foreground text-sm">Nincsenek kategóriák.</p>
               ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <div className="max-h-60 space-y-2 overflow-y-auto">
                   {categories.map((cat) => (
                     <div key={cat.id} className="flex items-center gap-2">
                       <Checkbox
@@ -1004,7 +1004,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
               <CardHeader>
                 <CardTitle>Meta</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
+              <CardContent className="text-muted-foreground space-y-1 text-xs">
                 <p>
                   <span className="font-medium">ID:</span>{" "}
                   <span className="font-mono">{product.id}</span>

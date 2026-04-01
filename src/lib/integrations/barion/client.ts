@@ -60,18 +60,14 @@ export interface VerifyPaymentResult {
 
 function getBaseUrl(): string {
   const env = siteConfig.payments.barion.environment;
-  return env === "prod"
-    ? "https://api.barion.com"
-    : "https://api.test.barion.com";
+  return env === "prod" ? "https://api.barion.com" : "https://api.test.barion.com";
 }
 
 function getPosKey(): string {
   const envVar = siteConfig.payments.barion.posKeyEnvVar;
   const key = process.env[envVar];
   if (!key) {
-    throw new Error(
-      `Missing Barion POS key. Set the "${envVar}" environment variable.`,
-    );
+    throw new Error(`Missing Barion POS key. Set the "${envVar}" environment variable.`);
   }
   return key;
 }
@@ -167,16 +163,12 @@ export async function startPayment(
   const data = (await response.json()) as BarionStartPaymentResponse;
 
   if (data.Errors && data.Errors.length > 0) {
-    const messages = data.Errors.map(
-      (e) => `${e.ErrorCode}: ${e.Description}`,
-    ).join("; ");
+    const messages = data.Errors.map((e) => `${e.ErrorCode}: ${e.Description}`).join("; ");
     throw new Error(`Barion Payment/Start returned errors: ${messages}`);
   }
 
   if (!data.PaymentId || !data.GatewayUrl) {
-    throw new Error(
-      "Barion Payment/Start response missing PaymentId or GatewayUrl.",
-    );
+    throw new Error("Barion Payment/Start response missing PaymentId or GatewayUrl.");
   }
 
   return {
@@ -188,9 +180,7 @@ export async function startPayment(
 /**
  * Retrieve the current payment state from Barion.
  */
-export async function getPaymentState(
-  paymentId: string,
-): Promise<PaymentStateResult> {
+export async function getPaymentState(paymentId: string): Promise<PaymentStateResult> {
   const posKey = getPosKey();
   const baseUrl = getBaseUrl();
 
@@ -207,9 +197,7 @@ export async function getPaymentState(
   const data = (await response.json()) as BarionPaymentStateResponse;
 
   if (data.Errors && data.Errors.length > 0) {
-    const messages = data.Errors.map(
-      (e) => `${e.ErrorCode}: ${e.Description}`,
-    ).join("; ");
+    const messages = data.Errors.map((e) => `${e.ErrorCode}: ${e.Description}`).join("; ");
     throw new Error(`Barion GetPaymentState returned errors: ${messages}`);
   }
 
@@ -226,9 +214,7 @@ export async function getPaymentState(
  * Verify a payment and return a normalized status that maps to our
  * internal OrderStatus enum.
  */
-export async function verifyPayment(
-  paymentId: string,
-): Promise<VerifyPaymentResult> {
+export async function verifyPayment(paymentId: string): Promise<VerifyPaymentResult> {
   const state = await getPaymentState(paymentId);
 
   return {

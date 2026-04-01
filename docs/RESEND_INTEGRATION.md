@@ -41,6 +41,7 @@ npm install resend
 - **Marketing sender**: `marketing@yourdomain.com` (e.g., `marketing@agency.hu`)
 
 Benefits:
+
 - Separate sender reputation for transactional vs. marketing
 - Independent bounce/complaint tracking
 - Better deliverability alignment
@@ -89,9 +90,8 @@ RESEND_TEST_RECIPIENT=your-email@example.com
 
 ```typescript
 // In email actions
-const recipient = process.env.NODE_ENV === 'development' 
-  ? process.env.RESEND_TEST_RECIPIENT 
-  : order.email;
+const recipient =
+  process.env.NODE_ENV === "development" ? process.env.RESEND_TEST_RECIPIENT : order.email;
 ```
 
 ## Email Architecture
@@ -172,8 +172,8 @@ export default function OrderReceiptEmail({ order, items }) {
 File: `src/lib/integrations/email/templates.ts`
 
 ```typescript
-import { render } from 'react-email';
-import OrderReceiptEmail from '@/emails/order-receipt';
+import { render } from "react-email";
+import OrderReceiptEmail from "@/emails/order-receipt";
 
 export async function renderOrderReceiptEmail(order, items) {
   return await render(OrderReceiptEmail({ order, items }));
@@ -188,14 +188,14 @@ File: `src/lib/integrations/email/actions.ts` (already implemented)
 export async function sendReceipt(orderId: string) {
   const order = await fetchOrder(orderId);
   const items = await fetchOrderItems(orderId);
-  
+
   const html = await renderOrderReceiptEmail(order, items);
-  
+
   return await sendEmail({
     to: order.email,
-    subject: 'Order Confirmation',
+    subject: "Order Confirmation",
     html,
-    tags: [{ name: 'type', value: 'receipt' }],
+    tags: [{ name: "type", value: "receipt" }],
   });
 }
 ```
@@ -214,17 +214,14 @@ await sendReceipt(orderId);
 For reliability, implement exponential backoff:
 
 ```typescript
-async function sendEmailWithRetry(
-  emailFn: () => Promise<SendEmailResult>,
-  maxAttempts = 3,
-) {
+async function sendEmailWithRetry(emailFn: () => Promise<SendEmailResult>, maxAttempts = 3) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const result = await emailFn();
     if (result.success) return result;
-    
+
     if (attempt < maxAttempts) {
       const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
   throw new Error(`Email send failed after ${maxAttempts} attempts`);
@@ -251,15 +248,15 @@ export async function sendNewsletterCampaign(input: {
   subject: string;
   content: NewsletterContent; // Predefined template structure
   tags?: string[];
-  segment?: 'all' | 'engaged' | 'inactive';
+  segment?: "all" | "engaged" | "inactive";
 }) {
   // 1. Fetch subscribers matching segment
   const subscribers = await getSubscribersBySegment(input.segment);
-  
+
   // 2. Generate unsubscribe token for each recipient
   // 3. Send batch emails
   return await sendNewsletterCampaign(
-    subscribers.map(s => s.email),
+    subscribers.map((s) => s.email),
     input.subject,
     input.content,
   );
@@ -292,14 +289,14 @@ Triggered by Edge Function (in Supabase):
 
 ```typescript
 // Edge Function (runs on schedule or via cron)
-import { sendAbandonedCartEmail } from '@/lib/integrations/email/actions';
+import { sendAbandonedCartEmail } from "@/lib/integrations/email/actions";
 
 // Find draft orders older than 24h
 const orders = await supabase
-  .from('orders')
-  .select('*')
-  .eq('status', 'draft')
-  .lt('created_at', oneDay.toISOString());
+  .from("orders")
+  .select("*")
+  .eq("status", "draft")
+  .lt("created_at", oneDay.toISOString());
 
 for (const order of orders) {
   await sendAbandonedCartEmail(order.id);
@@ -322,6 +319,7 @@ CREATE TABLE subscribers (
 ```
 
 Use tags for segmentation:
+
 - `engaged` - opened emails recently
 - `inactive` - no opens in 30 days
 - `vip` - customers over certain AOV
@@ -344,11 +342,17 @@ npm run email
 Or access via the `PreviewProps` in each template:
 
 ```typescript
-export const OrderReceiptEmail = ({ order, items }) => { /* ... */ };
+export const OrderReceiptEmail = ({ order, items }) => {
+  /* ... */
+};
 
 OrderReceiptEmail.PreviewProps = {
-  order: { /* mock data */ },
-  items: [ /* mock data */ ],
+  order: {
+    /* mock data */
+  },
+  items: [
+    /* mock data */
+  ],
 };
 ```
 
@@ -362,13 +366,13 @@ Create a test endpoint:
 // src/app/api/dev/send-test-email/route.ts
 // Only available in development
 
-import { sendReceipt } from '@/lib/integrations/email/actions';
+import { sendReceipt } from "@/lib/integrations/email/actions";
 
 export async function POST(req: Request) {
-  if (process.env.NODE_ENV !== 'development') {
-    return new Response('Not available in production', { status: 403 });
+  if (process.env.NODE_ENV !== "development") {
+    return new Response("Not available in production", { status: 403 });
   }
-  
+
   const { orderId } = await req.json();
   const result = await sendReceipt(orderId);
   return Response.json(result);
@@ -382,7 +386,7 @@ export async function POST(req: Request) {
 
 function getRecipient(email: string): string {
   // In development, always send to yourself
-  if (process.env.NODE_ENV === 'development' && process.env.RESEND_TEST_RECIPIENT) {
+  if (process.env.NODE_ENV === "development" && process.env.RESEND_TEST_RECIPIENT) {
     return process.env.RESEND_TEST_RECIPIENT;
   }
   return email;
@@ -395,13 +399,13 @@ Add logging to track issues:
 
 ```typescript
 export async function sendEmail(options: SendEmailOptions) {
-  console.log('[email-provider]', {
+  console.log("[email-provider]", {
     to: options.to,
     subject: options.subject,
     htmlLength: options.html.length,
     tags: options.tags,
   });
-  
+
   // ... send logic
 }
 ```
@@ -448,6 +452,7 @@ Never commit real keys to version control.
 ### 4. Monitoring & Analytics
 
 Resend provides:
+
 - **Open tracking** (enabled by default)
 - **Click tracking** (enabled by default)
 - **Bounce/complaint webhooks** (recommended for production)
@@ -460,9 +465,9 @@ View metrics in Resend dashboard for each sender domain.
 ### 1. Use `react-email` for Templates
 
 ```typescript
-import { 
-  Html, Body, Container, 
-  Heading, Text, Button, Link 
+import {
+  Html, Body, Container,
+  Heading, Text, Button, Link
 } from '@react-email/components';
 
 export default function EmailTemplate({ name }) {
@@ -484,9 +489,9 @@ export default function EmailTemplate({ name }) {
 ### 2. Render to HTML String
 
 ```typescript
-import { render } from 'react-email';
+import { render } from "react-email";
 
-const html = await render(EmailTemplate({ name: 'John' }));
+const html = await render(EmailTemplate({ name: "John" }));
 console.log(typeof html); // 'string'
 ```
 
@@ -553,61 +558,51 @@ export default function OrderReceiptEmail(props: OrderReceiptProps) {
 File: `src/app/api/email/webhook/resend/route.ts`
 
 ```typescript
-import { verifySignatureFromContent } from 'resend';
+import { verifySignatureFromContent } from "resend";
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const signature = req.headers.get('X-Resend-Signature') || '';
-  
+  const signature = req.headers.get("X-Resend-Signature") || "";
+
   try {
-    const isValid = verifySignatureFromContent(
-      body,
-      signature,
-      process.env.RESEND_WEBHOOK_SECRET!,
-    );
-    
+    const isValid = verifySignatureFromContent(body, signature, process.env.RESEND_WEBHOOK_SECRET!);
+
     if (!isValid) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response("Unauthorized", { status: 401 });
     }
-    
+
     const event = JSON.parse(body);
-    
+
     // Handle events
     switch (event.type) {
-      case 'email.bounced':
+      case "email.bounced":
         await handleBounce(event);
         break;
-      case 'email.complained':
+      case "email.complained":
         await handleComplaint(event);
         break;
-      case 'email.delivered':
+      case "email.delivered":
         await logDelivery(event);
         break;
     }
-    
-    return new Response('OK', { status: 200 });
+
+    return new Response("OK", { status: 200 });
   } catch (error) {
-    console.error('[webhook]', error);
-    return new Response('Error', { status: 500 });
+    console.error("[webhook]", error);
+    return new Response("Error", { status: 500 });
   }
 }
 
 async function handleBounce(event: any) {
   const { email } = event.data;
   // Disable future sends to this email
-  await supabase
-    .from('subscribers')
-    .update({ status: 'bounced' })
-    .eq('email', email);
+  await supabase.from("subscribers").update({ status: "bounced" }).eq("email", email);
 }
 
 async function handleComplaint(event: any) {
   const { email } = event.data;
   // Mark as unsubscribed
-  await supabase
-    .from('subscribers')
-    .update({ status: 'unsubscribed' })
-    .eq('email', email);
+  await supabase.from("subscribers").update({ status: "unsubscribed" }).eq("email", email);
 }
 ```
 

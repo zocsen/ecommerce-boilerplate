@@ -26,26 +26,26 @@ export default async function ProfilePage() {
         <h1 className="text-3xl font-semibold tracking-[-0.03em]">
           Üdvözöllek, {profile.full_name || "Felhasználó"}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-sm">
           Itt kezelheted a rendeléseidet, címeidet és fiókbeállításaidat.
         </p>
       </div>
 
       {/* -- Quick stats -- */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-border p-5">
-          <p className="text-xs text-muted-foreground">Összes rendelés</p>
+        <div className="border-border rounded-xl border p-5">
+          <p className="text-muted-foreground text-xs">Összes rendelés</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{totalOrders}</p>
         </div>
-        <div className="rounded-xl border border-border p-5">
-          <p className="text-xs text-muted-foreground">Tag óta</p>
+        <div className="border-border rounded-xl border p-5">
+          <p className="text-muted-foreground text-xs">Tag óta</p>
           <p className="mt-1 text-2xl font-semibold">{formatDate(profile.created_at)}</p>
         </div>
-        <div className="rounded-xl border border-border p-5">
-          <p className="text-xs text-muted-foreground">Telefon</p>
+        <div className="border-border rounded-xl border p-5">
+          <p className="text-muted-foreground text-xs">Telefon</p>
           <p className="mt-1 text-2xl font-semibold">
             {profile.phone || (
-              <span className="text-base text-muted-foreground">Nincs megadva</span>
+              <span className="text-muted-foreground text-base">Nincs megadva</span>
             )}
           </p>
         </div>
@@ -58,7 +58,7 @@ export default async function ProfilePage() {
           {totalOrders > 0 && (
             <Link
               href="/profile/orders"
-              className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors"
             >
               Összes megtekintése
               <ArrowRight className="size-3.5" />
@@ -68,13 +68,13 @@ export default async function ProfilePage() {
 
         {recentOrders.length === 0 ? (
           <div className="mt-8 flex flex-col items-center text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-              <Package className="size-6 text-muted-foreground" />
+            <div className="bg-muted flex size-14 items-center justify-center rounded-full">
+              <Package className="text-muted-foreground size-6" />
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">Még nincsenek rendeléseid.</p>
+            <p className="text-muted-foreground mt-3 text-sm">Még nincsenek rendeléseid.</p>
             <Link
               href="/products"
-              className="mt-4 text-sm font-medium underline underline-offset-2 transition-colors hover:text-foreground/70"
+              className="hover:text-foreground/70 mt-4 text-sm font-medium underline underline-offset-2 transition-colors"
             >
               Termékek böngészése
             </Link>
@@ -85,7 +85,7 @@ export default async function ProfilePage() {
               <Link
                 key={order.id}
                 href={`/profile/orders/${order.id}`}
-                className="group flex items-center justify-between rounded-xl border border-border p-4 transition-all duration-500 ease-out hover:border-foreground/20 hover:bg-muted/30"
+                className="group border-border hover:border-foreground/20 hover:bg-muted/30 flex items-center justify-between rounded-xl border p-4 transition-all duration-500 ease-out"
               >
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-6">
                   <div>
@@ -93,13 +93,13 @@ export default async function ProfilePage() {
                       #{order.id.slice(0, 8).toUpperCase()}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
+                  <p className="text-muted-foreground text-sm">{formatDate(order.created_at)}</p>
                   <p className="text-sm font-medium tabular-nums">
                     {formatHUF(order.total_amount)}
                   </p>
                   <OrderStatusBadge status={order.status as OrderStatus} />
                 </div>
-                <ChevronRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5" />
+                <ChevronRight className="text-muted-foreground size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </Link>
             ))}
           </div>

@@ -1,43 +1,43 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { Plus, Trash2, Save, Loader2, Search, GripVertical } from "lucide-react"
-import Link from "next/link"
-import { adminCreateProduct, adminListProducts } from "@/lib/actions/products"
-import { listCategories } from "@/lib/actions/categories"
-import { SingleImageUpload, GalleryImageUpload } from "@/components/admin/image-upload"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Trash2, Save, Loader2, Search, GripVertical } from "lucide-react";
+import Link from "next/link";
+import { adminCreateProduct, adminListProducts } from "@/lib/actions/products";
+import { listCategories } from "@/lib/actions/categories";
+import { SingleImageUpload, GalleryImageUpload } from "@/components/admin/image-upload";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { siteConfig } from "@/lib/config/site.config"
-import { toSlug } from "@/lib/utils/slug"
-import type { CategoryRow } from "@/lib/types/database"
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { siteConfig } from "@/lib/config/site.config";
+import { toSlug } from "@/lib/utils/slug";
+import type { CategoryRow } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Variant row type (client-side)                                     */
 /* ------------------------------------------------------------------ */
 
 interface VariantRow {
-  key: string
-  sku: string
-  option1Name: string
-  option1Value: string
-  option2Name: string
-  option2Value: string
-  priceOverride: string
-  stockQuantity: string
-  isActive: boolean
-  weightGrams: string
+  key: string;
+  sku: string;
+  option1Name: string;
+  option1Value: string;
+  option2Name: string;
+  option2Value: string;
+  priceOverride: string;
+  stockQuantity: string;
+  isActive: boolean;
+  weightGrams: string;
 }
 
 function emptyVariant(): VariantRow {
@@ -52,7 +52,7 @@ function emptyVariant(): VariantRow {
     stockQuantity: "0",
     isActive: true,
     weightGrams: "",
-  }
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -60,13 +60,13 @@ function emptyVariant(): VariantRow {
 /* ------------------------------------------------------------------ */
 
 interface ExtraRow {
-  key: string
-  extraProductId: string
-  extraVariantId: string | null
-  extraProductTitle: string
-  label: string
-  isDefaultChecked: boolean
-  sortOrder: number
+  key: string;
+  extraProductId: string;
+  extraVariantId: string | null;
+  extraProductTitle: string;
+  label: string;
+  isDefaultChecked: boolean;
+  sortOrder: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -74,103 +74,103 @@ interface ExtraRow {
 /* ------------------------------------------------------------------ */
 
 export default function AdminProductNewPage() {
-  const router = useRouter()
+  const router = useRouter();
 
   // Form state
-  const [title, setTitle] = useState("")
-  const [slug, setSlug] = useState("")
-  const [slugManual, setSlugManual] = useState(false)
-  const [description, setDescription] = useState("")
-  const [basePrice, setBasePrice] = useState("")
-  const [compareAtPrice, setCompareAtPrice] = useState("")
-  const [vatRate, setVatRate] = useState(String(siteConfig.tax.defaultVatRate))
-  const [weightGrams, setWeightGrams] = useState("")
-  const [mainImageUrl, setMainImageUrl] = useState("")
-  const [imageUrls, setImageUrls] = useState<string[]>([])
-  const [isActive, setIsActive] = useState(true)
-  const [publishedAt, setPublishedAt] = useState("")
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
-  const [variants, setVariants] = useState<VariantRow[]>([])
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugManual, setSlugManual] = useState(false);
+  const [description, setDescription] = useState("");
+  const [basePrice, setBasePrice] = useState("");
+  const [compareAtPrice, setCompareAtPrice] = useState("");
+  const [vatRate, setVatRate] = useState(String(siteConfig.tax.defaultVatRate));
+  const [weightGrams, setWeightGrams] = useState("");
+  const [mainImageUrl, setMainImageUrl] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [isActive, setIsActive] = useState(true);
+  const [publishedAt, setPublishedAt] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [variants, setVariants] = useState<VariantRow[]>([]);
 
   // Extras
-  const [extras, setExtras] = useState<ExtraRow[]>([])
-  const [extraSearch, setExtraSearch] = useState("")
+  const [extras, setExtras] = useState<ExtraRow[]>([]);
+  const [extraSearch, setExtraSearch] = useState("");
   const [extraSearchResults, setExtraSearchResults] = useState<
     Array<{ id: string; title: string; slug: string; base_price: number }>
-  >([])
-  const [extraSearching, setExtraSearching] = useState(false)
+  >([]);
+  const [extraSearching, setExtraSearching] = useState(false);
 
   // Categories
-  const [categories, setCategories] = useState<CategoryRow[]>([])
+  const [categories, setCategories] = useState<CategoryRow[]>([]);
 
   // Submit
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch categories
   useEffect(() => {
     listCategories().then((res) => {
       if (res.success && res.data) {
-        setCategories(res.data)
+        setCategories(res.data);
       }
-    })
-  }, [])
+    });
+  }, []);
 
   // Auto-generate slug from title
   useEffect(() => {
     if (!slugManual && title) {
-      setSlug(toSlug(title))
+      setSlug(toSlug(title));
     }
-  }, [title, slugManual])
+  }, [title, slugManual]);
 
   // ── Category toggle ────────────────────────────────────────────
   function toggleCategory(id: string) {
     setSelectedCategoryIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
-    )
+    );
   }
 
   // ── Variant management ─────────────────────────────────────────
   function addVariant() {
-    setVariants((prev) => [...prev, emptyVariant()])
+    setVariants((prev) => [...prev, emptyVariant()]);
   }
 
   function removeVariant(key: string) {
-    setVariants((prev) => prev.filter((v) => v.key !== key))
+    setVariants((prev) => prev.filter((v) => v.key !== key));
   }
 
   function updateVariant(key: string, field: keyof VariantRow, value: string | boolean) {
-    setVariants((prev) => prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)))
+    setVariants((prev) => prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)));
   }
 
   // ── Extras management ──────────────────────────────────────────
   async function searchExtraProducts(query: string) {
-    setExtraSearch(query)
+    setExtraSearch(query);
     if (query.trim().length < 2) {
-      setExtraSearchResults([])
-      return
+      setExtraSearchResults([]);
+      return;
     }
-    setExtraSearching(true)
+    setExtraSearching(true);
     try {
-      const result = await adminListProducts({ search: query.trim(), perPage: 10 })
+      const result = await adminListProducts({ search: query.trim(), perPage: 10 });
       if (result.success && result.data) {
-        const existingIds = new Set(extras.map((e) => e.extraProductId))
+        const existingIds = new Set(extras.map((e) => e.extraProductId));
         setExtraSearchResults(
           result.data.products
             .filter((p) => !existingIds.has(p.id))
             .map((p) => ({ id: p.id, title: p.title, slug: p.slug, base_price: p.base_price })),
-        )
+        );
       }
     } finally {
-      setExtraSearching(false)
+      setExtraSearching(false);
     }
   }
 
   function addExtra(productResult: {
-    id: string
-    title: string
-    slug: string
-    base_price: number
+    id: string;
+    title: string;
+    slug: string;
+    base_price: number;
   }) {
     const newExtra: ExtraRow = {
       key: crypto.randomUUID(),
@@ -180,66 +180,66 @@ export default function AdminProductNewPage() {
       label: `${productResult.title} (+${Math.round(productResult.base_price).toLocaleString("hu-HU")} Ft)`,
       isDefaultChecked: false,
       sortOrder: extras.length,
-    }
-    setExtras((prev) => [...prev, newExtra])
-    setExtraSearch("")
-    setExtraSearchResults([])
+    };
+    setExtras((prev) => [...prev, newExtra]);
+    setExtraSearch("");
+    setExtraSearchResults([]);
   }
 
   function removeExtra(key: string) {
-    setExtras((prev) => prev.filter((e) => e.key !== key))
+    setExtras((prev) => prev.filter((e) => e.key !== key));
   }
 
   function updateExtra(key: string, field: keyof ExtraRow, value: string | boolean | number) {
-    setExtras((prev) => prev.map((e) => (e.key === key ? { ...e, [field]: value } : e)))
+    setExtras((prev) => prev.map((e) => (e.key === key ? { ...e, [field]: value } : e)));
   }
 
   // ── Submit ─────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     // Client-side basic validation
     if (!title.trim()) {
-      setError("A termék neve kötelező.")
-      return
+      setError("A termék neve kötelező.");
+      return;
     }
     if (!slug.trim()) {
-      setError("A slug kötelező.")
-      return
+      setError("A slug kötelező.");
+      return;
     }
     if (!basePrice || Number(basePrice) < 0) {
-      setError("Érvényes alapár szükséges.")
-      return
+      setError("Érvényes alapár szükséges.");
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
 
     try {
-      const formData = new FormData()
-      formData.set("title", title.trim())
-      formData.set("slug", slug.trim())
-      formData.set("description", description)
-      formData.set("basePrice", String(Math.round(Number(basePrice))))
+      const formData = new FormData();
+      formData.set("title", title.trim());
+      formData.set("slug", slug.trim());
+      formData.set("description", description);
+      formData.set("basePrice", String(Math.round(Number(basePrice))));
 
       if (compareAtPrice) {
-        formData.set("compareAtPrice", String(Math.round(Number(compareAtPrice))))
+        formData.set("compareAtPrice", String(Math.round(Number(compareAtPrice))));
       }
 
-      formData.set("vatRate", vatRate)
+      formData.set("vatRate", vatRate);
 
       if (weightGrams) {
-        formData.set("weightGrams", weightGrams)
+        formData.set("weightGrams", weightGrams);
       }
 
       if (mainImageUrl.trim()) {
-        formData.set("mainImageUrl", mainImageUrl.trim())
+        formData.set("mainImageUrl", mainImageUrl.trim());
       }
 
-      formData.set("imageUrls", JSON.stringify(imageUrls))
-      formData.set("isActive", String(isActive))
-      formData.set("publishedAt", publishedAt ? new Date(publishedAt).toISOString() : "")
-      formData.set("categoryIds", JSON.stringify(selectedCategoryIds))
+      formData.set("imageUrls", JSON.stringify(imageUrls));
+      formData.set("isActive", String(isActive));
+      formData.set("publishedAt", publishedAt ? new Date(publishedAt).toISOString() : "");
+      formData.set("categoryIds", JSON.stringify(selectedCategoryIds));
 
       // Build variants payload
       if (variants.length > 0) {
@@ -253,8 +253,8 @@ export default function AdminProductNewPage() {
           stockQuantity: Number(v.stockQuantity) || 0,
           isActive: v.isActive,
           weightGrams: v.weightGrams ? Number(v.weightGrams) : undefined,
-        }))
-        formData.set("variants", JSON.stringify(variantsPayload))
+        }));
+        formData.set("variants", JSON.stringify(variantsPayload));
       }
 
       // Extras
@@ -265,22 +265,22 @@ export default function AdminProductNewPage() {
           label: e.label,
           isDefaultChecked: e.isDefaultChecked,
           sortOrder: e.sortOrder,
-        }))
-        formData.set("extras", JSON.stringify(extrasPayload))
+        }));
+        formData.set("extras", JSON.stringify(extrasPayload));
       }
 
-      const result = await adminCreateProduct(formData)
+      const result = await adminCreateProduct(formData);
 
       if (!result.success) {
-        setError(result.error ?? "Hiba a termék létrehozásakor.")
-        return
+        setError(result.error ?? "Hiba a termék létrehozásakor.");
+        return;
       }
 
-      router.push(`/admin/products/${result.data?.id}`)
+      router.push(`/admin/products/${result.data?.id}`);
     } catch {
-      setError("Váratlan hiba történt.")
+      setError("Váratlan hiba történt.");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
@@ -290,7 +290,7 @@ export default function AdminProductNewPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Új termék</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-1 text-sm">
             Töltse ki az alábbi mezőket az új termék létrehozásához.
           </p>
         </div>
@@ -305,7 +305,7 @@ export default function AdminProductNewPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -334,10 +334,10 @@ export default function AdminProductNewPage() {
                   Slug *
                   <button
                     type="button"
-                    className="ml-2 cursor-pointer text-xs text-muted-foreground underline"
+                    className="text-muted-foreground ml-2 cursor-pointer text-xs underline"
                     onClick={() => {
-                      setSlugManual(!slugManual)
-                      if (slugManual) setSlug(toSlug(title))
+                      setSlugManual(!slugManual);
+                      if (slugManual) setSlug(toSlug(title));
                     }}
                   >
                     {slugManual ? "Auto-generálás" : "Kézi szerkesztés"}
@@ -347,8 +347,8 @@ export default function AdminProductNewPage() {
                   id="slug"
                   value={slug}
                   onChange={(e) => {
-                    setSlugManual(true)
-                    setSlug(e.target.value)
+                    setSlugManual(true);
+                    setSlug(e.target.value);
                   }}
                   placeholder="premium-polo"
                   className="font-mono text-sm"
@@ -363,7 +363,7 @@ export default function AdminProductNewPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={5}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                   placeholder="Termék részletes leírása..."
                 />
               </div>
@@ -401,7 +401,7 @@ export default function AdminProductNewPage() {
                     onChange={(e) => setCompareAtPrice(e.target.value)}
                     placeholder="Opcionális"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Ha megadja, a termék akciósként jelenik meg.
                   </p>
                 </div>
@@ -440,7 +440,7 @@ export default function AdminProductNewPage() {
                     onChange={(e) => setWeightGrams(e.target.value)}
                     placeholder={String(siteConfig.shipping.rules.defaultProductWeightGrams)}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Üresen hagyva az alapértelmezett (
                     {siteConfig.shipping.rules.defaultProductWeightGrams} g) kerül alkalmazásra. A
                     variánsok felülírhatják.
@@ -494,13 +494,13 @@ export default function AdminProductNewPage() {
             {variants.length > 0 && (
               <CardContent className="space-y-4">
                 {variants.map((v, idx) => (
-                  <div key={v.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div key={v.key} className="bg-muted/30 space-y-3 rounded-lg border p-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Variáns #{idx + 1}</span>
                       <button
                         type="button"
                         onClick={() => removeVariant(v.key)}
-                        className="cursor-pointer text-muted-foreground hover:text-destructive"
+                        className="text-muted-foreground hover:text-destructive cursor-pointer"
                       >
                         <Trash2 className="size-4" />
                       </button>
@@ -624,7 +624,7 @@ export default function AdminProductNewPage() {
               <div className="space-y-2">
                 <Label className="text-xs">Termék keresése</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="text-muted-foreground absolute top-1/2 left-3 size-3.5 -translate-y-1/2" />
                   <Input
                     value={extraSearch}
                     onChange={(e) => searchExtraProducts(e.target.value)}
@@ -632,19 +632,19 @@ export default function AdminProductNewPage() {
                     className="h-8 pl-9 text-xs"
                   />
                   {extraSearching && (
-                    <Loader2 className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-3.5 -translate-y-1/2 animate-spin" />
                   )}
                 </div>
 
                 {/* Search results dropdown */}
                 {extraSearchResults.length > 0 && (
-                  <div className="rounded-md border bg-background shadow-md">
+                  <div className="bg-background rounded-md border shadow-md">
                     {extraSearchResults.map((p) => (
                       <button
                         key={p.id}
                         type="button"
                         onClick={() => addExtra(p)}
-                        className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-xs hover:bg-muted/50 transition-colors"
+                        className="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between px-3 py-2 text-xs transition-colors"
                       >
                         <span className="font-medium">{p.title}</span>
                         <span className="text-muted-foreground font-mono">
@@ -660,16 +660,16 @@ export default function AdminProductNewPage() {
               {extras.length > 0 && (
                 <div className="space-y-3">
                   {extras.map((extra) => (
-                    <div key={extra.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                    <div key={extra.key} className="bg-muted/30 space-y-3 rounded-lg border p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <GripVertical className="size-4 text-muted-foreground" />
+                          <GripVertical className="text-muted-foreground size-4" />
                           <span className="text-sm font-medium">{extra.extraProductTitle}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeExtra(extra.key)}
-                          className="cursor-pointer text-muted-foreground hover:text-destructive"
+                          className="text-muted-foreground hover:text-destructive cursor-pointer"
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -715,7 +715,7 @@ export default function AdminProductNewPage() {
               )}
 
               {extras.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Nincs kiegészítő termék hozzárendelve. Keressen fent egy terméket a hozzáadáshoz.
                 </p>
               )}
@@ -748,7 +748,7 @@ export default function AdminProductNewPage() {
                   value={publishedAt}
                   onChange={(e) => setPublishedAt(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Hagyja üresen az azonnali megjelenéshez. Jövőbeli dátum esetén a termék addig
                   rejtett marad a webshopban.
                 </p>
@@ -763,14 +763,14 @@ export default function AdminProductNewPage() {
             </CardHeader>
             <CardContent>
               {categories.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Nincsenek kategóriák.{" "}
-                  <Link href="/admin/categories" className="underline hover:text-foreground">
+                  <Link href="/admin/categories" className="hover:text-foreground underline">
                     Létrehozás
                   </Link>
                 </p>
               ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <div className="max-h-60 space-y-2 overflow-y-auto">
                   {categories.map((cat) => (
                     <div key={cat.id} className="flex items-center gap-2">
                       <Checkbox
@@ -790,5 +790,5 @@ export default function AdminProductNewPage() {
         </div>
       </div>
     </form>
-  )
+  );
 }

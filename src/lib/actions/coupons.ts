@@ -225,26 +225,19 @@ export async function adminUpdateCoupon(
 
     const updatePayload: Record<string, unknown> = {};
     if (input.code !== undefined) updatePayload.code = input.code;
-    if (input.discountType !== undefined)
-      updatePayload.discount_type = input.discountType;
+    if (input.discountType !== undefined) updatePayload.discount_type = input.discountType;
     if (input.value !== undefined) updatePayload.value = input.value;
-    if (input.minOrderAmount !== undefined)
-      updatePayload.min_order_amount = input.minOrderAmount;
+    if (input.minOrderAmount !== undefined) updatePayload.min_order_amount = input.minOrderAmount;
     if (input.maxUses !== undefined) updatePayload.max_uses = input.maxUses;
-    if (input.validFrom !== undefined)
-      updatePayload.valid_from = input.validFrom;
-    if (input.validUntil !== undefined)
-      updatePayload.valid_until = input.validUntil;
+    if (input.validFrom !== undefined) updatePayload.valid_from = input.validFrom;
+    if (input.validUntil !== undefined) updatePayload.valid_until = input.validUntil;
     if (input.isActive !== undefined) updatePayload.is_active = input.isActive;
 
     if (Object.keys(updatePayload).length === 0) {
       return { success: false, error: "Nincs frissítendő mező." };
     }
 
-    const { error } = await admin
-      .from("coupons")
-      .update(updatePayload)
-      .eq("id", idParsed.data);
+    const { error } = await admin.from("coupons").update(updatePayload).eq("id", idParsed.data);
 
     if (error) {
       if (error.code === "23505") {
@@ -271,10 +264,7 @@ export async function adminUpdateCoupon(
   }
 }
 
-export async function adminToggleCoupon(
-  id: string,
-  isActive: boolean,
-): Promise<ActionResult> {
+export async function adminToggleCoupon(id: string, isActive: boolean): Promise<ActionResult> {
   try {
     const profile = await requireAdmin();
 
@@ -312,9 +302,7 @@ export async function adminToggleCoupon(
   }
 }
 
-export async function adminDeleteCoupon(
-  id: string,
-): Promise<ActionResult> {
+export async function adminDeleteCoupon(id: string): Promise<ActionResult> {
   try {
     const profile = await requireAdmin();
 
@@ -325,10 +313,7 @@ export async function adminDeleteCoupon(
 
     const admin = createAdminClient();
 
-    const { error } = await admin
-      .from("coupons")
-      .delete()
-      .eq("id", idParsed.data);
+    const { error } = await admin.from("coupons").delete().eq("id", idParsed.data);
 
     if (error) {
       console.error("[adminDeleteCoupon] Delete error:", error.message);

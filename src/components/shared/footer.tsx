@@ -32,23 +32,23 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-background">
+    <footer className="border-border bg-background border-t">
       {/* ── Main grid ──────────────────────────────────── */}
-      <div className="mx-auto max-w-7xl px-6 pb-12 pt-16 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 pt-16 pb-12 lg:px-8">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand column */}
           <div className="lg:col-span-1">
             <Link href="/" className="text-xl font-semibold tracking-[-0.04em]">
               {siteConfig.branding.logoText}
             </Link>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+            <p className="text-muted-foreground mt-4 max-w-xs text-sm leading-relaxed">
               Prémium termékek, megbízható minőség.
             </p>
           </div>
 
           {/* Shop links */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <h3 className="text-muted-foreground text-xs font-semibold tracking-[0.1em] uppercase">
               Bolt
             </h3>
             <ul className="mt-4 flex flex-col gap-3">
@@ -56,7 +56,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-foreground/80 transition-colors duration-300 hover:text-foreground"
+                    className="text-foreground/80 hover:text-foreground text-sm transition-colors duration-300"
                   >
                     {link.label}
                   </Link>
@@ -67,7 +67,7 @@ export function Footer() {
 
           {/* Legal links */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <h3 className="text-muted-foreground text-xs font-semibold tracking-[0.1em] uppercase">
               Információ
             </h3>
             <ul className="mt-4 flex flex-col gap-3">
@@ -75,7 +75,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-foreground/80 transition-colors duration-300 hover:text-foreground"
+                    className="text-foreground/80 hover:text-foreground text-sm transition-colors duration-300"
                   >
                     {link.label}
                   </Link>
@@ -89,14 +89,14 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <h3 className="text-muted-foreground text-xs font-semibold tracking-[0.1em] uppercase">
               Kapcsolat
             </h3>
-            <ul className="mt-4 flex flex-col gap-3 text-sm text-foreground/80">
+            <ul className="text-foreground/80 mt-4 flex flex-col gap-3 text-sm">
               <li>
                 <a
                   href={`mailto:${store.email}`}
-                  className="transition-colors duration-300 hover:text-foreground"
+                  className="hover:text-foreground transition-colors duration-300"
                 >
                   {store.email}
                 </a>
@@ -104,7 +104,7 @@ export function Footer() {
               <li>
                 <a
                   href={`tel:${store.phone.replace(/\s/g, "")}`}
-                  className="transition-colors duration-300 hover:text-foreground"
+                  className="hover:text-foreground transition-colors duration-300"
                 >
                   {store.phone}
                 </a>
@@ -120,7 +120,7 @@ export function Footer() {
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h3 className="text-sm font-semibold">Hírlevél</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-sm">
               Iratkozz fel az újdonságokért és exkluzív ajánlatokért.
             </p>
           </div>
@@ -130,7 +130,7 @@ export function Footer() {
         {/* ── Copyright ────────────────────────────────── */}
         <Separator className="my-12" />
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           &copy; {currentYear} {store.legalName} — Minden jog fenntartva.
         </p>
       </div>

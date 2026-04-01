@@ -32,10 +32,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Missing or invalid orderId" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Missing or invalid orderId" }, { status: 400 });
   }
 
   const result = await sendAbandonedCartEmail(parsed.data.orderId);

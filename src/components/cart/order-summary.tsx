@@ -22,8 +22,8 @@ export function OrderSummary({
   total,
 }: OrderSummaryProps) {
   return (
-    <div className="rounded-lg border border-border bg-background p-6">
-      <h3 className="text-sm font-semibold uppercase tracking-widest text-foreground">
+    <div className="border-border bg-background rounded-lg border p-6">
+      <h3 className="text-foreground text-sm font-semibold tracking-widest uppercase">
         Összesítés
       </h3>
 
@@ -45,8 +45,8 @@ export function OrderSummary({
       <Separator className="my-4" />
 
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium text-foreground">Összesen</span>
-        <span className="text-lg font-semibold tracking-[-0.02em] text-foreground tabular-nums">
+        <span className="text-foreground text-sm font-medium">Összesen</span>
+        <span className="text-foreground text-lg font-semibold tracking-[-0.02em] tabular-nums">
           {formatHUF(total)}
         </span>
       </div>
@@ -74,7 +74,7 @@ function SummaryLine({
         className={
           highlight
             ? "font-medium text-emerald-600 tabular-nums dark:text-emerald-400"
-            : "font-medium tabular-nums text-foreground"
+            : "text-foreground font-medium tabular-nums"
         }
       >
         {value}

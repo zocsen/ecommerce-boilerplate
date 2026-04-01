@@ -72,16 +72,14 @@ export default function ResetPasswordPage() {
         <div className="flex size-14 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
           <CheckCircle2 className="size-7 text-emerald-600 dark:text-emerald-400" />
         </div>
-        <h1 className="mt-4 text-xl font-semibold tracking-[-0.02em]">
-          E-mail elküldve
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Ha ez az e-mail cím regisztrált nálunk, hamarosan kapsz egy linket a
-          jelszó visszaállításához.
+        <h1 className="mt-4 text-xl font-semibold tracking-[-0.02em]">E-mail elküldve</h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Ha ez az e-mail cím regisztrált nálunk, hamarosan kapsz egy linket a jelszó
+          visszaállításához.
         </p>
         <Link
           href="/login"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70"
+          className="text-foreground hover:text-foreground/70 mt-6 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-2 transition-colors"
         >
           <ArrowLeft className="size-3.5" />
           Vissza a bejelentkezéshez
@@ -94,12 +92,9 @@ export default function ResetPasswordPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold tracking-[-0.02em]">
-        Jelszó visszaállítása
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Adja meg az e-mail címét, és küldünk egy linket a jelszó
-        visszaállításához.
+      <h1 className="text-xl font-semibold tracking-[-0.02em]">Jelszó visszaállítása</h1>
+      <p className="text-muted-foreground mt-1 text-sm">
+        Adja meg az e-mail címét, és küldünk egy linket a jelszó visszaállításához.
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
@@ -118,19 +113,12 @@ export default function ResetPasswordPage() {
             disabled={isLoading}
           />
           {errors.email && (
-            <p className="text-xs text-red-600 dark:text-red-400">
-              {errors.email.message}
-            </p>
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.email.message}</p>
           )}
         </div>
 
         {/* ── Submit ───────────────────────────────────── */}
-        <Button
-          type="submit"
-          className="w-full"
-          size="lg"
-          disabled={isLoading}
-        >
+        <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2 className="mr-1.5 size-4 animate-spin" />
@@ -146,7 +134,7 @@ export default function ResetPasswordPage() {
       <p className="mt-6 text-center">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
         >
           <ArrowLeft className="size-3.5" />
           Vissza a bejelentkezéshez

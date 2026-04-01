@@ -89,7 +89,7 @@ export function PickupPointSelector({
                     value={carrier.id}
                     checked={isSelected}
                     onChange={() => onProviderChange(carrier.id)}
-                    className="size-4 accent-foreground"
+                    className="accent-foreground size-4"
                   />
                   <span className="text-sm font-medium">{carrier.name}</span>
                 </div>
@@ -109,7 +109,7 @@ export function PickupPointSelector({
             <MapPin className="mr-1.5 inline-block size-4" />
             Átvételi pont választása
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Válasszon a listán elérhető átvételi pontok közül.
           </p>
           <div className="space-y-2">
@@ -127,13 +127,11 @@ export function PickupPointSelector({
                   type="radio"
                   checked={selectedPointId === point.id}
                   onChange={() => onPointChange(point.id, point.label)}
-                  className="size-4 accent-foreground"
+                  className="accent-foreground size-4"
                 />
                 <div>
                   <span className="text-sm">{point.label}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({point.id})
-                  </span>
+                  <span className="text-muted-foreground ml-2 text-xs">({point.id})</span>
                 </div>
               </label>
             ))}

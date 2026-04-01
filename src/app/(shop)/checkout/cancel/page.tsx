@@ -2,9 +2,9 @@
 /*  Checkout cancel page                                               */
 /* ------------------------------------------------------------------ */
 
-import Link from 'next/link'
-import { XCircle, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from "next/link";
+import { XCircle, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function CheckoutCancelPage() {
   return (
@@ -16,7 +16,7 @@ export default function CheckoutCancelPage() {
         </div>
 
         <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">A fizetés megszakadt</h1>
-        <p className="mt-2 max-w-md text-muted-foreground">
+        <p className="text-muted-foreground mt-2 max-w-md">
           A fizetési folyamat megszakadt vagy nem sikerült. A kosarad tartalma megmaradt, nyugodtan
           próbáld újra.
         </p>
@@ -30,12 +30,12 @@ export default function CheckoutCancelPage() {
 
           <Link
             href="/products"
-            className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors duration-300"
           >
             Termékek böngészése
           </Link>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -42,7 +42,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
       {/* ── Image ──────────────────────────────────────── */}
       <Link
         href={`/products/${item.slug}`}
-        className="relative size-20 flex-shrink-0 overflow-hidden rounded-md bg-muted"
+        className="bg-muted relative size-20 flex-shrink-0 overflow-hidden rounded-md"
       >
         {item.image ? (
           <Image
@@ -55,7 +55,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <span className="text-lg font-light text-muted-foreground/40">
+            <span className="text-muted-foreground/40 text-lg font-light">
               {item.title.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -68,7 +68,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
           <div className="flex items-start justify-between gap-2">
             <Link
               href={`/products/${item.slug}`}
-              className="text-sm font-medium leading-snug text-foreground transition-colors duration-300 hover:text-foreground/70"
+              className="text-foreground hover:text-foreground/70 text-sm leading-snug font-medium transition-colors duration-300"
             >
               {item.title}
             </Link>
@@ -76,7 +76,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
               variant="ghost"
               size="icon-xs"
               onClick={handleRemove}
-              className="flex-shrink-0 text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground flex-shrink-0"
             >
               <X className="size-3.5" />
               <span className="sr-only">Eltávolítás</span>
@@ -84,7 +84,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
           </div>
 
           {item.variantLabel && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{item.variantLabel}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs">{item.variantLabel}</p>
           )}
         </div>
 
@@ -120,7 +120,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
           <div className="text-right">
             <p className="text-sm font-medium tabular-nums">{formatHUF(lineTotal)}</p>
             {item.quantity > 1 && (
-              <p className="text-xs text-muted-foreground tabular-nums">
+              <p className="text-muted-foreground text-xs tabular-nums">
                 {formatHUF(item.price)} / db
               </p>
             )}

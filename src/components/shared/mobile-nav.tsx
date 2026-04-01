@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ShoppingBag, User, LogIn, Menu } from "lucide-react"
-import { siteConfig } from "@/lib/config/site.config"
-import { Button } from "@/components/ui/button"
+import Link from "next/link";
+import { ShoppingBag, User, LogIn, Menu } from "lucide-react";
+import { siteConfig } from "@/lib/config/site.config";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetTrigger,
@@ -11,9 +11,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetClose,
-} from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
-import { useUIStore } from "@/lib/store/ui"
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { useUIStore } from "@/lib/store/ui";
 
 /* ------------------------------------------------------------------ */
 /*  Nav links                                                          */
@@ -22,17 +22,17 @@ import { useUIStore } from "@/lib/store/ui"
 const navLinks = [
   { label: "Termékek", href: "/products" },
   { label: "Kategóriák", href: "/products?category=all" },
-] as const
+] as const;
 
 /* ------------------------------------------------------------------ */
 /*  MobileNav — slide-out side menu for small screens                  */
 /* ------------------------------------------------------------------ */
 
 interface MobileNavProps {
-  accountHref: string
-  accountLabel: string
-  isLoggedIn: boolean
-  enableAccounts: boolean
+  accountHref: string;
+  accountLabel: string;
+  isLoggedIn: boolean;
+  enableAccounts: boolean;
 }
 
 export function MobileNav({
@@ -41,8 +41,8 @@ export function MobileNav({
   isLoggedIn,
   enableAccounts,
 }: MobileNavProps) {
-  const { branding } = siteConfig
-  const openCartDrawer = useUIStore((s) => s.openCartDrawer)
+  const { branding } = siteConfig;
+  const openCartDrawer = useUIStore((s) => s.openCartDrawer);
 
   return (
     <Sheet>
@@ -70,7 +70,7 @@ export function MobileNav({
               render={
                 <Link
                   href={link.href}
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors duration-300 hover:bg-muted"
+                  className="text-foreground hover:bg-muted rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-300"
                 />
               }
             >
@@ -82,10 +82,10 @@ export function MobileNav({
 
           {/* Cart — closes mobile nav and opens the cart drawer */}
           <SheetClose
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors duration-300 hover:bg-muted"
+            className="text-foreground hover:bg-muted flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors duration-300"
             onClick={() => {
               // Let the mobile sheet close animation finish before opening drawer
-              setTimeout(() => openCartDrawer(), 300)
+              setTimeout(() => openCartDrawer(), 300);
             }}
           >
             <ShoppingBag className="size-4" />
@@ -97,7 +97,7 @@ export function MobileNav({
               render={
                 <Link
                   href={accountHref}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors duration-300 hover:bg-muted"
+                  className="text-foreground hover:bg-muted flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-300"
                 />
               }
             >
@@ -108,5 +108,5 @@ export function MobileNav({
         </nav>
       </SheetContent>
     </Sheet>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-import Link from "next/link"
-import { User, LogIn } from "lucide-react"
-import { siteConfig } from "@/lib/config/site.config"
-import { Button } from "@/components/ui/button"
-import { CartDrawer } from "@/components/cart/cart-drawer"
-import { MobileNav } from "@/components/shared/mobile-nav"
-import { getCurrentProfile } from "@/lib/security/roles"
-import type { AppRole } from "@/lib/types/database"
+import Link from "next/link";
+import { User, LogIn } from "lucide-react";
+import { siteConfig } from "@/lib/config/site.config";
+import { Button } from "@/components/ui/button";
+import { CartDrawer } from "@/components/cart/cart-drawer";
+import { MobileNav } from "@/components/shared/mobile-nav";
+import { getCurrentProfile } from "@/lib/security/roles";
+import type { AppRole } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Navigation data                                                    */
@@ -14,22 +14,22 @@ import type { AppRole } from "@/lib/types/database"
 const navLinks = [
   { label: "Termékek", href: "/products" },
   { label: "Kategóriák", href: "/products?category=all" },
-] as const
+] as const;
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
 function getAccountHref(role: AppRole | null): string {
-  if (!role) return "/login"
-  if (role === "admin" || role === "agency_viewer") return "/admin"
-  return "/profile"
+  if (!role) return "/login";
+  if (role === "admin" || role === "agency_viewer") return "/admin";
+  return "/profile";
 }
 
 function getAccountLabel(role: AppRole | null): string {
-  if (!role) return "Bejelentkezés"
-  if (role === "admin" || role === "agency_viewer") return "Admin"
-  return "Fiókom"
+  if (!role) return "Bejelentkezés";
+  if (role === "admin" || role === "agency_viewer") return "Admin";
+  return "Fiókom";
 }
 
 /* ------------------------------------------------------------------ */
@@ -37,16 +37,16 @@ function getAccountLabel(role: AppRole | null): string {
 /* ------------------------------------------------------------------ */
 
 export async function Header() {
-  const { branding, features } = siteConfig
+  const { branding, features } = siteConfig;
 
-  const profile = await getCurrentProfile()
-  const role = profile?.role ?? null
-  const accountHref = getAccountHref(role)
-  const accountLabel = getAccountLabel(role)
-  const isLoggedIn = role !== null
+  const profile = await getCurrentProfile();
+  const role = profile?.role ?? null;
+  const accountHref = getAccountHref(role);
+  const accountLabel = getAccountLabel(role);
+  const isLoggedIn = role !== null;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/80">
+    <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-40 w-full border-b backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
         {/* -- Logo -- */}
         <Link
@@ -62,7 +62,7 @@ export async function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors duration-300"
             >
               {link.label}
             </Link>
@@ -96,5 +96,5 @@ export async function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }

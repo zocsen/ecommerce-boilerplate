@@ -40,12 +40,12 @@ export default function LogoutPage() {
     return (
       <div className="flex flex-col items-center gap-4">
         <p className="text-lg font-medium tracking-tight">Kijelentkezés</p>
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
           {error}
         </div>
         <button
           onClick={() => (window.location.href = "/")}
-          className="cursor-pointer text-sm underline text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground cursor-pointer text-sm underline"
         >
           Vissza a főoldalra
         </button>
@@ -55,8 +55,8 @@ export default function LogoutPage() {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <Loader2 className="size-5 animate-spin text-muted-foreground" />
-      <p className="text-sm text-muted-foreground">Kijelentkezés...</p>
+      <Loader2 className="text-muted-foreground size-5 animate-spin" />
+      <p className="text-muted-foreground text-sm">Kijelentkezés...</p>
     </div>
   );
 }

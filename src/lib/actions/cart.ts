@@ -29,6 +29,7 @@ interface ValidatedCartItem {
   image: string | null;
   slug: string;
   stock: number;
+  weightGrams: number;
   available: boolean;
 }
 
@@ -57,17 +58,14 @@ const cartItemSchema = z.object({
   image: z.string().nullable(),
   slug: z.string(),
   stock: z.number().int().min(0),
+  weightGrams: z.number().int().min(0),
 });
 
-const cartItemsSchema = z
-  .array(cartItemSchema)
-  .min(1, "A kosár nem lehet üres.");
+const cartItemsSchema = z.array(cartItemSchema).min(1, "A kosár nem lehet üres.");
 
 // ── Cart validation ────────────────────────────────────────────────
 
-export async function validateCart(
-  items: CartItem[],
-): Promise<ActionResult<ValidatedCart>> {
+export async function validateCart(items: CartItem[]): Promise<ActionResult<ValidatedCart>> {
   try {
     const parsed = cartItemsSchema.safeParse(items);
     if (!parsed.success) {
@@ -87,19 +85,17 @@ export async function validateCart(
       .map((item) => item.variantId)
       .filter((id): id is string => id !== null);
 
-    // Fetch products and variants in parallel
+    // Fetch products and variants in parallel — defense-in-depth: also filter by published_at
+    const now = new Date().toISOString();
     const [productsResult, variantsResult] = await Promise.all([
       supabase
         .from("products")
         .select("*")
         .in("id", productIds)
-        .eq("is_active", true),
+        .eq("is_active", true)
+        .or(`published_at.is.null,published_at.lte.${now}`),
       variantIds.length > 0
-        ? supabase
-            .from("product_variants")
-            .select("*")
-            .in("id", variantIds)
-            .eq("is_active", true)
+        ? supabase.from("product_variants").select("*").in("id", variantIds).eq("is_active", true)
         : Promise.resolve({ data: [], error: null }),
     ]);
 
@@ -108,12 +104,8 @@ export async function validateCart(
       return { success: false, error: "Hiba a termékek ellenőrzésekor." };
     }
 
-    const productsMap = new Map(
-      (productsResult.data ?? []).map((p) => [p.id, p]),
-    );
-    const variantsMap = new Map(
-      (variantsResult.data ?? []).map((v) => [v.id, v]),
-    );
+    const productsMap = new Map((productsResult.data ?? []).map((p) => [p.id, p]));
+    const variantsMap = new Map((variantsResult.data ?? []).map((v) => [v.id, v]));
 
     let hasChanges = false;
     const validatedItems: ValidatedCartItem[] = [];
@@ -135,6 +127,8 @@ export async function validateCart(
       let currentPrice = product.base_price;
       let currentStock = 0;
       let variantLabel = item.variantLabel;
+      let resolvedWeight =
+        product.weight_grams ?? siteConfig.shipping.rules.defaultProductWeightGrams;
 
       if (item.variantId) {
         const variant = variantsMap.get(item.variantId);
@@ -151,12 +145,14 @@ export async function validateCart(
 
         currentPrice = variant.price_override ?? product.base_price;
         currentStock = variant.stock_quantity;
-        variantLabel = [
-          variant.option1_value,
-          variant.option2_value,
-        ]
-          .filter(Boolean)
-          .join(" / ") || item.variantLabel;
+        variantLabel =
+          [variant.option1_value, variant.option2_value].filter(Boolean).join(" / ") ||
+          item.variantLabel;
+        // Variant weight overrides product weight
+        resolvedWeight =
+          variant.weight_grams ??
+          product.weight_grams ??
+          siteConfig.shipping.rules.defaultProductWeightGrams;
       } else {
         // No variant — check if there are any variants at all
         // If product has variants, user should select one
@@ -185,6 +181,7 @@ export async function validateCart(
         image: product.main_image_url,
         slug: product.slug,
         stock: currentStock,
+        weightGrams: resolvedWeight,
         available: currentStock > 0 || !item.variantId,
       });
     }
@@ -261,10 +258,7 @@ export async function applyCoupon(
     }
 
     // Check minimum order amount
-    if (
-      coupon.min_order_amount !== null &&
-      parsed.data.subtotal < coupon.min_order_amount
-    ) {
+    if (coupon.min_order_amount !== null && parsed.data.subtotal < coupon.min_order_amount) {
       return {
         success: false,
         error: `A minimális rendelési összeg ${coupon.min_order_amount.toLocaleString("hu-HU")} Ft.`,

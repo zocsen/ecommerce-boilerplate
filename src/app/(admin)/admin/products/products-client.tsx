@@ -3,13 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import {
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Eye, EyeOff, Clock } from "lucide-react";
 import { adminListProducts } from "@/lib/actions/products";
 import { formatHUF, formatDate } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
@@ -77,9 +71,7 @@ export function AdminProductsClient() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Termékek</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {total} termék összesen
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{total} termék összesen</p>
         </div>
         <Button size="sm" render={<Link href="/admin/products/new" />}>
           <Plus className="mr-2 size-4" />
@@ -174,9 +166,7 @@ export function AdminProductsClient() {
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   <div>
-                    <span className="font-medium">
-                      {formatHUF(product.base_price)}
-                    </span>
+                    <span className="font-medium">{formatHUF(product.base_price)}</span>
                     {product.compare_at_price && (
                       <span className="ml-2 text-xs text-muted-foreground line-through">
                         {formatHUF(product.compare_at_price)}
@@ -185,7 +175,19 @@ export function AdminProductsClient() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {product.is_active ? (
+                  {product.is_active &&
+                  product.published_at &&
+                  new Date(product.published_at) > new Date() ? (
+                    <Badge variant="secondary" className="gap-1">
+                      <Clock className="size-3" />
+                      <span>
+                        Ütemezett{" "}
+                        <span className="font-normal text-muted-foreground">
+                          {formatDate(product.published_at)}
+                        </span>
+                      </span>
+                    </Badge>
+                  ) : product.is_active ? (
                     <Badge variant="default" className="gap-1">
                       <Eye className="size-3" />
                       Aktív
@@ -235,4 +237,3 @@ export function AdminProductsClient() {
     </div>
   );
 }
-

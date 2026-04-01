@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getUserOrder } from "@/lib/actions/profile";
 import { formatHUF, formatDate, formatDateTime } from "@/lib/utils/format";
-import { Badge } from "@/components/ui/badge";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { notFound } from "next/navigation";
@@ -12,26 +12,6 @@ import type { OrderStatus, AddressJson } from "@/lib/types/database";
 /*  Profile order detail page                                          */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  draft: "Piszkozat",
-  awaiting_payment: "Fizetésre vár",
-  paid: "Fizetve",
-  processing: "Feldolgozás alatt",
-  shipped: "Kiszállítva",
-  cancelled: "Lemondva",
-  refunded: "Visszatérítve",
-};
-
-const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  draft: "outline",
-  awaiting_payment: "secondary",
-  paid: "default",
-  processing: "secondary",
-  shipped: "default",
-  cancelled: "destructive",
-  refunded: "destructive",
-};
-
 function AddressDisplay({ address, label }: { address: AddressJson; label: string }) {
   if (!address?.name && !address?.street) return null;
   return (
@@ -40,7 +20,9 @@ function AddressDisplay({ address, label }: { address: AddressJson; label: strin
       <div className="mt-1 text-sm">
         <p className="font-medium">{address.name}</p>
         <p>{address.street}</p>
-        <p>{address.zip} {address.city}</p>
+        <p>
+          {address.zip} {address.city}
+        </p>
         {address.country && address.country !== "HU" && <p>{address.country}</p>}
       </div>
     </div>
@@ -74,20 +56,21 @@ export default async function ProfileOrderDetailPage({
       {/* -- Header -- */}
       <div className="flex items-start justify-between">
         <div>
-          <Button variant="ghost" size="sm" render={<Link href="/profile/orders" />} className="mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href="/profile/orders" />}
+            className="mb-2"
+          >
             <ArrowLeft className="mr-2 size-4" />
             Vissza
           </Button>
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">
             Rendelés #{order.id.slice(0, 8).toUpperCase()}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {formatDateTime(order.created_at)}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.created_at)}</p>
         </div>
-        <Badge variant={STATUS_VARIANTS[order.status] ?? "outline"} className="text-sm">
-          {STATUS_LABELS[order.status] ?? order.status}
-        </Badge>
+        <OrderStatusBadge status={order.status} className="text-sm" />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -115,7 +98,9 @@ export default async function ProfileOrderDetailPage({
                         <p className="mt-0.5 text-xs text-muted-foreground">{variantLabel}</p>
                       )}
                       {vs.sku && (
-                        <p className="mt-0.5 font-mono text-xs text-muted-foreground">SKU: {vs.sku}</p>
+                        <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                          SKU: {vs.sku}
+                        </p>
                       )}
                     </div>
                     <div className="text-right">
@@ -146,7 +131,9 @@ export default async function ProfileOrderDetailPage({
                   <span className="text-muted-foreground">
                     Kedvezmény{order.coupon_code ? ` (${order.coupon_code})` : ""}
                   </span>
-                  <span className="tabular-nums text-green-600">-{formatHUF(order.discount_total)}</span>
+                  <span className="tabular-nums text-green-600">
+                    -{formatHUF(order.discount_total)}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">

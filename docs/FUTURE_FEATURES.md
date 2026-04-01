@@ -17,7 +17,7 @@ These features MUST be completed before any client shop goes live.
 | Field            | Value                                            |
 | ---------------- | ------------------------------------------------ |
 | **Priority**     | P0                                               |
-| **Status**       | NOT STARTED                                      |
+| **Status**       | DONE                                             |
 | **Plan Tier**    | N/A (internal)                                   |
 | **Complexity**   | XS (< 1 day)                                     |
 | **Dependencies** | None                                             |
@@ -89,7 +89,7 @@ B) Remove the claim from PROJECT_STATUS.md if the underlying code is trivial or 
 | Field            | Value                                          |
 | ---------------- | ---------------------------------------------- |
 | **Priority**     | P0                                             |
-| **Status**       | NOT STARTED                                    |
+| **Status**       | DONE                                           |
 | **Plan Tier**    | All plans                                      |
 | **Complexity**   | M (3-5 days)                                   |
 | **Dependencies** | None (storage bucket + RLS already configured) |
@@ -206,7 +206,7 @@ imageUpload: {
 | Field            | Value                                   |
 | ---------------- | --------------------------------------- |
 | **Priority**     | P0                                      |
-| **Status**       | NOT STARTED                             |
+| **Status**       | DONE                                    |
 | **Plan Tier**    | All plans (legally mandatory)           |
 | **Complexity**   | S (1-2 days)                            |
 | **Dependencies** | None                                    |
@@ -1006,7 +1006,7 @@ export async function getPriceHistory(
 | Field            | Value                                                 |
 | ---------------- | ----------------------------------------------------- |
 | **Priority**     | P0                                                    |
-| **Status**       | NOT STARTED                                           |
+| **Status**       | DONE                                                  |
 | **Plan Tier**    | All plans                                             |
 | **Complexity**   | S (1-2 days)                                          |
 | **Dependencies** | None (email infrastructure via Resend already exists) |
@@ -1195,7 +1195,7 @@ export async function searchProducts(params: {
   categorySlug?: string
   minPrice?: number
   maxPrice?: number
-  sortBy?: 'relevance' | 'price_asc' | 'price_desc' | 'newest'
+  sortBy?: "relevance" | "price_asc" | "price_desc" | "newest"
   page?: number
   limit?: number
 }): Promise<{
@@ -1482,14 +1482,14 @@ export async function getProductReviews(
   params: {
     page?: number
     limit?: number
-    sortBy?: 'newest' | 'highest' | 'lowest'
+    sortBy?: "newest" | "highest" | "lowest"
   },
 ): Promise<{ reviews: ReviewWithUser[]; stats: ReviewStats; totalCount: number }>
 
 // Admin actions
 export async function adminModerateReview(
   id: string,
-  status: 'approved' | 'rejected',
+  status: "approved" | "rejected",
 ): Promise<void>
 export async function adminReplyToReview(id: string, reply: string): Promise<void>
 export async function adminGetPendingReviews(params: {
@@ -1625,12 +1625,12 @@ Alternatively, store in `shop_settings` table or environment variables.
 ```typescript
 interface EcommerceEvent {
   event:
-    | 'page_view'
-    | 'view_item'
-    | 'add_to_cart'
-    | 'remove_from_cart'
-    | 'begin_checkout'
-    | 'purchase'
+    | "page_view"
+    | "view_item"
+    | "add_to_cart"
+    | "remove_from_cart"
+    | "begin_checkout"
+    | "purchase"
   data?: Record<string, unknown>
 }
 
@@ -1802,7 +1802,7 @@ notifications: {
 | Field            | Value        |
 | ---------------- | ------------ |
 | **Priority**     | P1           |
-| **Status**       | NOT STARTED  |
+| **Status**       | DONE         |
 | **Plan Tier**    | All plans    |
 | **Complexity**   | S (1-2 days) |
 | **Dependencies** | None         |
@@ -2030,7 +2030,7 @@ export async function adminSetProductRelations(
   productId: string,
   relations: Array<{
     relatedProductId: string
-    relationType: 'related' | 'upsell' | 'cross_sell'
+    relationType: "related" | "upsell" | "cross_sell"
     sortOrder: number
   }>,
 ): Promise<void>
@@ -2314,7 +2314,7 @@ export async function updateShopBranding(input: {
 | Field            | Value             |
 | ---------------- | ----------------- |
 | **Priority**     | P1                |
-| **Status**       | NOT STARTED       |
+| **Status**       | DONE              |
 | **Plan Tier**    | All plans         |
 | **Complexity**   | XS (< 1 day)      |
 | **Dependencies** | None              |
@@ -2816,7 +2816,7 @@ export async function getPublishedPosts(params: {
 export async function getPostBySlug(slug: string): Promise<PostDetail | null>
 export async function adminGetPosts(params: {
   page?: number
-  status?: 'all' | 'published' | 'draft'
+  status?: "all" | "published" | "draft"
 }): Promise<PaginatedResult<PostAdmin>>
 export async function adminCreatePost(input: CreatePostInput): Promise<Post>
 export async function adminUpdatePost(id: string, input: UpdatePostInput): Promise<Post>
@@ -2887,7 +2887,7 @@ export async function adminDeletePost(id: string): Promise<void>
 | Field            | Value        |
 | ---------------- | ------------ |
 | **Priority**     | P2           |
-| **Status**       | NOT STARTED  |
+| **Status**       | DONE         |
 | **Plan Tier**    | Basic        |
 | **Complexity**   | S (1-2 days) |
 | **Dependencies** | None         |
@@ -3035,7 +3035,7 @@ export async function createRefund(input: {
   orderId: string
   amount: number
   reason: string
-  refundMethod: 'barion_api' | 'manual_transfer' | 'store_credit' | 'other'
+  refundMethod: "barion_api" | "manual_transfer" | "store_credit" | "other"
   lineItems?: Array<{ productId: string; variantId?: string; quantity: number; amount: number }>
   restoreStock: boolean
 }): Promise<Refund>
@@ -3110,7 +3110,7 @@ export async function getRefundSummary(
 | Field            | Value                                                        |
 | ---------------- | ------------------------------------------------------------ |
 | **Priority**     | P2                                                           |
-| **Status**       | NOT STARTED                                                  |
+| **Status**       | DONE                                                         |
 | **Plan Tier**    | All plans                                                    |
 | **Complexity**   | S (1-2 days)                                                 |
 | **Dependencies** | None                                                         |
@@ -3210,7 +3210,7 @@ export async function adminSetProductExtras(
 | Field            | Value             |
 | ---------------- | ----------------- |
 | **Priority**     | P2                |
-| **Status**       | NOT STARTED       |
+| **Status**       | DONE              |
 | **Plan Tier**    | All plans         |
 | **Complexity**   | S (1-2 days)      |
 | **Dependencies** | None              |
@@ -3424,7 +3424,7 @@ New file: `src/lib/actions/shipping.ts` (or extend existing):
 export async function getShippingRates(input: {
   destinationZip: string
   weightKg: number
-  carrierType: 'home_delivery' | 'pickup_point'
+  carrierType: "home_delivery" | "pickup_point"
 }): Promise<ShippingRate[]>
 
 export async function getPickupPoints(input: {
@@ -3518,7 +3518,7 @@ carrierApiEnabled: false,  // true when Premium + API configured
 | Field            | Value             |
 | ---------------- | ----------------- |
 | **Priority**     | P2                |
-| **Status**       | NOT STARTED       |
+| **Status**       | DONE              |
 | **Plan Tier**    | All plans         |
 | **Complexity**   | S (1-2 days)      |
 | **Dependencies** | None              |
@@ -3745,7 +3745,7 @@ export async function getProducts(params: {
   minPrice?: number
   maxPrice?: number
   inStock?: boolean
-  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'name_asc'
+  sortBy?: "newest" | "price_asc" | "price_desc" | "name_asc"
   page?: number
   limit?: number
 }): Promise<PaginatedResult<ProductCard>>
@@ -3874,7 +3874,7 @@ export async function adminUpdateFlashSale(
 ): Promise<FlashSale>
 export async function adminDeleteFlashSale(id: string): Promise<void>
 export async function adminGetFlashSales(params: {
-  status?: 'active' | 'upcoming' | 'ended' | 'all'
+  status?: "active" | "upcoming" | "ended" | "all"
 }): Promise<FlashSale[]>
 ```
 
@@ -4124,7 +4124,7 @@ export async function getGiftCardBalance(code: string): Promise<{
 
 // Admin
 export async function adminGetGiftCards(params: {
-  status?: 'active' | 'used' | 'expired' | 'all'
+  status?: "active" | "used" | "expired" | "all"
 }): Promise<PaginatedResult<GiftCard>>
 export async function adminDeactivateGiftCard(id: string): Promise<void>
 export async function adminCreateGiftCard(input: ManualGiftCardInput): Promise<GiftCard> // For manual/promotional cards
@@ -4247,7 +4247,7 @@ New file: `src/lib/actions/customers.ts`
 export async function adminGetCustomers(params: {
   search?: string
   tags?: string[]
-  sortBy?: 'name' | 'orders' | 'spent' | 'last_order'
+  sortBy?: "name" | "orders" | "spent" | "last_order"
   page?: number
 }): Promise<PaginatedResult<CustomerWithStats>>
 

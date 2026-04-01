@@ -38,10 +38,7 @@ export interface ShippingUpdateEmailProps {
 
 // ── Component ─────────────────────────────────────────────────────
 
-export default function ShippingUpdateEmail({
-  order,
-  trackingCode,
-}: ShippingUpdateEmailProps) {
+export default function ShippingUpdateEmail({ order, trackingCode }: ShippingUpdateEmailProps) {
   const { store, branding, urls } = siteConfig;
   const isPickup = order.shipping_method === "pickup";
 
@@ -108,9 +105,8 @@ export default function ShippingUpdateEmail({
                 fontSize: "14px",
               }}
             >
-              A(z){" "}
-              <strong>{order.id.slice(0, 8).toUpperCase()}</strong> számú
-              rendelésed feladásra került.
+              A(z) <strong>{order.id.slice(0, 8).toUpperCase()}</strong> számú rendelésed feladásra
+              került.
             </Text>
 
             {/* ── Tracking code ────────────── */}
@@ -151,9 +147,7 @@ export default function ShippingUpdateEmail({
             {/* ── Shipment details ─────────── */}
             <Section style={{ marginBottom: "24px", fontSize: "14px" }}>
               <Row>
-                <Column
-                  style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}
-                >
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
                   Szállítási mód:
                 </Column>
                 <Column style={{ textAlign: "right", padding: "4px 0" }}>
@@ -162,9 +156,7 @@ export default function ShippingUpdateEmail({
               </Row>
               {isPickup && order.pickup_point_label && (
                 <Row>
-                  <Column
-                    style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}
-                  >
+                  <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
                     Átvételi pont:
                   </Column>
                   <Column style={{ textAlign: "right", padding: "4px 0" }}>
@@ -173,14 +165,10 @@ export default function ShippingUpdateEmail({
                 </Row>
               )}
               <Row>
-                <Column
-                  style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}
-                >
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
                   Rendelés összege:
                 </Column>
-                <Column
-                  style={{ textAlign: "right", fontWeight: 600, padding: "4px 0" }}
-                >
+                <Column style={{ textAlign: "right", fontWeight: 600, padding: "4px 0" }}>
                   {formatHuf(order.total_amount)}
                 </Column>
               </Row>
@@ -260,8 +248,20 @@ ShippingUpdateEmail.PreviewProps = {
     discount_total: 0,
     total_amount: 13490,
     shipping_method: "home",
-    shipping_address: { name: "Kovács János", street: "Váci utca 1.", city: "Budapest", zip: "1052", country: "HU" },
-    billing_address: { name: "Kovács János", street: "Váci utca 1.", city: "Budapest", zip: "1052", country: "HU" },
+    shipping_address: {
+      name: "Kovács János",
+      street: "Váci utca 1.",
+      city: "Budapest",
+      zip: "1052",
+      country: "HU",
+    },
+    billing_address: {
+      name: "Kovács János",
+      street: "Váci utca 1.",
+      city: "Budapest",
+      zip: "1052",
+      country: "HU",
+    },
     pickup_point_provider: null,
     pickup_point_label: null,
     coupon_code: null,
@@ -280,6 +280,8 @@ ShippingUpdateEmail.PreviewProps = {
     shipping_phone: null,
     pickup_point_id: null,
     idempotency_key: null,
+    payment_method: "barion",
+    cod_fee: 0,
   },
   trackingCode: "GLS-123456789HU",
 } satisfies ShippingUpdateEmailProps;

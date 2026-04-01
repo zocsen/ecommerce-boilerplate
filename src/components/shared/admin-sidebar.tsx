@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -11,6 +11,7 @@ import {
   Ticket,
   Truck,
   Megaphone,
+  BookOpen,
   Settings,
   FileText,
   Menu,
@@ -19,9 +20,9 @@ import {
   ArrowLeft,
   PanelLeftClose,
   PanelRightClose,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetTrigger,
@@ -29,32 +30,38 @@ import {
   SheetHeader,
   SheetTitle,
   SheetClose,
-} from '@/components/ui/sheet'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 /* ------------------------------------------------------------------ */
 /*  Admin sidebar navigation items                                     */
 /* ------------------------------------------------------------------ */
 
 interface NavItem {
-  label: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  featureFlag?: keyof typeof import('@/lib/config/site.config').siteConfig.features
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  featureFlag?: keyof typeof import("@/lib/config/site.config").siteConfig.features;
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Rendelések', href: '/admin/orders', icon: ShoppingCart },
-  { label: 'Termékek', href: '/admin/products', icon: Package },
-  { label: 'Kategóriák', href: '/admin/categories', icon: FolderTree },
-  { label: 'Kuponok', href: '/admin/coupons', icon: Ticket, featureFlag: 'enableCoupons' },
-  { label: 'Szállítás', href: '/admin/shipping', icon: Truck },
-  { label: 'Marketing', href: '/admin/marketing', icon: Megaphone, featureFlag: 'enableMarketingModule' },
-  { label: 'Beállítások', href: '/admin/settings', icon: Settings },
-  { label: 'Audit log', href: '/admin/audit', icon: FileText },
-]
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Rendelések", href: "/admin/orders", icon: ShoppingCart },
+  { label: "Termékek", href: "/admin/products", icon: Package },
+  { label: "Kategóriák", href: "/admin/categories", icon: FolderTree },
+  { label: "Kuponok", href: "/admin/coupons", icon: Ticket, featureFlag: "enableCoupons" },
+  { label: "Szállítás", href: "/admin/shipping", icon: Truck },
+  {
+    label: "Marketing",
+    href: "/admin/marketing",
+    icon: Megaphone,
+    featureFlag: "enableMarketingModule",
+  },
+  { label: "Oldalak", href: "/admin/pages/about", icon: BookOpen },
+  { label: "Beállítások", href: "/admin/settings", icon: Settings },
+  { label: "Audit log", href: "/admin/audit", icon: FileText },
+];
 
 /* ------------------------------------------------------------------ */
 /*  Shared navigation list                                             */
@@ -66,21 +73,21 @@ function NavLinks({
   enabledFeatures,
   onNavigate,
 }: {
-  pathname: string
-  isAgencyViewer: boolean
-  enabledFeatures?: Record<string, boolean>
-  onNavigate?: () => void
+  pathname: string;
+  isAgencyViewer: boolean;
+  enabledFeatures?: Record<string, boolean>;
+  onNavigate?: () => void;
 }) {
   const visibleItems = navItems.filter((item) => {
-    if (!item.featureFlag) return true
-    return enabledFeatures?.[item.featureFlag] !== false
-  })
+    if (!item.featureFlag) return true;
+    return enabledFeatures?.[item.featureFlag] !== false;
+  });
 
   return (
     <nav className="flex flex-col gap-1">
       {visibleItems.map((item) => {
         const isActive =
-          pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+          pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
 
         return (
           <Link
@@ -88,16 +95,16 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300',
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300",
               isActive
-                ? 'bg-foreground text-background'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <item.icon className="size-4 shrink-0" />
             {item.label}
           </Link>
-        )
+        );
       })}
 
       {isAgencyViewer && (
@@ -111,7 +118,7 @@ function NavLinks({
         </>
       )}
     </nav>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -123,13 +130,13 @@ function DesktopSidebar({
   isAgencyViewer,
   enabledFeatures,
 }: {
-  collapsed: boolean
-  isAgencyViewer: boolean
-  enabledFeatures?: Record<string, boolean>
+  collapsed: boolean;
+  isAgencyViewer: boolean;
+  enabledFeatures?: Record<string, boolean>;
 }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
-  if (collapsed) return null
+  if (collapsed) return null;
 
   return (
     <aside className="hidden w-[260px] shrink-0 border-r border-border bg-background lg:flex lg:flex-col">
@@ -145,7 +152,11 @@ function DesktopSidebar({
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        <NavLinks pathname={pathname} isAgencyViewer={isAgencyViewer} enabledFeatures={enabledFeatures} />
+        <NavLinks
+          pathname={pathname}
+          isAgencyViewer={isAgencyViewer}
+          enabledFeatures={enabledFeatures}
+        />
       </div>
 
       {/* Footer */}
@@ -166,15 +177,21 @@ function DesktopSidebar({
         </Link>
       </div>
     </aside>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
 /*  Mobile sidebar (Sheet)                                             */
 /* ------------------------------------------------------------------ */
 
-function MobileSidebar({ isAgencyViewer, enabledFeatures }: { isAgencyViewer: boolean; enabledFeatures?: Record<string, boolean> }) {
-  const pathname = usePathname()
+function MobileSidebar({
+  isAgencyViewer,
+  enabledFeatures,
+}: {
+  isAgencyViewer: boolean;
+  enabledFeatures?: Record<string, boolean>;
+}) {
+  const pathname = usePathname();
 
   return (
     <Sheet>
@@ -194,7 +211,11 @@ function MobileSidebar({ isAgencyViewer, enabledFeatures }: { isAgencyViewer: bo
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-3 py-4">
-          <NavLinks pathname={pathname} isAgencyViewer={isAgencyViewer} enabledFeatures={enabledFeatures} />
+          <NavLinks
+            pathname={pathname}
+            isAgencyViewer={isAgencyViewer}
+            enabledFeatures={enabledFeatures}
+          />
         </div>
 
         <div className="border-t border-border p-3 space-y-0.5">
@@ -223,7 +244,7 @@ function MobileSidebar({ isAgencyViewer, enabledFeatures }: { isAgencyViewer: bo
         </div>
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -236,10 +257,10 @@ function TopBar({
   isAgencyViewer,
   enabledFeatures,
 }: {
-  collapsed: boolean
-  onToggleCollapse: () => void
-  isAgencyViewer: boolean
-  enabledFeatures?: Record<string, boolean>
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  isAgencyViewer: boolean;
+  enabledFeatures?: Record<string, boolean>;
 }) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4 lg:px-6">
@@ -259,7 +280,7 @@ function TopBar({
           ) : (
             <PanelLeftClose className="size-[18px]" />
           )}
-          <span className="sr-only">{collapsed ? 'Sidebar megnyitása' : 'Sidebar bezárása'}</span>
+          <span className="sr-only">{collapsed ? "Sidebar megnyitása" : "Sidebar bezárása"}</span>
         </Button>
 
         <span className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground lg:hidden">
@@ -275,7 +296,7 @@ function TopBar({
         )}
       </div>
     </header>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -287,15 +308,19 @@ export function AdminShell({
   isAgencyViewer = false,
   enabledFeatures,
 }: {
-  children: React.ReactNode
-  isAgencyViewer?: boolean
-  enabledFeatures?: Record<string, boolean>
+  children: React.ReactNode;
+  isAgencyViewer?: boolean;
+  enabledFeatures?: Record<string, boolean>;
 }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30">
-      <DesktopSidebar collapsed={collapsed} isAgencyViewer={isAgencyViewer} enabledFeatures={enabledFeatures} />
+      <DesktopSidebar
+        collapsed={collapsed}
+        isAgencyViewer={isAgencyViewer}
+        enabledFeatures={enabledFeatures}
+      />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar
@@ -310,5 +335,5 @@ export function AdminShell({
         </main>
       </div>
     </div>
-  )
+  );
 }

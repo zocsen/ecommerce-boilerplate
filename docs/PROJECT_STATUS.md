@@ -1,8 +1,8 @@
 ﻿# Agency E-Commerce Boilerplate — Project Status & Roadmap
 
-> **Last updated:** 2026-03-24
-> **Codebase:** 11 commits, ~187 files, ~42,000 lines of code
-> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **45 features** planned across 4 priority tiers (P0-P3) — see Feature Roadmap.
+> **Last updated:** 2026-04-01
+> **Codebase:** 11 commits, ~210 files, ~46,000 lines of code
+> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **46 features** planned across 4 priority tiers (P0-P3) — 13 completed (FE-000, FE-002, FE-006, FE-007, FE-013, FE-018, FE-023, FE-025, FE-026, FE-029, FE-037, FE-044, FE-045). See Feature Roadmap.
 
 ---
 
@@ -120,24 +120,24 @@ src/
     shared/          # Header, Footer, AdminSidebar, Breadcrumbs, etc.
     product/         # ProductCard, ProductGrid, Gallery, VariantSelector, etc.
     cart/            # CartLineItem, CouponInput, OrderSummary, etc.
-    admin/           # DashboardCharts
+    admin/           # DashboardCharts, OrderNotes
     auth/            # DevProfileSelector
     ui/              # 23 shadcn/ui primitives
   lib/
-    actions/         # 10 server action files (47 exported functions)
+    actions/         # 10 server action files (51 exported functions)
     config/          # site.config.ts, hooks.ts
     integrations/    # barion/, email/, invoicing/
     security/        # roles.ts, rate-limit.ts, logger.ts, unsubscribe-token.ts
     supabase/        # server.ts, client.ts, admin.ts, middleware.ts
     store/           # Zustand cart store
-    types/           # database.ts (642 lines), index.ts
-    utils/           # format.ts, shipping.ts
+    types/           # database.ts (842 lines), index.ts
+    utils/           # format.ts, shipping.ts, price-history.ts, price-history-shared.ts
     validators/      # checkout.ts, coupon.ts, product.ts, subscriber.ts, uuid.ts
   proxy.ts           # Middleware (role-based route protection)
-supabase/
-  migrations/        # 4 SQL migration files
+  supabase/
+  migrations/        # 12 SQL migration files
   functions/         # Edge function (abandoned-cart)
-  seed.sql           # 895 lines of test data
+  seed.sql           # 960 lines of test data
   config.toml        # Local dev configuration
 ```
 
@@ -153,7 +153,7 @@ supabase/
 
 ## Database Schema
 
-**Status: COMPLETE** — 4 migrations applied, 10 tables, 3 enums, 20 indexes, 34 RLS policies, 4 storage policies. **3 additional tables planned** (shop_plans, shop_subscriptions, subscription_invoices) + 1 new enum (subscription_status) + cost_price columns on products/variants.
+**Status: COMPLETE** — 12 migrations applied, 14 tables, 3 enums, 27 indexes, 45 RLS policies, 4 storage policies. **3 additional tables planned** (shop_plans, shop_subscriptions, subscription_invoices) + 1 new enum (subscription_status) + cost_price columns on products/variants.
 
 ### Enums
 
@@ -197,23 +197,26 @@ RLS: Public read (active only). Admin full. Agency viewer read.
 
 #### 3. `products`
 
-| Column             | Type        | Constraints                                                                                                                                  |
-| ------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`               | uuid PK     | DEFAULT gen_random_uuid()                                                                                                                    |
-| `slug`             | text        | UNIQUE, NOT NULL                                                                                                                             |
-| `title`            | text        | NOT NULL                                                                                                                                     |
-| `description`      | text        | Nullable                                                                                                                                     |
-| `base_price`       | int         | NOT NULL (HUF, no decimals)                                                                                                                  |
-| `cost_price`       | int         | Nullable **(PLANNED)** — Purchasing/material cost per unit. Admin-only, never shown to customers. Used for profit calculations on dashboard. |
-| `compare_at_price` | int         | Nullable (strikethrough price)                                                                                                               |
-| `main_image_url`   | text        | Nullable                                                                                                                                     |
-| `image_urls`       | text[]      | DEFAULT '{}'                                                                                                                                 |
-| `is_active`        | boolean     | DEFAULT true                                                                                                                                 |
-| `created_at`       | timestamptz | DEFAULT now()                                                                                                                                |
-| `updated_at`       | timestamptz | DEFAULT now() (auto-trigger)                                                                                                                 |
+| Column             | Type        | Constraints                                                                                                                                    |
+| ------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | uuid PK     | DEFAULT gen_random_uuid()                                                                                                                      |
+| `slug`             | text        | UNIQUE, NOT NULL                                                                                                                               |
+| `title`            | text        | NOT NULL                                                                                                                                       |
+| `description`      | text        | Nullable                                                                                                                                       |
+| `base_price`       | int         | NOT NULL (HUF, no decimals)                                                                                                                    |
+| `cost_price`       | int         | Nullable **(PLANNED)** — Purchasing/material cost per unit. Admin-only, never shown to customers. Used for profit calculations on dashboard.   |
+| `compare_at_price` | int         | Nullable (strikethrough price)                                                                                                                 |
+| `vat_rate`         | int         | NOT NULL, DEFAULT 27, CHECK (vat_rate IN (5, 18, 27)). Hungarian VAT rate used for invoicing.                                                  |
+| `weight_grams`     | int         | Nullable. Product weight in grams for weight-based shipping. NULL = use defaultProductWeightGrams from config. Variant-level weight overrides. |
+| `main_image_url`   | text        | Nullable                                                                                                                                       |
+| `image_urls`       | text[]      | DEFAULT '{}'                                                                                                                                   |
+| `is_active`        | boolean     | DEFAULT true                                                                                                                                   |
+| `published_at`     | timestamptz | Nullable. NULL = immediately published (respects is_active). Future date = hidden from storefront until that time.                             |
+| `created_at`       | timestamptz | DEFAULT now()                                                                                                                                  |
+| `updated_at`       | timestamptz | DEFAULT now() (auto-trigger)                                                                                                                   |
 
-Indexes: `idx_products_slug`, `idx_products_active` (partial WHERE true), `idx_products_price`
-RLS: Public read (active only). Admin full. Agency viewer read.
+Indexes: `idx_products_slug`, `idx_products_active` (partial WHERE true), `idx_products_price`, `idx_products_published_at` (partial WHERE published_at IS NOT NULL)
+RLS: Public read (active only, AND published_at IS NULL OR published_at <= now()). Admin full. Agency viewer read.
 
 #### 4. `product_variants`
 
@@ -228,6 +231,7 @@ RLS: Public read (active only). Admin full. Agency viewer read.
 | `option2_value`  | text        | Nullable                                                                                                                              |
 | `price_override` | int         | Nullable (replaces base_price)                                                                                                        |
 | `cost_price`     | int         | Nullable **(PLANNED)** — Variant-level cost override. If set, takes precedence over product-level cost_price for profit calculations. |
+| `weight_grams`   | int         | Nullable. Variant weight in grams. If set, overrides the product-level weight_grams for shipping calculations.                        |
 | `stock_quantity` | int         | DEFAULT 0                                                                                                                             |
 | `is_active`      | boolean     | DEFAULT true                                                                                                                          |
 | `created_at`     | timestamptz | DEFAULT now()                                                                                                                         |
@@ -277,6 +281,8 @@ RLS: NOT publicly readable (validated server-side only). Admin full. Agency view
 | `shipping_fee`              | int          | DEFAULT 0                                       |
 | `discount_total`            | int          | DEFAULT 0                                       |
 | `total_amount`              | int          | DEFAULT 0                                       |
+| `payment_method`            | text         | DEFAULT 'barion', CHECK IN ('barion', 'cod')    |
+| `cod_fee`                   | int          | DEFAULT 0. Utánvét kezelési díj.                |
 | `coupon_code`               | text         | Nullable                                        |
 | `shipping_method`           | text         | DEFAULT 'home'                                  |
 | `shipping_address`          | jsonb        | DEFAULT '{}'                                    |
@@ -299,22 +305,23 @@ RLS: NOT publicly readable (validated server-side only). Admin full. Agency view
 | `idempotency_key`           | text         | UNIQUE, nullable                                |
 | `abandoned_cart_sent_at`    | timestamptz  | Nullable                                        |
 
-Indexes: `idx_orders_user`, `idx_orders_email`, `idx_orders_status`, `idx_orders_created` (DESC), `idx_orders_barion` (partial WHERE NOT NULL)
+Indexes: `idx_orders_user`, `idx_orders_email`, `idx_orders_status`, `idx_orders_created` (DESC), `idx_orders_barion` (partial WHERE NOT NULL), `idx_orders_payment_method`
 RLS: Users read own (uid = user_id), insert own. Admin full. Agency viewer read.
 
 #### 8. `order_items`
 
-| Column                | Type    | Constraints                          |
-| --------------------- | ------- | ------------------------------------ |
-| `id`                  | uuid PK | DEFAULT gen_random_uuid()            |
-| `order_id`            | uuid    | FK to orders(id) ON DELETE CASCADE   |
-| `product_id`          | uuid    | FK to products(id)                   |
-| `variant_id`          | uuid    | FK to product_variants(id), nullable |
-| `title_snapshot`      | text    | NOT NULL                             |
-| `variant_snapshot`    | jsonb   | DEFAULT '{}'                         |
-| `unit_price_snapshot` | int     | NOT NULL                             |
-| `quantity`            | int     | NOT NULL                             |
-| `line_total`          | int     | NOT NULL                             |
+| Column                | Type    | Constraints                                                                                                      |
+| --------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| `id`                  | uuid PK | DEFAULT gen_random_uuid()                                                                                        |
+| `order_id`            | uuid    | FK to orders(id) ON DELETE CASCADE                                                                               |
+| `product_id`          | uuid    | FK to products(id)                                                                                               |
+| `variant_id`          | uuid    | FK to product_variants(id), nullable                                                                             |
+| `title_snapshot`      | text    | NOT NULL                                                                                                         |
+| `variant_snapshot`    | jsonb   | DEFAULT '{}'                                                                                                     |
+| `unit_price_snapshot` | int     | NOT NULL                                                                                                         |
+| `quantity`            | int     | NOT NULL                                                                                                         |
+| `line_total`          | int     | NOT NULL                                                                                                         |
+| `vat_rate`            | int     | NOT NULL, DEFAULT 27, CHECK (vat_rate IN (5, 18, 27)). Historical snapshot of product VAT rate at time of order. |
 
 Indexes: `idx_order_items_order`
 RLS: Users read/insert own (via parent order join). Admin full. Agency viewer read.
@@ -355,7 +362,67 @@ RLS: NOT publicly accessible (managed via service role). Admin full. Agency view
 Indexes: `idx_audit_logs_actor`, `idx_audit_logs_entity` (type + id), `idx_audit_logs_created` (DESC)
 RLS: Admin full. Agency viewer read.
 
-#### 11. `shop_plans` **(PLANNED)**
+#### 11. `order_notes`
+
+| Column       | Type        | Constraints                                     |
+| ------------ | ----------- | ----------------------------------------------- |
+| `id`         | uuid PK     | DEFAULT gen_random_uuid()                       |
+| `order_id`   | uuid        | FK to orders(id) ON DELETE CASCADE, NOT NULL    |
+| `author_id`  | uuid        | FK to profiles(id) ON DELETE SET NULL, NOT NULL |
+| `content`    | text        | NOT NULL, CHECK char_length 1–2000              |
+| `created_at` | timestamptz | NOT NULL, DEFAULT now()                         |
+
+Indexes: `idx_order_notes_order` (order_id, created_at DESC), `idx_order_notes_author` (author_id)
+RLS: Admin and agency_viewer read. Admin insert (author_id = auth.uid()). Admin delete own notes only.
+
+#### 12. `shop_pages`
+
+| Column         | Type        | Constraints               |
+| -------------- | ----------- | ------------------------- |
+| `id`           | uuid PK     | DEFAULT gen_random_uuid() |
+| `page_key`     | text        | UNIQUE, NOT NULL          |
+| `content`      | jsonb       | NOT NULL, DEFAULT '{}'    |
+| `is_published` | boolean     | NOT NULL, DEFAULT false   |
+| `created_at`   | timestamptz | NOT NULL, DEFAULT now()   |
+| `updated_at`   | timestamptz | NOT NULL, DEFAULT now()   |
+
+Indexes: `idx_shop_pages_key` (page_key)
+RLS: Public SELECT (published only). Admin and agency_viewer SELECT (all). Admin INSERT/UPDATE/DELETE.
+Trigger: `trg_shop_pages_updated_at` — auto-sets `updated_at` on UPDATE via `set_updated_at()`.
+
+#### 13. `product_extras`
+
+| Column               | Type        | Constraints                                            |
+| -------------------- | ----------- | ------------------------------------------------------ |
+| `id`                 | uuid PK     | DEFAULT gen_random_uuid()                              |
+| `product_id`         | uuid        | FK to products(id) ON DELETE CASCADE, NOT NULL         |
+| `extra_product_id`   | uuid        | FK to products(id) ON DELETE CASCADE, NOT NULL         |
+| `extra_variant_id`   | uuid        | FK to product_variants(id) ON DELETE CASCADE, nullable |
+| `label`              | text        | NOT NULL                                               |
+| `is_default_checked` | boolean     | NOT NULL, DEFAULT false                                |
+| `sort_order`         | int         | NOT NULL, DEFAULT 0                                    |
+| `created_at`         | timestamptz | NOT NULL, DEFAULT now()                                |
+
+Constraints: UNIQUE(product_id, extra_product_id), CHECK(product_id != extra_product_id)
+Indexes: `idx_product_extras_product` (product_id, sort_order)
+RLS: Public SELECT. Admin INSERT/UPDATE/DELETE.
+
+#### 14. `price_history`
+
+| Column             | Type        | Constraints                                            |
+| ------------------ | ----------- | ------------------------------------------------------ |
+| `id`               | uuid PK     | DEFAULT gen_random_uuid()                              |
+| `product_id`       | uuid        | FK to products(id) ON DELETE CASCADE, NOT NULL         |
+| `variant_id`       | uuid        | FK to product_variants(id) ON DELETE CASCADE, nullable |
+| `price`            | int         | NOT NULL                                               |
+| `compare_at_price` | int         | Nullable                                               |
+| `recorded_at`      | timestamptz | NOT NULL, DEFAULT now()                                |
+
+Indexes: `idx_price_history_product_recorded` (product_id, recorded_at DESC), `idx_price_history_variant_recorded` (variant_id, recorded_at DESC WHERE variant_id IS NOT NULL)
+RLS: Public SELECT. Admin UPDATE/DELETE. No direct INSERT (populated by triggers only).
+Trigger-populated: Rows are created automatically by `record_price_change` (on products) and `record_variant_price_change` (on product_variants) triggers when base_price/compare_at_price/price_override changes. A daily cleanup deletes records older than 90 days.
+
+#### 15. `shop_plans` **(PLANNED)**
 
 Defines available subscription plan tiers. Each row is a plan template that can be customized per client at project setup.
 
@@ -380,7 +447,7 @@ Notes:
 
 RLS: Admin read. Agency admin full CRUD. Agency viewer read.
 
-#### 12. `shop_subscriptions` **(PLANNED)**
+#### 16. `shop_subscriptions` **(PLANNED)**
 
 One active subscription per shop (client). Tracks the client's current plan, billing cycle, and custom pricing.
 
@@ -411,7 +478,7 @@ Notes:
 
 RLS: Admin read (own shop only, via shop_identifier match). Agency admin full CRUD.
 
-#### 13. `subscription_invoices` **(PLANNED)**
+#### 17. `subscription_invoices` **(PLANNED)**
 
 Billing records for plan subscriptions. Reuses the existing Billingo/Szamlazz invoicing adapters for invoice generation.
 
@@ -443,11 +510,14 @@ RLS: Admin read (own shop's invoices only, via subscription join). Agency admin 
 
 ### Database Functions & Triggers
 
-| Function             | Type                      | Purpose                                                              |
-| -------------------- | ------------------------- | -------------------------------------------------------------------- |
-| `current_app_role()` | STABLE, SECURITY DEFINER  | Returns app_role for auth.uid() from profiles. Fallback: 'customer'. |
-| `handle_new_user()`  | Trigger, SECURITY DEFINER | Auto-creates profiles row on auth.users INSERT with role='customer'. |
-| `set_updated_at()`   | Trigger                   | Sets updated_at = now() on UPDATE.                                   |
+| Function                        | Type                      | Purpose                                                                                                         |
+| ------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `current_app_role()`            | STABLE, SECURITY DEFINER  | Returns app_role for auth.uid() from profiles. Fallback: 'customer'.                                            |
+| `handle_new_user()`             | Trigger, SECURITY DEFINER | Auto-creates profiles row on auth.users INSERT with role='customer'.                                            |
+| `set_updated_at()`              | Trigger                   | Sets updated_at = now() on UPDATE.                                                                              |
+| `record_price_change()`         | Trigger, SECURITY DEFINER | Records product-level price changes to `price_history` when base_price or compare_at_price changes on products. |
+| `record_variant_price_change()` | Trigger, SECURITY DEFINER | Records variant-level price changes to `price_history` when price_override changes on product_variants.         |
+| `cleanup_old_price_history()`   | Scheduled (daily)         | Deletes `price_history` records older than 90 days.                                                             |
 
 | Trigger                           | Table            | Event         |
 | --------------------------------- | ---------------- | ------------- |
@@ -455,11 +525,18 @@ RLS: Admin read (own shop's invoices only, via subscription join). Agency admin 
 | `trg_products_updated_at`         | products         | BEFORE UPDATE |
 | `trg_product_variants_updated_at` | product_variants | BEFORE UPDATE |
 | `trg_orders_updated_at`           | orders           | BEFORE UPDATE |
+| `trg_shop_pages_updated_at`       | shop_pages       | BEFORE UPDATE |
+| `trg_record_price_change`         | products         | AFTER UPDATE  |
+| `trg_record_variant_price_change` | product_variants | AFTER UPDATE  |
 
 ### Storage
 
 - Bucket: `product-images` (public read, 5MB limit, JPEG/PNG/WebP/AVIF)
 - 4 storage policies: public read, admin upload/update/delete
+- **Upload server action:** `uploadProductImage(formData)` in `src/lib/actions/images.ts` — validates file type/size, uploads via service-role client to `products/{uuid}.{ext}`, returns public URL
+- **Delete server action:** `deleteProductImage(url)` in `src/lib/actions/images.ts` — extracts file path from Supabase Storage URL, deletes from bucket. No-op for external URLs (safe to call on any URL).
+- **Admin UI:** Drag-and-drop + click-to-browse image upload in product create/edit forms AND About Us page editor (hero image + team member photos). Storage deletion on remove/replace. Gallery drag-and-drop reordering with position badges.
+- **next/image:** Supabase Storage hostname dynamically added to `images.remotePatterns` in `next.config.ts`
 
 ---
 
@@ -506,17 +583,17 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### Security Helpers (`src/lib/security/`)
 
-| Function                   | File                 | Purpose                                                   |
-| -------------------------- | -------------------- | --------------------------------------------------------- |
-| `requireAuth()`            | roles.ts             | Returns authenticated user or throws (redirects to login) |
-| `requireAdmin()`           | roles.ts             | Returns admin user or throws (blocks agency_viewer)       |
-| `requireAdminOrViewer()`   | roles.ts             | Returns admin or agency_viewer user                       |
-| `getCurrentProfile()`      | roles.ts             | Returns profile or null (non-throwing, for layouts)       |
-| `isAgencyViewer()`         | roles.ts             | Boolean check                                             |
-| `RateLimiter` class        | rate-limit.ts        | In-memory rate limiter (subscribe: 5/60s, auth: 10/60s)   |
-| `logAudit()`               | logger.ts            | Writes to audit_logs via admin client                     |
-| `signUnsubscribeToken()`   | unsubscribe-token.ts | HMAC-SHA256 signed token generation                       |
-| `verifyUnsubscribeToken()` | unsubscribe-token.ts | Token verification, returns email or null                 |
+| Function                   | File                 | Purpose                                                                         |
+| -------------------------- | -------------------- | ------------------------------------------------------------------------------- |
+| `requireAuth()`            | roles.ts             | Returns authenticated user or throws (redirects to login)                       |
+| `requireAdmin()`           | roles.ts             | Returns admin user or throws (blocks agency_viewer)                             |
+| `requireAdminOrViewer()`   | roles.ts             | Returns admin or agency_viewer user                                             |
+| `getCurrentProfile()`      | roles.ts             | Returns profile or null (non-throwing, for layouts)                             |
+| `isAgencyViewer()`         | roles.ts             | Boolean check                                                                   |
+| `RateLimiter` class        | rate-limit.ts        | In-memory rate limiter (subscribe: 5/60s, auth: 10/60s, orderTracking: 5/3600s) |
+| `logAudit()`               | logger.ts            | Writes to audit_logs via admin client                                           |
+| `signUnsubscribeToken()`   | unsubscribe-token.ts | HMAC-SHA256 signed token generation                                             |
+| `verifyUnsubscribeToken()` | unsubscribe-token.ts | Token verification, returns email or null                                       |
 
 ### Auth Pages
 
@@ -532,7 +609,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Storefront Pages
 
-**Status: COMPLETE** — All 10 storefront routes fully implemented.
+**Status: COMPLETE** — All 12 storefront routes fully implemented.
 
 ### `/` (Home Page)
 
@@ -552,37 +629,58 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 - **File:** `src/app/(shop)/products/[slug]/page.tsx`
 - **Type:** Server Component with client interactivity
-- **Features:** Server fetch product + variants + categories. Variant selector (buttons/chips, updates price and stock). Add to cart (client). Gallery with main image + thumbnails. Breadcrumbs. SEO metadata per product. JSON-LD Product schema. Loading skeleton.
+- **Features:** Server fetch product + variants + categories + extras. Variant selector (buttons/chips, updates price and stock). Extra product checkboxes (FE-025, default-checked, out-of-stock handling). 30-day lowest price display for discounted products (FE-006, EU Omnibus Directive). Add to cart (client, includes checked extras as separate items). Gallery with main image + thumbnails. Breadcrumbs. SEO metadata per product. JSON-LD Product schema. Loading skeleton.
 - **Components used:** ProductDetailClient, VariantSelector, Gallery, AddToCartButton, PriceDisplay, StockBadge, Breadcrumbs
 
 ### `/cart` (Shopping Cart)
 
 - **File:** `src/app/(shop)/cart/page.tsx`
 - **Type:** Client Component (Zustand store)
-- **Features:** Cart persisted in localStorage. Quantity controls (increment/decrement). Remove item. Line item subtotals. Coupon input with server-side validation. Order summary (subtotal, shipping estimate, discount, total). CTA to /checkout. Empty cart state.
+- **Features:** Cart persisted in localStorage. Quantity controls (increment/decrement). Remove item. Line item subtotals. Coupon input with server-side validation. Order summary (subtotal, shipping estimate with weight-based tiers, total weight display, discount, total). CTA to /checkout. Empty cart state.
 - **Components used:** CartLineItem, CouponInput, OrderSummary
 
 ### `/checkout` (Multi-Step Checkout)
 
-- **File:** `src/app/(shop)/checkout/page.tsx` (~1,051 lines)
+- **File:** `src/app/(shop)/checkout/page.tsx` (~1,130 lines)
 - **Type:** Client Component (multi-step form)
 - **Step 1 — Contact & Addresses:** Email, phone (+36 Hungarian validation), billing address (defaults to "same as delivery" via checked checkbox, can be overridden). If home delivery: full shipping address (street, city, zip). If pickup: billing address still required for invoicing.
 - **Step 2 — Shipping Method:** Two distinct UX paths:
   - "Hazhozsz&aacute;ll&iacute;t&aacute;s" (Home Delivery): GLS, MPL, Express One. Requires street + city + zip + phone.
   - "Csomagautomata / &Aacute;tv&eacute;teli pont" (Pickup Point): Foxpost, GLS Automata, Packeta, MPL Automata, Easybox. Dropdown selector (hardcoded mock points). No home address needed; only locker ID + phone.
-- **Step 3 — Review & Pay:** Order summary, confirm, submit.
-- **On submit:** Server action validates cart against DB (prices, stock, active status). Creates order + order_items snapshots. Applies coupon if present. Decrements stock. Calculates shipping fee. Starts Barion payment. Redirects user to Barion.
+- **Step 3 — Review & Pay:** Payment method selector (Barion online card vs Utánvét / COD), order summary with COD fee if applicable, confirm, submit. COD availability governed by `siteConfig.payments.cod` (enabled, fee, maxOrderAmount, allowedShippingMethods). COD disabled if cart total exceeds `maxOrderAmount`.
+- **On submit:** Server action validates cart against DB (prices, stock, active status). Creates order + order_items snapshots. Applies coupon if present. Decrements stock. Calculates shipping fee. If Barion: starts Barion payment, redirects to Barion. If COD: adds COD fee to total, sets order status to `processing`, sends receipt + admin notification emails immediately, redirects to success page with `?method=cod`.
 - **Guest checkout:** Supported when `enableGuestCheckout` is true in config.
 
 ### `/checkout/success` (Order Confirmation)
 
 - **File:** `src/app/(shop)/checkout/success/page.tsx`
-- **Features:** Reads order ID from query params. Fetches order summary. Shows paid/processing status. CTA to `/profile/orders` (logged in) or `/products` (guest).
+- **Features:** Reads order ID and `method` from query params. Fetches order summary. Barion orders: shows "Sikeres fizetés!" with paid/processing status. COD orders: shows "Rendelés visszaigazolva!" with note about payment at delivery. CTA to `/profile/orders` (logged in) or `/products` (guest).
 
 ### `/checkout/cancel` (Payment Cancelled)
 
 - **File:** `src/app/(shop)/checkout/cancel/page.tsx`
 - **Features:** Cancellation message. Return to cart button.
+
+### `/order-tracking` (Guest Order Tracking)
+
+- **File:** `src/app/(shop)/order-tracking/page.tsx` (~362 lines)
+- **Type:** Client Component (`useReducer` + `useSearchParams`, wrapped in `<Suspense>`)
+- **Features:** Public order tracking for guest customers. Form with order number (8-char short ID or full UUID) + email. Server-side validation via `trackGuestOrder` action. Rate limited (5 per hour per IP). Displays order status card with: status badge, timeline visualization (COD-aware: processing → shipped → paid for COD, awaiting_payment → paid → processing → shipped for Barion), payment method, order details (items, totals, shipping method, tracking code). Pre-fillable via URL params (`?order=XXX&email=XXX`). Error handling for not-found, rate-limited, and validation errors.
+- **Components used:** Input, Button, Badge, Card
+- **Links to this page:** Footer "Rendeléskövetés" link, checkout success page (guest CTA), order receipt email CTA button
+
+### `/cookie-policy` (Cookie Policy)
+
+- **File:** `src/app/(shop)/cookie-policy/page.tsx`
+- **Type:** Server Component
+- **Features:** Static Hungarian-language cookie policy page. Details cookie types (necessary, analytics, marketing), data retention, user rights. Cookie settings button to reopen consent banner.
+
+### `/about` (About Us)
+
+- **File:** `src/app/(shop)/about/page.tsx` (~288 lines)
+- **Type:** Server Component
+- **Features:** Structured About Us page with 5 sections: Hero (title, subtitle, image), Story (title, body text), Team (grid of members with photo, name, role, bio), Values (numbered cards with title and description), Contact (address, phone, email, Google Maps embed). Sections with empty content are hidden. Content loaded from `shop_pages` table via `getPageContent("about")` action. Fallback state for unpublished/no content.
+- **Components used:** Image, Link (lucide icons for contact)
 
 ### `/terms`, `/privacy`, `/shipping-and-returns` (Legal Pages)
 
@@ -610,7 +708,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Admin Panel
 
-**Status: COMPLETE** — All 12 admin pages fully implemented with agency_viewer read-only enforcement. **3 additional pages planned** (subscription, agency/clients, subscription/plans).
+**Status: COMPLETE** — All 13 admin pages fully implemented with agency_viewer read-only enforcement. **3 additional pages planned** (subscription, agency/clients, subscription/plans).
 
 ### `/admin` (Dashboard)
 
@@ -626,36 +724,42 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 - Search by email or order ID
 - Columns: order number, customer email, status (color-coded badge), total, date
 - Click row navigates to order detail
+- **Export (FE-026):** "Exportálás" button opens dialog with date range picker, status filter select, and "Tételek részletezése" checkbox. Generates CSV with UTF-8 BOM (Excel-compatible). Includes: order number, date, status, customer name/email, shipping method/fee, subtotal, discount, total, payment method, COD fee, payment status, item count, shipping address, tracking number. Optional line-items section with product title, variant, SKU, quantity, unit price, line total, ÁFA kulcs (VAT rate).
 
 ### `/admin/orders/[id]` (Order Detail)
 
-- **Sections:** Customer contact info, shipping address/method, billing address, line items table, Barion payment details
-- **Status timeline:** Visual state machine showing order progression
-- **Actions (admin only):** Change status dropdown, add tracking code (when marking shipped), send receipt email, send shipping update email, generate invoice (if invoicing provider enabled)
+- **Sections:** Customer contact info, shipping address/method, billing address, line items table, payment details (payment method, COD fee if applicable, Barion details for online payments), internal notes
+- **Status timeline:** Visual state machine showing order progression. COD-aware status transitions: shipped → paid allowed for COD orders (courier collects payment). Barion orders: shipped is terminal.
+- **Actions (admin only):** Change status dropdown (context-aware: COD vs Barion transitions), add tracking code (when marking shipped), send receipt email, send shipping update email, generate invoice (if invoicing provider enabled)
+- **Internal notes:** Admin-only note system for internal communication. Add/delete notes with 2000-char limit. Author name resolution from profiles. Reverse chronological display. Agency viewers see notes read-only.
 - **Agency viewer:** All action buttons hidden. Read-only view.
 
 ### `/admin/products` (Product List)
 
 - Paginated table with search, active/inactive filter
-- Columns: thumbnail, title, base price, variant count, category badges, active badge
+- Columns: thumbnail, title, base price, variant count, category badges, status badge (Aktív/Inaktív/Ütemezett with date — 3-state badge logic)
 - Sort controls
 - "New product" button links to `/admin/products/new`
 
 ### `/admin/products/new` (Product Create)
 
 - **Two-column layout:** Left column (main fields), right column (metadata)
-- **Fields:** Title, auto-generated slug (editable), description (textarea), base price (HUF), compare-at price
+- **Fields:** Title, auto-generated slug (editable), description (textarea), base price (HUF), compare-at price, ÁFA kulcs (VAT rate) dropdown (27%/18%/5%)
 - **Planned field:** Cost price (HUF) — optional purchasing/material cost. Labeled "Beszerzesi ar" in Hungarian. Admin-only, never visible to customers. Shown in a collapsible "Koltseginformaciok" (Cost Information) section to keep the form clean.
-- **Images:** Main image URL + gallery image URLs (text inputs, not file upload)
+- **Images:** Drag-and-drop / click-to-browse image upload for main image + gallery images. Uploads to Supabase Storage `product-images` bucket. Storage deletion on remove/replace. Gallery drag-and-drop reordering with position badges. Also supports manual URL entry as fallback.
 - **Categories:** Checkbox multi-select from all categories
 - **Variant builder:** Dynamic rows. Each row: SKU, option1 name/value, option2 name/value, price override, stock quantity. Add/remove rows. **Planned:** Per-variant cost price override field in each row.
-- **Save:** Server action with full Zod validation, creates product + variants + category associations + audit log
+- **Extras builder (FE-025):** "Kiegészítő termékek" Card section. Search existing products, attach as extras with custom label, sort order, and default-checked toggle. Delete-and-recreate pattern on save.
+- **Scheduled publishing (FE-037):** datetime-local input in Státusz card. Empty = published immediately. Future date = product hidden from storefront until that time.
+- **Save:** Server action with full Zod validation, creates product + variants + category associations + extras + audit log
 
 ### `/admin/products/[id]` (Product Edit)
 
-- Same form as create, pre-populated
+- Same form as create, pre-populated (including extras and scheduled publishing state)
 - Additional actions: Toggle active/inactive, hard delete with confirmation dialog
+- **Price history sparkline (FE-006):** Read-only SVG sparkline (~120px × 32px) rendered next to base price input. Shows 30-day price trend with color-coded direction (green/red/neutral). Hover tooltip with price + date. Fetched via `getProductPriceHistory` server action.
 - Meta info display: created at, updated at, product ID
+- "Ütemezett" badge shown when product has a future `published_at` date
 
 ### `/admin/categories` (Category Management)
 
@@ -698,6 +802,13 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 - Paginated table with entity type filter
 - Columns: timestamp, actor (name or ID), role, action (color-coded), entity type, entity ID
 - Expandable metadata (JSON view)
+
+### `/admin/pages/about` (About Us Page Editor)
+
+- **File:** `src/app/(admin)/admin/pages/about/page.tsx` (~520 lines)
+- **Type:** Client Component (`useReducer` state management)
+- **Features:** Structured editor for the About Us page content. 5 collapsible sections (hero, story, team, values, contact). Team member add/remove (max 20). Values add/remove (max 12). Image upload via `SingleImageUpload` component for hero image and team member photos (drag-and-drop, click-to-browse, manual URL fallback, storage deletion). Character counters. Dirty state tracking with unsaved changes warning. Save button (calls `adminUpdatePageContent`). Publish/unpublish toggle (calls `adminTogglePagePublished`). External preview link to `/about`. Loading state with spinner. Error/success toast feedback via Sonner.
+- **Nav:** "Oldalak" link in admin sidebar (`BookOpen` icon)
 
 ### `/admin/subscription` (Shop Owner Subscription View) **(PLANNED)**
 
@@ -762,8 +873,8 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 - **Desktop:** Fixed 260px collapsible sidebar + top bar with toggle
 - **Mobile:** Sheet-based slide-out sidebar
-- **Navigation items:** Feature-flag-driven (marketing only shows if `enableMarketingModule` is true, coupons only if `enableCoupons` is true)
-- **Planned nav items:** "Elofizetes" (Subscription) link to `/admin/subscription` for all admin roles. "Ugyfelek" (Clients) link to `/admin/agency/clients` visible only to `agency_admin` users.
+- **Navigation items:** Feature-flag-driven (marketing only shows if `enableMarketingModule` is true, coupons only if `enableCoupons` is true). "Oldalak" link to `/admin/pages/about` (always visible).
+- **Planned nav items:** "Előfizetés" (Subscription) link to `/admin/subscription` for all admin roles. "Ügyfelek" (Clients) link to `/admin/agency/clients` visible only to `agency_admin` users.
 - **Agency viewer:** Yellow "Csak olvasas" (Read-only) badge in sidebar
 - **Footer links:** "Vissza a boltba" (Back to shop) + "Kijelentkezes" (Sign out)
 
@@ -771,31 +882,39 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Server Actions
 
-**Status: COMPLETE** — 10 action files, 47 exported functions, all with Zod validation.
+**Status: COMPLETE** — 12 action files, 61 exported functions, all with Zod validation.
 
-### `src/lib/actions/products.ts` (876 lines)
+### `src/lib/actions/products.ts` (1150 lines)
 
-| Function                       | Guard                | What it does                                                                                                                                           |
-| ------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `listProducts(filters)`        | Public               | Server-side filtered/sorted/paginated product listing. Filters: category, price range, stock, sort. Joins variants and categories.                     |
-| `getProductBySlug(slug)`       | Public               | Fetches single product with all variants and categories. Active products only.                                                                         |
-| `adminListProducts(filters)`   | requireAdminOrViewer | Lists ALL products (including inactive). Search, filter, paginate.                                                                                     |
-| `adminGetProduct(id)`          | requireAdminOrViewer | Single product with variants and categories (any status).                                                                                              |
-| `adminCreateProduct(formData)` | requireAdmin         | Creates product + variants + category associations. FormData-based (for potential file upload). Auto-generates slug. Validates with Zod. Audit logged. |
-| `adminUpdateProduct(formData)` | requireAdmin         | Updates product fields, syncs variants (upsert/delete), syncs categories. Audit logged.                                                                |
-| `adminDeleteProduct(id)`       | requireAdmin         | Soft delete (is_active = false). Audit logged.                                                                                                         |
-| `adminToggleProductActive(id)` | requireAdmin         | Toggle active state. Audit logged.                                                                                                                     |
-| `adminHardDeleteProduct(id)`   | requireAdmin         | Permanent delete with cascade. Audit logged.                                                                                                           |
+| Function                            | Guard                | What it does                                                                                                                                                                                                                    |
+| ----------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `listProducts(filters)`             | Public               | Server-side filtered/sorted/paginated product listing. Filters: category, price range, stock, sort. Joins variants and categories. Filters by `published_at IS NULL OR published_at <= now()` (defense-in-depth on top of RLS). |
+| `getProductBySlug(slug)`            | Public               | Fetches single product with all variants, categories, and extras. Active products only. Filters by `published_at` (defense-in-depth). Enriches extras with live product data.                                                   |
+| `adminListProducts(filters)`        | requireAdminOrViewer | Lists ALL products (including inactive and scheduled). Search, filter, paginate.                                                                                                                                                |
+| `adminGetProduct(id)`               | requireAdminOrViewer | Single product with variants, categories, and extras (any status). Enriches extras with live product data.                                                                                                                      |
+| `adminCreateProduct(formData)`      | requireAdmin         | Creates product + variants + category associations + extras. FormData-based. Parses `vatRate` (default 27) and `publishedAt` (nullable datetime). Auto-generates slug. Validates with Zod. Audit logged.                        |
+| `adminUpdateProduct(formData)`      | requireAdmin         | Updates product fields (including `vat_rate`, `published_at`), syncs variants (upsert/delete), syncs categories, syncs extras (delete-and-recreate). Audit logged.                                                              |
+| `adminDeleteProduct(id)`            | requireAdmin         | Soft delete (is_active = false). Audit logged.                                                                                                                                                                                  |
+| `adminToggleProductActive(id)`      | requireAdmin         | Toggle active state. Audit logged.                                                                                                                                                                                              |
+| `adminHardDeleteProduct(id)`        | requireAdmin         | Permanent delete with cascade. Audit logged.                                                                                                                                                                                    |
+| `getProductExtras(productId)`       | Public               | Fetches extras for a product with enriched product/variant data (title, slug, price, image, stock, active status). Uses `enrichExtras()` helper.                                                                                |
+| `adminSetProductExtras(id, extras)` | requireAdmin         | Standalone extras save: validates with Zod, blocks self-reference, delete-and-recreate pattern. Audit logged with extras count.                                                                                                 |
+| `getProductPriceHistory(productId)` | requireAdminOrViewer | Fetches 30-day price history for admin sparkline chart. Returns array of `{price, compareAtPrice, date}` sorted chronologically. Uses `getPriceHistory()` utility.                                                              |
 
-### `src/lib/actions/orders.ts` (719 lines)
+### `src/lib/actions/orders.ts` (1268 lines)
 
-| Function                                             | Guard                             | What it does                                                                                                                                                                                                                               |
-| ---------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `createOrderFromCart(input)`                         | requireAuth (or guest if enabled) | Full checkout flow: validates cart items against DB (prices, stock, active status), applies coupon, calculates shipping fee, decrements stock, creates order + order_items snapshots, runs preCheckoutHook/postPaidHook. Returns order ID. |
-| `getOrderForUser(orderId)`                           | requireAuth                       | Fetches order with items, filtered by both order ID and authenticated user ID.                                                                                                                                                             |
-| `adminListOrders(filters)`                           | requireAdminOrViewer              | All orders with filters (status, date range, search by email/order ID). Paginated.                                                                                                                                                         |
-| `adminGetOrder(id)`                                  | requireAdminOrViewer              | Single order with items.                                                                                                                                                                                                                   |
-| `adminUpdateOrderStatus(orderId, status, tracking?)` | requireAdmin                      | Status state machine with validation. Sets paid_at/shipped_at timestamps. Stores tracking code. Audit logged.                                                                                                                              |
+| Function                                             | Guard                             | What it does                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createOrderFromCart(input)`                         | requireAuth (or guest if enabled) | Full checkout flow: validates cart items against DB (prices, stock, active status), applies coupon, calculates shipping fee, decrements stock, creates order + order_items snapshots (includes `vat_rate` per item), handles payment method (Barion: status `awaiting_payment`, COD: status `processing` + adds `cod_fee` + sends receipt/admin emails immediately), runs preCheckoutHook/postPaidHook. Returns order ID. |
+| `getOrderForUser(orderId)`                           | requireAuth                       | Fetches order with items, filtered by both order ID and authenticated user ID.                                                                                                                                                                                                                                                                                                                                            |
+| `adminListOrders(filters)`                           | requireAdminOrViewer              | All orders with filters (status, date range, search by email/order ID). Paginated.                                                                                                                                                                                                                                                                                                                                        |
+| `adminGetOrder(id)`                                  | requireAdminOrViewer              | Single order with items.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `adminUpdateOrderStatus(orderId, status, tracking?)` | requireAdmin                      | Server-side enforced forward-only status transitions via `isTransitionAllowed()` from shared constants. Payment-method-aware (Barion vs COD have different transition maps). Fetches `payment_method` from order before validating. Sets paid_at/shipped_at timestamps. Stores tracking code in `tracking_code` field. Returns descriptive Hungarian error on invalid transition. Audit logged.                           |
+| `trackGuestOrder(input)`                             | Public (rate-limited)             | Guest order tracking: validates order number (8-char short ID or full UUID) + email via Zod. Uses admin client (bypasses RLS). Matches on `id` prefix + `email`. Rate limited: 5 per hour per IP. Returns limited order data with timeline.                                                                                                                                                                               |
+| `getOrderNotes(orderId)`                             | requireAdminOrViewer              | Fetches all notes for an order with author names resolved from profiles. Reverse chronological. Returns `OrderNoteWithAuthor[]`.                                                                                                                                                                                                                                                                                          |
+| `addOrderNote(orderId, content)`                     | requireAdmin                      | Creates a new internal note on an order. Validates order exists. Resolves author name from profile. Audit logged. Returns the created note with author name.                                                                                                                                                                                                                                                              |
+| `deleteOrderNote(noteId)`                            | requireAdmin                      | Deletes an internal note. Ownership check (only own notes). Audit logged.                                                                                                                                                                                                                                                                                                                                                 |
+| `exportOrdersCsv(filters)`                           | requireAdminOrViewer              | Exports orders to CSV with date range and status filters. UTF-8 BOM for Excel. Includes payment method and COD fee columns. Optional line-items section (includes ÁFA kulcs per item). Max 10,000 orders. Returns CSV string + filename + order count.                                                                                                                                                                    |
 
 ### `src/lib/actions/cart.ts` (300 lines)
 
@@ -806,9 +925,9 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### `src/lib/actions/payments.ts` (122 lines)
 
-| Function                      | Guard       | What it does                                                                                                                     |
-| ----------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `startPaymentAction(orderId)` | requireAuth | Fetches order, calls Barion startPayment, stores barion_payment_id and barion_payment_request_id on order, returns redirect URL. |
+| Function                      | Guard       | What it does                                                                                                                                                                |
+| ----------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `startPaymentAction(orderId)` | requireAuth | Fetches order, guards against COD orders (returns error), calls Barion startPayment, stores barion_payment_id and barion_payment_request_id on order, returns redirect URL. |
 
 ### `src/lib/actions/coupons.ts` (352 lines)
 
@@ -868,6 +987,22 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | ---------------------------- | -------- | -------------------------------------- |
 | `devSignIn(email, password)` | Dev only | Quick sign-in for development testing. |
 
+### `src/lib/actions/pages.ts` (264 lines)
+
+| Function                                              | Guard                | What it does                                                                                           |
+| ----------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------ |
+| `getPageContent(pageKey)`                             | Public               | Fetches published page content by key from `shop_pages`. Returns structured `AboutUsContent` or error. |
+| `adminGetPageContent(pageKey)`                        | requireAdminOrViewer | Fetches page content including unpublished. Returns empty default content if page doesn't exist yet.   |
+| `adminUpdatePageContent(pageKey, content, published)` | requireAdmin         | Upserts structured page content with full Zod validation. Logs audit event `page.update`.              |
+| `adminTogglePagePublished(pageKey)`                   | requireAdmin         | Toggles `is_published` flag on existing page. Logs audit event `page.publish` or `page.unpublish`.     |
+
+### `src/lib/actions/images.ts` (~150 lines)
+
+| Function                       | Guard        | What it does                                                                                                                                                                                      |
+| ------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `uploadProductImage(formData)` | requireAdmin | Uploads a single image to Supabase Storage `product-images` bucket. Validates file type (JPEG/PNG/WebP/AVIF) and size (5 MB). Returns public URL.                                                 |
+| `deleteProductImage(url)`      | requireAdmin | Deletes an image from the `product-images` bucket. Extracts file path from Supabase Storage URL pattern. No-op for external URLs (returns success). Called automatically on image remove/replace. |
+
 ---
 
 ## Integrations
@@ -876,28 +1011,30 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### Barion (Payments)
 
-| File                 | Lines | Purpose                                                                                                                                                                                                                                                                               |
-| -------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `barion/client.ts`   | 239   | API client: `startPayment()`, `getPaymentState()`, `verifyPayment()`. Test/prod URL switching. Full type definitions for Barion API request/response.                                                                                                                                 |
-| `barion/callback.ts` | 298   | Idempotent callback handler: verifies payment with Barion API, finds order by payment ID, skips if already in terminal state, decrements stock on success (with negative-stock guard, clamps to 0), updates order status + timestamps. Race condition protected via status IN clause. |
+| File                 | Lines | Purpose                                                                                                                                                                                                                                                                                                                                                |
+| -------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `barion/client.ts`   | 239   | API client: `startPayment()`, `getPaymentState()`, `verifyPayment()`. Test/prod URL switching. Full type definitions for Barion API request/response.                                                                                                                                                                                                  |
+| `barion/callback.ts` | 298   | Idempotent callback handler: verifies payment with Barion API, finds order by payment ID, skips if already in terminal state, decrements stock on success (with negative-stock guard, clamps to 0), updates order status + timestamps, sends receipt + admin notification emails (with payment method). Race condition protected via status IN clause. |
 
-**Flow:** Checkout -> createOrderFromCart -> startPaymentAction (calls Barion API, gets redirect URL) -> User pays on Barion -> Barion calls `/api/payments/barion/callback` -> handleBarionCallback (idempotent, updates order status, decrements stock).
+**Flow (Barion):** Checkout -> createOrderFromCart (status: `awaiting_payment`) -> startPaymentAction (calls Barion API, gets redirect URL) -> User pays on Barion -> Barion calls `/api/payments/barion/callback` -> handleBarionCallback (idempotent, updates order status, decrements stock, sends receipt + admin emails).
+
+**Flow (COD / Utánvét):** Checkout -> createOrderFromCart (status: `processing`, adds `cod_fee`) -> sends receipt + admin notification emails immediately -> redirects to success page with `?method=cod`. Admin ships order -> courier collects payment -> admin marks order as `paid`.
 
 ### Resend (Email)
 
-| File                  | Lines  | Purpose                                                                                                                                                                                                                              |
-| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `email/provider.ts`   | ~150   | `sendEmail()` with retry + exponential backoff. `sendBatchEmail()` (50/chunk). Sender address config (transactional vs marketing). Test recipient redirect for dev.                                                                  |
-| `email/sender.ts`     | ~100   | High-level sending functions: `sendTransactionalEmail()`, `sendMarketingEmail()`. Handles sender identity separation.                                                                                                                |
-| `email/actions.ts`    | ~250   | `sendReceipt(orderId)`, `sendShippingUpdate(orderId)`, `sendAbandonedCartEmail(orderId)`, `renderNewsletterPreview(data)`, `sendNewsletterCampaign(data)` (batch with tag targeting).                                                |
-| `email/templates.tsx` | ~1,216 | React Email templates: order-receipt (442 lines), shipping-update (285 lines), abandoned-cart (274 lines), newsletter (215 lines). All styled with inline CSS, responsive, include unsubscribe links.                                |
-| `email/webhook.ts`    | ~150   | `handleWebhookEvent()`: processes bounce (marks subscriber bounced), complaint (marks complained), delivered (updates stats), opened (increments open_count), clicked (increments click_count). `verifyWebhookSignature()` via HMAC. |
+| File                  | Lines  | Purpose                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `email/provider.ts`   | ~150   | `sendEmail()` with retry + exponential backoff. `sendBatchEmail()` (50/chunk). Sender address config (transactional vs marketing). Test recipient redirect for dev.                                                                                                                                                                                                                                            |
+| `email/sender.ts`     | ~100   | High-level sending functions: `sendTransactionalEmail()`, `sendMarketingEmail()`. Handles sender identity separation.                                                                                                                                                                                                                                                                                          |
+| `email/actions.ts`    | ~400   | `sendReceipt(orderId)`, `sendShippingUpdate(orderId)`, `sendAbandonedCartEmail(orderId)`, `renderNewsletterPreview(data)`, `sendNewsletterCampaign(data)`, `sendSignupConfirmationEmail({to, name})`, `sendWelcomeEmail({to, name})`, `sendAdminOrderNotification({..., paymentMethod?})`. All actions respect feature flags in `siteConfig.email`. Admin notification includes optional payment method label. |
+| `email/templates.tsx` | ~1,216 | React Email render wrappers for all 7 templates. All styled with inline CSS, responsive, include unsubscribe links where needed.                                                                                                                                                                                                                                                                               |
+| `email/webhook.ts`    | ~150   | `handleWebhookEvent()`: processes bounce (marks subscriber bounced), complaint (marks complained), delivered (updates stats), opened (increments open_count), clicked (increments click_count). `verifyWebhookSignature()` via HMAC.                                                                                                                                                                           |
 
 ### Invoicing (Billingo / Szamlazz)
 
-| File                   | Lines | Purpose                                                                                                                                                                                                                                                                                                                               |
-| ---------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `invoicing/adapter.ts` | 401   | Strategy pattern interface: `InvoicingAdapter` with `createInvoice()`, `getInvoice()`, `cancelInvoice()`. Three implementations: `BillingoAdapter` (REST API calls), `SzamlazzAdapter` (XML API calls), `NullAdapter` (no-op fallback). Factory: `getInvoicingAdapter()` reads `INVOICING_PROVIDER` env var. Dev mode mock fallbacks. |
+| File                   | Lines | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invoicing/adapter.ts` | 415   | Strategy pattern interface: `InvoicingAdapter` with `createInvoice()`, `getInvoice()`, `cancelInvoice()`. Three implementations: `BillingoAdapter` (REST API calls, per-item VAT rate via `billingoVatString()`, dynamic `payment_method`: "cash_on_delivery" for COD / "online_bankcard" for Barion, COD fee as separate line item), `SzamlazzAdapter` (XML API calls, per-item VAT rate and net price, dynamic `<fizmod>`: "Utánvét" for COD / "Bankkártya (online)" for Barion, COD fee as XML line item), `NullAdapter` (no-op fallback). Helper functions: `billingoVatString()`, `grossToNet()`, `grossToVat()`. Factory: `getInvoicingAdapter()` reads `INVOICING_PROVIDER` env var. Dev mode mock fallbacks. |
 
 **Planned: Subscription invoicing reuse.** The existing `InvoicingAdapter` strategy pattern will be reused for generating subscription/plan invoices for agency clients. When the agency admin clicks "Szamla keszitese" on `/admin/agency/clients`, it calls the same `getInvoicingAdapter().createInvoice()` with subscription billing data instead of order data. This requires a thin wrapper function (e.g., `createSubscriptionInvoice(subscriptionId, billingPeriod)`) that maps `subscription_invoices` data to the adapter's `InvoiceInput` format. No changes to the adapter interface itself — only a new caller.
 
@@ -905,7 +1042,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## API Route Handlers
 
-**Status: COMPLETE** — 4 endpoints.
+**Status: COMPLETE** — 5 endpoints.
 
 | Route                           | Method     | Auth               | Purpose                                                                                                           |
 | ------------------------------- | ---------- | ------------------ | ----------------------------------------------------------------------------------------------------------------- |
@@ -913,6 +1050,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | `/api/email/webhook/resend`     | POST + GET | HMAC signature     | Resend webhook receiver. Processes bounce/complaint/delivered/opened/clicked. GET returns debug info in dev only. |
 | `/api/email/abandoned-cart`     | POST       | CRON_SECRET header | Triggered by Edge Function. Sends abandoned cart email for a specific order.                                      |
 | `/api/newsletter/unsubscribe`   | GET        | Signed token       | One-click unsubscribe. Renders Hungarian HTML confirmation page. Idempotent.                                      |
+| `/api/dev/test-emails`          | GET        | Dev only           | Renders all email templates and sends to local Mailpit for visual QA. Returns 404 in production.                  |
 
 ### Edge Function
 
@@ -924,33 +1062,36 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Components Inventory
 
-**Status: COMPLETE** — 44 component files total.
+**Status: COMPLETE** — 53 component files total.
 
-### Shared Components (7)
+### Shared Components (10)
 
-| Component       | File                          | Type   | Purpose                                                                                                                                      |
-| --------------- | ----------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Header          | `shared/header.tsx`           | Server | Auth-aware. Shows role-appropriate account link: Login (guest), Fiokom (customer), Admin (admin/viewer). Mobile sheet nav. Cart count badge. |
-| Footer          | `shared/footer.tsx`           | Server | Site links, legal links, newsletter signup, copyright.                                                                                       |
-| AdminSidebar    | `shared/admin-sidebar.tsx`    | Client | 260px collapsible sidebar. Feature-flag-driven nav items. Agency viewer badge. Back to shop + sign out links. Mobile sheet.                  |
-| Breadcrumbs     | `shared/breadcrumbs.tsx`      | Client | Configurable breadcrumb trail.                                                                                                               |
-| CartCount       | `shared/cart-count.tsx`       | Client | Cart item count badge in header.                                                                                                             |
-| LoadingSkeleton | `shared/loading-skeleton.tsx` | Server | Reusable skeleton placeholders.                                                                                                              |
-| NewsletterForm  | `shared/newsletter-form.tsx`  | Client | Email input + subscribe button. Calls subscribe server action. Toast feedback.                                                               |
+| Component             | File                                    | Type   | Purpose                                                                                                                                      |
+| --------------------- | --------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header                | `shared/header.tsx`                     | Server | Auth-aware. Shows role-appropriate account link: Login (guest), Fiokom (customer), Admin (admin/viewer). Mobile sheet nav. Cart count badge. |
+| Footer                | `shared/footer.tsx`                     | Server | Site links, legal links, newsletter signup, copyright.                                                                                       |
+| AdminSidebar          | `shared/admin-sidebar.tsx`              | Client | 260px collapsible sidebar. Feature-flag-driven nav items. Agency viewer badge. Back to shop + sign out links. Mobile sheet.                  |
+| Breadcrumbs           | `shared/breadcrumbs.tsx`                | Client | Configurable breadcrumb trail.                                                                                                               |
+| CartCount             | `shared/cart-count.tsx`                 | Client | Cart item count badge in header.                                                                                                             |
+| LoadingSkeleton       | `shared/loading-skeleton.tsx`           | Server | Reusable skeleton placeholders.                                                                                                              |
+| NewsletterForm        | `shared/newsletter-form.tsx`            | Client | Email input + subscribe button. Calls subscribe server action. Toast feedback.                                                               |
+| CookieConsent         | `cookie-consent.tsx`                    | Client | GDPR cookie consent banner with accept all, reject, and settings toggles. Slide-up animation. Persisted to localStorage.                     |
+| CookieSettingsButton  | `shared/cookie-settings-button.tsx`     | Client | Floating button to reopen cookie consent settings. Used on cookie policy page.                                                               |
+| CookieConsentProvider | `providers/cookie-consent-provider.tsx` | Client | Context provider for cookie consent state. Wraps app in root layout.                                                                         |
 
 ### Product Components (9)
 
-| Component           | File                                | Type   | Purpose                                                                                   |
-| ------------------- | ----------------------------------- | ------ | ----------------------------------------------------------------------------------------- |
-| ProductCard         | `product/product-card.tsx`          | Server | Card with image, title, price, compare-at price, category badges. Link to product detail. |
-| ProductGrid         | `product/product-grid.tsx`          | Server | Responsive grid of ProductCards.                                                          |
-| ProductDetailClient | `product/product-detail-client.tsx` | Client | Full product detail with variant state, price updates, add to cart.                       |
-| ProductFilters      | `product/product-filters.tsx`       | Client | Category select, price range, in-stock toggle, sort select. Updates URL params.           |
-| VariantSelector     | `product/variant-selector.tsx`      | Client | Button/chip-based variant selection. Updates parent state.                                |
-| Gallery             | `product/gallery.tsx`               | Client | Main image + thumbnail strip. Click to switch.                                            |
-| AddToCartButton     | `product/add-to-cart-button.tsx`    | Client | Button with loading state. Calls Zustand addItem. Toast confirmation.                     |
-| PriceDisplay        | `product/price-display.tsx`         | Server | Formats HUF price. Shows strikethrough for compare-at.                                    |
-| StockBadge          | `product/stock-badge.tsx`           | Server | Green/yellow/red badge based on stock level.                                              |
+| Component           | File                                | Type   | Purpose                                                                                                                                                                                          |
+| ------------------- | ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ProductCard         | `product/product-card.tsx`          | Server | Card with image, title, price, compare-at price, category badges. Link to product detail.                                                                                                        |
+| ProductGrid         | `product/product-grid.tsx`          | Server | Responsive grid of ProductCards.                                                                                                                                                                 |
+| ProductDetailClient | `product/product-detail-client.tsx` | Client | Full product detail with variant state, price updates, extras checkboxes (FE-025), 30-day lowest price resolution per variant (FE-006), add to cart.                                             |
+| ProductFilters      | `product/product-filters.tsx`       | Client | Category select, price range, in-stock toggle, sort select. Updates URL params.                                                                                                                  |
+| VariantSelector     | `product/variant-selector.tsx`      | Client | Button/chip-based variant selection. Updates parent state.                                                                                                                                       |
+| Gallery             | `product/gallery.tsx`               | Client | Main image + thumbnail strip. Click to switch.                                                                                                                                                   |
+| AddToCartButton     | `product/add-to-cart-button.tsx`    | Client | Button with loading state. Calls Zustand addItem + adds checked extras as separate cart items. Toast confirmation with extras count.                                                             |
+| PriceDisplay        | `product/price-display.tsx`         | Server | Formats HUF price. Shows strikethrough for compare-at. EU Omnibus Directive: displays "Legalacsonyabb ár az elmúlt 30 napban" text with lowest 30-day price when product is discounted (FE-006). |
+| StockBadge          | `product/stock-badge.tsx`           | Server | Green/yellow/red badge based on stock level.                                                                                                                                                     |
 
 ### Cart/Checkout Components (4)
 
@@ -958,14 +1099,18 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | ------------------- | -------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
 | CartLineItem        | `cart/cart-line-item.tsx`        | Client | Thumbnail, title, variant info, unit price, quantity controls, remove button, line total.                                  |
 | CouponInput         | `cart/coupon-input.tsx`          | Client | Input + apply button. Calls applyCoupon server action. Shows discount amount or error.                                     |
-| OrderSummary        | `cart/order-summary.tsx`         | Client | Subtotal, shipping fee, discount, total.                                                                                   |
+| OrderSummary        | `cart/order-summary.tsx`         | Client | Subtotal, shipping fee, COD fee (optional, shown when > 0 as "Utánvét kezelési díj"), discount, total.                     |
 | PickupPointSelector | `cart/pickup-point-selector.tsx` | Client | Dropdown selector for pickup points. Currently uses hardcoded mock data. Interface ready for real carrier API integration. |
 
-### Admin Components (1)
+### Admin Components (5)
 
-| Component       | File                         | Type   | Purpose                                                    |
-| --------------- | ---------------------------- | ------ | ---------------------------------------------------------- |
-| DashboardCharts | `admin/dashboard-charts.tsx` | Client | Recharts bar charts for daily revenue + daily order count. |
+| Component        | File                           | Type   | Purpose                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DashboardCharts  | `admin/dashboard-charts.tsx`   | Client | Recharts bar charts for daily revenue + daily order count.                                                                                                                                                                                                                                                                                           |
+| OrderStatusBadge | `admin/order-status-badge.tsx` | Shared | Single source of truth for order status badge display. Uses `ORDER_STATUS_LABELS` and `ORDER_STATUS_BADGE_VARIANT` from `@/lib/constants/order-status`. Works in both Server Components and Client Components. Replaces 8+ inline StatusBadge duplications across admin/shop pages.                                                                  |
+| OrderNotes       | `admin/order-notes.tsx`        | Client | Internal notes panel for order detail. Add/delete notes (admin), read-only for agency viewers. 2000-char limit. Author name resolution. useReducer state management.                                                                                                                                                                                 |
+| ImageUpload      | `admin/image-upload.tsx`       | Client | `SingleImageUpload` + `GalleryImageUpload` — drag-and-drop / click-to-browse image upload. Uploads via `uploadProductImage` server action. Storage deletion on remove/replace via `deleteProductImage`. Gallery drag-and-drop reordering (HTML5 native) with position badges and visual drop indicator. Manual URL entry fallback. useReducer state. |
+| PriceSparkline   | `admin/price-sparkline.tsx`    | Client | Lightweight SVG sparkline (~120px × 32px) for 30-day price history. Color-coded trend (green = decreasing, red = increasing, neutral = stable). Hover tooltip with price + date. Rendered next to base price input on admin product edit page. Uses `PriceHistoryPoint` type from `price-history-shared.ts`.                                         |
 
 ### Auth Components (1)
 
@@ -973,22 +1118,25 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | ------------------ | ------------------------------- | ------ | --------------------------------------------------------------------------------- |
 | DevProfileSelector | `auth/dev-profile-selector.tsx` | Client | Dev-only role switcher. Buttons for admin, viewer, customer roles. Quick sign-in. |
 
-### UI Primitives (shadcn/ui) — 23 components
+### UI Primitives (shadcn/ui) — 24 components
 
-badge, breadcrumb, button, card, chart, checkbox, command, dialog, dropdown-menu, input, input-group, label, pagination, popover, radio-group, select, separator, sheet, skeleton, sonner, table, tabs, textarea
+alert-dialog, badge, breadcrumb, button, card, chart, checkbox, command, dialog, dropdown-menu, input, input-group, label, pagination, popover, radio-group, select, separator, sheet, skeleton, sonner, table, tabs, textarea
 
 ---
 
 ## Email Templates
 
-**Status: COMPLETE** — 4 React Email templates, all styled, responsive, Hungarian language.
+**Status: COMPLETE** — 7 React Email templates, all styled, responsive, Hungarian language.
 
-| Template        | File                  | Lines | Content                                                                                                                  |
-| --------------- | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------ |
-| Order Receipt   | `order-receipt.tsx`   | 442   | Order confirmation with line items table, shipping/billing addresses, payment info, totals breakdown, shop contact info. |
-| Shipping Update | `shipping-update.tsx` | 285   | Shipping notification with tracking code, carrier name, estimated delivery, order summary.                               |
-| Abandoned Cart  | `abandoned-cart.tsx`  | 274   | Cart recovery prompt with product list, subtotal, CTA button to resume checkout.                                         |
-| Newsletter      | `newsletter.tsx`      | 215   | Marketing template with headline, body, CTA button, unsubscribe link (HMAC-signed).                                      |
+| Template                 | File                           | Lines | Content                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------ | ------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Order Receipt            | `order-receipt.tsx`            | 520   | Order confirmation with line items table, shipping/billing addresses, payment method display ("Online bankkártya" / "Utánvét"), COD fee in totals if applicable, totals breakdown, tracking CTA button (pre-fills order number + email on tracking page), shop contact info. COD orders show "Feldolgozás alatt" status, Barion orders show "Fizetve". |
+| Shipping Update          | `shipping-update.tsx`          | 287   | Shipping notification with tracking code, carrier name, estimated delivery, order summary.                                                                                                                                                                                                                                                             |
+| Abandoned Cart           | `abandoned-cart.tsx`           | 274   | Cart recovery prompt with product list, subtotal, CTA button to resume checkout.                                                                                                                                                                                                                                                                       |
+| Newsletter               | `newsletter.tsx`               | 215   | Marketing template with headline, body, CTA button, unsubscribe link (HMAC-signed).                                                                                                                                                                                                                                                                    |
+| Signup Confirmation      | `signup-confirmation.tsx`      | ~140  | "Sikeres regisztráció" — sent after email+password signup. Login CTA button.                                                                                                                                                                                                                                                                           |
+| Welcome                  | `welcome.tsx`                  | ~140  | "Üdvözlünk!" — sent on first sign-in (OAuth or email confirm). Products CTA button.                                                                                                                                                                                                                                                                    |
+| Admin Order Notification | `admin-order-notification.tsx` | ~190  | Info-dense admin notification with order details table (customer, items, total, shipping, payment method). Sent when order is paid (Barion) or immediately on order creation (COD).                                                                                                                                                                    |
 
 All templates use inline CSS for email client compatibility, are mobile-responsive, and include the shop's branding from siteConfig.
 
@@ -998,22 +1146,24 @@ All templates use inline CSS for email client compatibility, are mobile-responsi
 
 **Status: COMPLETE** (base config). **Planned: Plan-based feature gating layer.**
 
-### `src/lib/config/site.config.ts` (234 lines)
+### `src/lib/config/site.config.ts` (~260 lines)
 
 Fully typed `SiteConfig` with these sections:
 
-| Section                   | Key Settings                                                                                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **store**                 | name: "Agency Store", legalName: "Agency Kft.", currency: HUF, Budapest address, phone, email                                                                                                     |
-| **urls**                  | siteUrl (from env), supportEmail                                                                                                                                                                  |
-| **features**              | enableAccounts: true, enableGuestCheckout: true, enableCoupons: true, enableReviews: false (scaffold only), enableMarketingModule: true, enableAbandonedCart: true, enableB2BWholesaleMode: false |
-| **payments**              | provider: "barion", environment from env (test/prod), posKey env var name, redirectUrls                                                                                                           |
-| **shipping.homeDelivery** | enabled: true, carriers: GLS, MPL, Express One                                                                                                                                                    |
-| **shipping.pickupPoint**  | enabled: true, carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox                                                                                                                    |
-| **shipping.rules**        | baseFee: 1490, freeOver: 15000, weightTiers: []                                                                                                                                                   |
-| **invoicing**             | provider from env (default "none"), mode: "manual"                                                                                                                                                |
-| **admin**                 | agencyViewerEnabled: true, readonlyByDefaultForAgency: true                                                                                                                                       |
-| **branding**              | logoText: "AGENCY", neutral black/white theme tokens                                                                                                                                              |
+| Section                   | Key Settings                                                                                                                                                                                                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **store**                 | name: "Agency Store", legalName: "Agency Kft.", currency: HUF, Budapest address, phone, email                                                                                                                                                                                |
+| **urls**                  | siteUrl (from env), supportEmail                                                                                                                                                                                                                                             |
+| **features**              | enableAccounts: true, enableGuestCheckout: true, enableCoupons: true, enableReviews: false (scaffold only), enableMarketingModule: true, enableAbandonedCart: true, enableB2BWholesaleMode: false                                                                            |
+| **payments**              | provider: "barion", environment from env (test/prod), posKey env var name, redirectUrls. **COD config:** `cod.enabled: true`, `cod.fee: 590` (HUF surcharge), `cod.maxOrderAmount: 100_000` (orders above must pay online), `cod.allowedShippingMethods: ["home", "pickup"]` |
+| **shipping.homeDelivery** | enabled: true, carriers: GLS, MPL, Express One                                                                                                                                                                                                                               |
+| **shipping.pickupPoint**  | enabled: true, carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox                                                                                                                                                                                               |
+| **shipping.rules**        | baseFee: 1490, freeOver: 15000, defaultProductWeightGrams: 500, weightTiers: [{maxWeightKg:2, fee:1490}, {maxWeightKg:5, fee:1990}, {maxWeightKg:10, fee:2990}, {maxWeightKg:20, fee:4490}]                                                                                  |
+| **invoicing**             | provider from env (default "none"), mode: "manual"                                                                                                                                                                                                                           |
+| **admin**                 | agencyViewerEnabled: true, readonlyByDefaultForAgency: true                                                                                                                                                                                                                  |
+| **email**                 | adminNotificationRecipients: [ADMIN_EMAIL env], sendSignupConfirmation: true, sendWelcomeEmail: true, sendAdminOrderNotification: true                                                                                                                                       |
+| **branding**              | logoText: "AGENCY", neutral black/white theme tokens                                                                                                                                                                                                                         |
+| **tax**                   | defaultVatRate: 27, availableRates: [5, 18, 27]. Used by product validators and invoicing adapters.                                                                                                                                                                          |
 
 ### Planned: Plan-Based Feature Gating
 
@@ -1055,13 +1205,13 @@ API: `getHooks()`, `overrideHooks(partial)`, `resetHooks()`
 
 ### Zod Validators (5 files)
 
-| File                       | Schemas                                                                             |
-| -------------------------- | ----------------------------------------------------------------------------------- |
-| `validators/checkout.ts`   | addressSchema, contactSchema, homeDeliverySchema, pickupPointSchema, checkoutSchema |
-| `validators/coupon.ts`     | couponCreateSchema, couponApplySchema                                               |
-| `validators/product.ts`    | variantSchema, productCreateSchema, productUpdateSchema                             |
-| `validators/subscriber.ts` | subscribeSchema, unsubscribeSchema, tagSchema                                       |
-| `validators/uuid.ts`       | uuidSchema                                                                          |
+| File                       | Schemas                                                                                                                                   |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `validators/checkout.ts`   | addressSchema, contactSchema, homeDeliverySchema, pickupPointSchema, checkoutSchema (includes `paymentMethod: z.enum(["barion", "cod"])`) |
+| `validators/coupon.ts`     | couponCreateSchema, couponApplySchema                                                                                                     |
+| `validators/product.ts`    | vatRateSchema, variantSchema, productCreateSchema, productUpdateSchema                                                                    |
+| `validators/subscriber.ts` | subscribeSchema, unsubscribeSchema, tagSchema                                                                                             |
+| `validators/uuid.ts`       | uuidSchema                                                                                                                                |
 
 Plus 15+ inline Zod schemas in individual action files.
 
@@ -1071,15 +1221,15 @@ Plus 15+ inline Zod schemas in individual action files.
 
 **Status: COMPLETE**
 
-| Feature           | Status | Details                                                                                                                                                                                                       |
-| ----------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dynamic sitemap   | DONE   | `src/app/sitemap.ts` — includes all active products (limit 5000), categories (limit 500), and 5 static pages. Priority weighting: home 1.0, products 0.9, individual products 0.8, categories 0.7, legal 0.3. |
-| robots.txt        | DONE   | `src/app/robots.ts` — allows all crawlers on `/`. Disallows `/admin/`, `/api/`, `/checkout/`, `/account/`. Points to sitemap.                                                                                 |
-| Per-page metadata | DONE   | Custom title/description on every route. Product pages have dynamic metadata from DB.                                                                                                                         |
-| JSON-LD           | DONE   | Product structured data on `/products/[slug]` (Product schema with name, description, price, availability, image).                                                                                            |
-| OpenGraph         | DONE   | Product pages include og:title, og:description, og:image.                                                                                                                                                     |
-| next/image        | DONE   | Used for product images with placeholder blur.                                                                                                                                                                |
-| Loading skeletons | DONE   | `loading.tsx` files for products list and product detail pages.                                                                                                                                               |
+| Feature           | Status | Details                                                                                                                                                                                                                                 |
+| ----------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dynamic sitemap   | DONE   | `src/app/sitemap.ts` — includes all active products (limit 5000, filtered by published_at), categories (limit 500), and 5 static pages. Priority weighting: home 1.0, products 0.9, individual products 0.8, categories 0.7, legal 0.3. |
+| robots.txt        | DONE   | `src/app/robots.ts` — allows all crawlers on `/`. Disallows `/admin/`, `/api/`, `/checkout/`, `/account/`. Points to sitemap.                                                                                                           |
+| Per-page metadata | DONE   | Custom title/description on every route. Product pages have dynamic metadata from DB.                                                                                                                                                   |
+| JSON-LD           | DONE   | Product structured data on `/products/[slug]` (Product schema with name, description, price, availability, image).                                                                                                                      |
+| OpenGraph         | DONE   | Product pages include og:title, og:description, og:image.                                                                                                                                                                               |
+| next/image        | DONE   | Used for product images with placeholder blur.                                                                                                                                                                                          |
+| Loading skeletons | DONE   | `loading.tsx` files for products list and product detail pages.                                                                                                                                                                         |
 
 ---
 
@@ -1087,24 +1237,31 @@ Plus 15+ inline Zod schemas in individual action files.
 
 **Status: COMPLETE** — Unit, integration, and E2E tests.
 
-### Unit Tests (Vitest) — 8 test files
+### Unit Tests (Vitest) — 15 test files
 
-| Test File                      | Location       | What it tests                                                            |
-| ------------------------------ | -------------- | ------------------------------------------------------------------------ |
-| `cart-math.test.ts`            | tests/unit/    | Cart subtotal calculation, quantity updates, item removal                |
-| `coupon-validation.test.ts`    | tests/unit/    | Coupon validity checks (dates, usage limits, min order, active status)   |
-| `order-totals.test.ts`         | tests/unit/    | Order total calculation with discounts and shipping                      |
-| `shipping.test.ts`             | tests/unit/    | Shipping fee calculation, free shipping threshold, weight tiers          |
-| `cart-store.test.ts`           | src/**tests**/ | Zustand cart store integration (add, remove, update, clear, persistence) |
-| `coupon-schemas.test.ts`       | src/**tests**/ | Zod coupon schema validation                                             |
-| `order-shipping-utils.test.ts` | src/**tests**/ | Order and shipping utility functions                                     |
-| `checkout-validation.test.ts`  | src/**tests**/ | Checkout form Zod schema validation                                      |
+| Test File                      | Location           | What it tests                                                                                                                                                                                                                  |
+| ------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cart-math.test.ts`            | tests/unit/        | Cart subtotal calculation, quantity updates, item removal                                                                                                                                                                      |
+| `coupon-validation.test.ts`    | tests/unit/        | Coupon validity checks (dates, usage limits, min order, active status)                                                                                                                                                         |
+| `order-totals.test.ts`         | tests/unit/        | Order total calculation with discounts and shipping                                                                                                                                                                            |
+| `shipping.test.ts`             | tests/unit/        | Shipping fee calculation, free shipping threshold, weight tier lookup (getWeightTierFee), weight-based carrier fees, tier boundaries                                                                                           |
+| `cart-store.test.ts`           | src/\_\_tests\_\_/ | Zustand cart store integration (add, remove, update, clear, persistence)                                                                                                                                                       |
+| `coupon-schemas.test.ts`       | src/\_\_tests\_\_/ | Zod coupon schema validation                                                                                                                                                                                                   |
+| `order-shipping-utils.test.ts` | src/\_\_tests\_\_/ | Order and shipping utility functions                                                                                                                                                                                           |
+| `checkout-validation.test.ts`  | src/\_\_tests\_\_/ | Checkout form Zod schema validation                                                                                                                                                                                            |
+| `email-actions.test.ts`        | src/\_\_tests\_\_/ | Email action functions: signup confirmation, welcome, admin notification (15 tests)                                                                                                                                            |
+| `order-notes.test.ts`          | src/\_\_tests\_\_/ | Order note CRUD actions: getOrderNotes, addOrderNote, deleteOrderNote (13 tests)                                                                                                                                               |
+| `product-extras.test.ts`       | src/\_\_tests\_\_/ | Product extras CRUD: getProductExtras (6 tests), adminSetProductExtras (9 tests)                                                                                                                                               |
+| `order-export.test.ts`         | src/\_\_tests\_\_/ | Order CSV export: filters, BOM, escaping, line items, empty results (16 tests)                                                                                                                                                 |
+| `vat-rate.test.ts`             | src/\_\_tests\_\_/ | VAT rate management: Zod validation, product create/update, invoicing helpers, TaxConfig, CSV export (21 tests)                                                                                                                |
+| `scheduled-publishing.test.ts` | src/\_\_tests\_\_/ | Scheduled publishing: publishedAt parsing, create/update actions, public query filters, sitemap filter (15 tests)                                                                                                              |
+| `price-history.test.ts`        | src/\_\_tests\_\_/ | 30-day price history (FE-006): resolveLowest30DayPrice pure function (6 tests), getLowest30DayPrice server query (6 tests), getLowest30DayPriceMap batch grouping (3 tests), getPriceHistory chronological retrieval (5 tests) |
 
 ### Integration Tests (Vitest) — 1 test file
 
-| Test File              | Location                       | What it tests                                                                                                                                                     |
-| ---------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create-order.test.ts` | tests/integration/ (421 lines) | Full `createOrderFromCart` flow against mocked Supabase. Tests: valid order creation, stock decrement, coupon application, guest checkout, invalid cart handling. |
+| Test File              | Location                       | What it tests                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create-order.test.ts` | tests/integration/ (430 lines) | Full `createOrderFromCart` flow against mocked Supabase. Tests: valid order creation, stock decrement, coupon application, guest checkout, invalid cart handling. MockChain supports `.or()` for published_at filter. |
 
 ### E2E Tests (Playwright) — 1 test file
 
@@ -1164,7 +1321,7 @@ Plus 15+ inline Zod schemas in individual action files.
 
 ## Seed Data
 
-**Status: COMPLETE** — 895 lines of realistic Hungarian test data.
+**Status: COMPLETE** — 960 lines of realistic Hungarian test data.
 
 ### Test Users (8)
 
@@ -1183,23 +1340,23 @@ All passwords: `password123`
 
 ### Test Data Volume
 
-| Entity                 | Count | Notes                                                                               |
-| ---------------------- | ----- | ----------------------------------------------------------------------------------- |
-| Categories             | 18    | 7 top-level + 11 subcategories, 1 inactive                                          |
-| Products               | 15    | 14 active + 1 inactive, 5,990 — 99,990 HUF range                                    |
-| Variants               | 62    | Multi-dimensional (Size + Color), single-dimension, single-variant. 1 out-of-stock. |
-| Product-Category links | 28    | Multi-category assignments                                                          |
-| Coupons                | 8     | Active, expired, exhausted, inactive, future, unrestricted                          |
-| Orders                 | 12    | All statuses represented, both shipping methods, 3 coupons used, 1 guest order      |
-| Order Items            | 15    | Multi-item orders included                                                          |
-| Subscribers            | 10    | 9 subscribed + 1 unsubscribed, varied sources and tags                              |
-| Audit Logs             | 12    | Various actions by different actors                                                 |
+| Entity                 | Count | Notes                                                                                                                          |
+| ---------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Categories             | 18    | 7 top-level + 11 subcategories, 1 inactive                                                                                     |
+| Products               | 15    | 14 active + 1 inactive, 5,990 — 99,990 HUF range                                                                               |
+| Variants               | 62    | Multi-dimensional (Size + Color), single-dimension, single-variant. 1 out-of-stock.                                            |
+| Product-Category links | 28    | Multi-category assignments                                                                                                     |
+| Coupons                | 8     | Active, expired, exhausted, inactive, future, unrestricted                                                                     |
+| Orders                 | 15    | All statuses represented, both shipping methods, 3 coupons used, 1 guest order, 3 COD orders (processing, shipped, paid guest) |
+| Order Items            | 19    | Multi-item orders included                                                                                                     |
+| Subscribers            | 10    | 9 subscribed + 1 unsubscribed, varied sources and tags                                                                         |
+| Audit Logs             | 12    | Various actions by different actors                                                                                            |
 
 ---
 
 ## Known Issues & Minor Gaps
 
-These are small issues or architectural notes. All former "spec gaps" and "planned features" have been moved to the **Feature Roadmap** below with full enterprise-level specifications (see FE-000 through FE-044).
+These are small issues or architectural notes. All former "spec gaps" and "planned features" have been moved to the **Feature Roadmap** below with full enterprise-level specifications (see FE-000 through FE-045).
 
 ### Bugs
 
@@ -1208,11 +1365,27 @@ These are small issues or architectural notes. All former "spec gaps" and "plann
 
 ### Architecture Notes
 
-3. **Checkout/admin components are inline:** CheckoutStepper, AddressForm, ShippingMethodSelector, DataTable, StatusBadge, ConfirmDialog, ProductForm, OrderDetailPanel are all built inline within their respective pages rather than extracted as reusable standalone components. Functionally complete but not DRY. ? Addressed in **FE-005**.
+3. **Checkout/admin components are inline:** CheckoutStepper, AddressForm, ShippingMethodSelector, DataTable, ~~StatusBadge~~, ConfirmDialog, ProductForm, OrderDetailPanel are built inline within their pages rather than extracted as reusable components. → **StatusBadge** extracted to shared `OrderStatusBadge` (`admin/order-status-badge.tsx`) with centralized constants in `lib/constants/order-status.ts` — 8 inline duplications eliminated. Remaining inline components addressed in **FE-005**.
 
 ### Documentation Inaccuracies
 
-4. **Test file count mismatch:** PROJECT_STATUS.md claims 8 unit test files, but only 5 unique test files exist. Three claimed files (`cart-store.test.ts`, `coupon-schemas.test.ts`, `order-shipping-utils.test.ts`) do not exist in the codebase. Needs correction or the missing tests need to be written.
+4. **Test file count mismatch:** ~~PROJECT_STATUS.md claims 8 unit test files, but only 5 unique test files exist.~~ → Fixed in **FE-000** (missing tests written) and **FE-007** (email-actions.test.ts added). Now 15 unit test files, 369 total tests passing across 19 test files.
+
+### Completed Feature Fixes
+
+5. **FE-002 (Cookie Consent & GDPR):** Cookie consent banner, cookie policy page, and settings button. GDPR-compliant with necessary/analytics/marketing cookie categories.
+6. **FE-007 (Email Flow Completion):** Signup confirmation, welcome, and admin order notification emails. All 3 sending actions with feature flags in siteConfig.
+7. **FE-013 (Guest Order Tracking):** `/order-tracking` page with form + status card + timeline. `trackGuestOrder` server action with rate limiting. Tracking CTA in order receipt email and checkout success page.
+8. **FE-018 (Order Internal Notes):** `order_notes` table with RLS. 3 server actions (`getOrderNotes`, `addOrderNote`, `deleteOrderNote`). `OrderNotes` client component integrated into admin order detail page. Agency viewer read-only support. 13 unit tests.
+9. **FE-023 (About Us Page Builder):** `shop_pages` table with RLS and auto-update trigger. 4 server actions (`getPageContent`, `adminGetPageContent`, `adminUpdatePageContent`, `adminTogglePagePublished`) with full Zod validation. Public `/about` page (Server Component, 5 sections: hero, story, team, values, contact — hidden if empty). Admin editor at `/admin/pages/about` (Client Component, collapsible sections, team/values add/remove, publish toggle, dirty state tracking). "Oldalak" nav item in admin sidebar. "Rólunk" link in footer.
+10. **FE-025 (Extra Product Selection Checkbox):** `product_extras` table (UNIQUE(product_id, extra_product_id), self-reference CHECK) with RLS. `enrichExtras()` helper fetches live product details for extras. `getProductExtras` and `adminSetProductExtras` server actions with Zod validation. Storefront: extras checkboxes on product detail page (default-checked support, out-of-stock disabled), added as separate cart items. Admin: "Kiegészítő termékek" Card on product create/edit with search, label editing, sort order, default-checked toggle. 15 unit tests.
+11. **FE-026 (Order Export CSV/Excel):** `exportOrdersCsv` server action with date range and status filters, UTF-8 BOM for Excel. "Exportálás" button + Dialog on admin orders page with date picker, status select, line-items checkbox. CSV columns: order number, date, status, customer name/email, shipping, fees, totals, payment status, item count, address, tracking number. Optional line-items section with product/variant/SKU/quantity/price detail. 16 unit tests.
+12. **FE-029 (VAT Rate Management):** `vat_rate` column on `products` (default 27, CHECK IN (5,18,27)) and `order_items` (historical snapshot). `TaxConfig` in siteConfig (`defaultVatRate: 27, availableRates: [5, 18, 27]`). `vatRateSchema` Zod validator with `.refine()` against config. Admin product forms: "ÁFA kulcs" Select dropdown in Árazás section. `adminCreateProduct` parses vatRate from FormData (default 27). `createOrderFromCart` snapshots `vat_rate` per item. Invoicing adapters: `billingoVatString()`, `grossToNet()`, `grossToVat()` helpers, per-item VAT rate for both Billingo and Szamlazz. CSV export: "ÁFA kulcs" column in line items section. Migration: `008_vat_rates.sql`. 21 unit tests.
+13. **FE-037 (Scheduled Product Publishing):** `published_at` timestamptz column on `products` (nullable, NULL = immediate). RLS policy updated to include `published_at IS NULL OR published_at <= now()`. Partial index on `published_at` WHERE NOT NULL. Defense-in-depth app-level filters in `listProducts`, `getProductBySlug`, `validateCart`, `createOrderFromCart`, and `sitemap.ts`. `publishedAt` in Zod create/update schemas. Admin product forms: `datetime-local` input in Státusz card. Product list: 3-state badge (Aktív/Inaktív/Ütemezett with date). Migration: `009_scheduled_publishing.sql`. 15 unit tests.
+14. **FE-044 (Weight-based Shipping):** `weight_grams` int column on `products` and `product_variants` (nullable). `defaultProductWeightGrams: 500` in siteConfig. 4 weight tiers in config: 0-2kg (1490 Ft), 2-5kg (1990 Ft), 5-10kg (2990 Ft), 10-20kg (4490 Ft). `getWeightTierFee()` function for tier lookup (sorted ascending, exceeds-all → highest tier fee). `calculateShippingFee()` and `getCarrierFee()` accept optional `totalWeightGrams` param — weight tier replaces base/carrier fee when provided. `CartItem.weightGrams` field. Weight resolved from variant → product → default in add-to-cart, cart validation, and order creation. Admin product forms: "Súly (gramm)" input in Árazás card + per-variant "Súly (g)" input. Cart page shows total weight in summary. Checkout page shows weight next to shipping fee display. `weightGrams` in product Zod create/update/variant schemas. Migration: `010_weight_based_shipping.sql`. 25 shipping unit tests (expanded from 12 with weight tier tests).
+15. **FE-045 (Utánvét / Cash on Delivery):** `payment_method` text column (default 'barion', CHECK IN ('barion','cod')) and `cod_fee` int column (default 0) on `orders` table. Migration: `011_add_payment_method.sql`. `CodConfig` interface in siteConfig with `enabled`, `fee` (590 HUF), `maxOrderAmount` (100,000 HUF), `allowedShippingMethods` (["home","pickup"]). `PaymentMethod` TypeScript type. Payment method selector radio cards in checkout Step 3 (Barion vs Utánvét). COD orders: skip Barion entirely, set status to `processing`, add COD fee to total, send receipt + admin notification emails immediately. Barion orders: existing flow unchanged. OrderSummary shows "Utánvét kezelési díj" line when COD. Success page: "Rendelés visszaigazolva!" for COD vs "Sikeres fizetés!" for Barion. Admin order detail: COD-aware status transitions (shipped → paid for COD), payment method display, COD fee in totals. Invoicing: dynamic `payment_method` (Billingo: "cash_on_delivery", Számlázz.hu: "Utánvét") + COD fee line items. Guest order tracking: COD-aware timeline (processing → shipped → paid). CSV export: "Fizetési mód" and "Utánvét díj" columns. Email templates: payment method + COD fee in order receipt, payment method label in admin notification. `startPaymentAction` guard for COD orders. 3 COD seed orders. `checkoutSchema` includes `paymentMethod` enum.
+16. **Order Status Management Overhaul:** Comprehensive refactor of order status system. **New file:** `lib/constants/order-status.ts` — single source of truth for all status labels, badge variants, transition maps, timeline definitions, and confirmation dialog metadata. **Server-side enforcement:** `adminUpdateOrderStatus` now validates transitions server-side via `isTransitionAllowed()` (was UI-only before — security gap). **COD flow fixes:** corrected transition maps (COD: processing → shipped → paid; removed nonsensical transitions like paid → processing). **Shared component:** `OrderStatusBadge` (`admin/order-status-badge.tsx`) replaces 8 inline duplications across admin and shop pages. **Admin order detail redesign:** prominent "Következő lépés" status action card at top of page (was buried below line items), AlertDialog confirmation before every status change with Hungarian descriptions, visual status stepper/progress indicator (COD-aware), error feedback for rejected transitions. **Hungarian consistency:** standardized "Feldolgozás alatt" (was "Feldolgozás"), "Lemondva" (was "Törölve"). **Bug fix:** tracking code stored in `tracking_code` field (was overwriting `notes`). **UI component:** added `alert-dialog` shadcn component.
+17. **FE-006 (30-Day Price History Tracking):** EU Omnibus Directive compliance. `price_history` table with database triggers (`record_price_change` on products, `record_variant_price_change` on product_variants) that automatically record price/compare_at_price changes — no application-level inserts. RLS: public SELECT, admin UPDATE/DELETE, no direct INSERT. 2 indexes for fast lookups. 90-day cleanup function. Migration: `012_price_history.sql`. TypeScript types: `PriceHistoryRow`, `PriceHistoryInsert` in `database.ts`. Utility functions split into server-only (`price-history.ts`: `getLowest30DayPrice`, `getLowest30DayPriceMap`, `getPriceHistory`) and client-safe (`price-history-shared.ts`: `resolveLowest30DayPrice`, types `LowestPriceMap`, `LowestPriceResult`, `PriceHistoryPoint`). Storefront: product detail page fetches `lowestPriceMap` when discounted, `ProductDetailClient` resolves per-variant lowest price, `PriceDisplay` shows "Legalacsonyabb ár az elmúlt 30 napban: X Ft" below price when `compare_at_price > base_price` (hidden for free products). Variant fallback: if variant has no price history, uses product-level history. Admin: `PriceSparkline` component (lightweight SVG ~120px × 32px, color-coded trend, hover tooltip) rendered next to base price input on product edit page. `getProductPriceHistory` server action. 20 unit tests.
 
 ---
 
@@ -1269,6 +1442,7 @@ For shop owners who need a solid, legally compliant webshop with essential featu
 **Payments & Invoicing:**
 
 - Barion payment gateway
+- Utánvét / Cash on Delivery (configurable surcharge and order limit)
 - Automatic invoicing via szamlazz.hu or Billingo
 
 **Marketing & Communication:**
@@ -1342,6 +1516,7 @@ These ship with every instance regardless of plan tier:
 - Packing slip printing
 - Legal page templates
 - Barion payment gateway
+- Utánvét / Cash on Delivery (configurable fee + max order amount)
 - Invoicing (Billingo/Szamlazz)
 - Basic SEO (sitemap, robots, meta, JSON-LD, OG)
 - Profit tracking on dashboard (when cost data available)

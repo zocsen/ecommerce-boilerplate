@@ -2,27 +2,24 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Trash2,
-  Save,
-  Loader2,
-  ImagePlus,
-} from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Search, GripVertical } from "lucide-react";
 import Link from "next/link";
-import { adminCreateProduct } from "@/lib/actions/products";
+import { adminCreateProduct, adminListProducts } from "@/lib/actions/products";
 import { listCategories } from "@/lib/actions/categories";
+import { SingleImageUpload, GalleryImageUpload } from "@/components/admin/image-upload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { siteConfig } from "@/lib/config/site.config";
 import type { CategoryRow } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
@@ -39,6 +36,7 @@ interface VariantRow {
   priceOverride: string;
   stockQuantity: string;
   isActive: boolean;
+  weightGrams: string;
 }
 
 function emptyVariant(): VariantRow {
@@ -52,7 +50,22 @@ function emptyVariant(): VariantRow {
     priceOverride: "",
     stockQuantity: "0",
     isActive: true,
+    weightGrams: "",
   };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Extra row type (client-side)                                       */
+/* ------------------------------------------------------------------ */
+
+interface ExtraRow {
+  key: string;
+  extraProductId: string;
+  extraVariantId: string | null;
+  extraProductTitle: string;
+  label: string;
+  isDefaultChecked: boolean;
+  sortOrder: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -82,12 +95,22 @@ export default function AdminProductNewPage() {
   const [description, setDescription] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [compareAtPrice, setCompareAtPrice] = useState("");
+  const [vatRate, setVatRate] = useState(String(siteConfig.tax.defaultVatRate));
+  const [weightGrams, setWeightGrams] = useState("");
   const [mainImageUrl, setMainImageUrl] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [publishedAt, setPublishedAt] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [variants, setVariants] = useState<VariantRow[]>([]);
+
+  // Extras
+  const [extras, setExtras] = useState<ExtraRow[]>([]);
+  const [extraSearch, setExtraSearch] = useState("");
+  const [extraSearchResults, setExtraSearchResults] = useState<
+    Array<{ id: string; title: string; slug: string; base_price: number }>
+  >([]);
+  const [extraSearching, setExtraSearching] = useState(false);
 
   // Categories
   const [categories, setCategories] = useState<CategoryRow[]>([]);
@@ -119,19 +142,6 @@ export default function AdminProductNewPage() {
     );
   }
 
-  // ── Image URL list management ──────────────────────────────────
-  function addImageUrl() {
-    const url = newImageUrl.trim();
-    if (url && !imageUrls.includes(url)) {
-      setImageUrls((prev) => [...prev, url]);
-      setNewImageUrl("");
-    }
-  }
-
-  function removeImageUrl(index: number) {
-    setImageUrls((prev) => prev.filter((_, i) => i !== index));
-  }
-
   // ── Variant management ─────────────────────────────────────────
   function addVariant() {
     setVariants((prev) => [...prev, emptyVariant()]);
@@ -142,9 +152,58 @@ export default function AdminProductNewPage() {
   }
 
   function updateVariant(key: string, field: keyof VariantRow, value: string | boolean) {
-    setVariants((prev) =>
-      prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)),
-    );
+    setVariants((prev) => prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)));
+  }
+
+  // ── Extras management ──────────────────────────────────────────
+  async function searchExtraProducts(query: string) {
+    setExtraSearch(query);
+    if (query.trim().length < 2) {
+      setExtraSearchResults([]);
+      return;
+    }
+    setExtraSearching(true);
+    try {
+      const result = await adminListProducts({ search: query.trim(), perPage: 10 });
+      if (result.success && result.data) {
+        const existingIds = new Set(extras.map((e) => e.extraProductId));
+        setExtraSearchResults(
+          result.data.products
+            .filter((p) => !existingIds.has(p.id))
+            .map((p) => ({ id: p.id, title: p.title, slug: p.slug, base_price: p.base_price })),
+        );
+      }
+    } finally {
+      setExtraSearching(false);
+    }
+  }
+
+  function addExtra(productResult: {
+    id: string;
+    title: string;
+    slug: string;
+    base_price: number;
+  }) {
+    const newExtra: ExtraRow = {
+      key: crypto.randomUUID(),
+      extraProductId: productResult.id,
+      extraVariantId: null,
+      extraProductTitle: productResult.title,
+      label: `${productResult.title} (+${Math.round(productResult.base_price).toLocaleString("hu-HU")} Ft)`,
+      isDefaultChecked: false,
+      sortOrder: extras.length,
+    };
+    setExtras((prev) => [...prev, newExtra]);
+    setExtraSearch("");
+    setExtraSearchResults([]);
+  }
+
+  function removeExtra(key: string) {
+    setExtras((prev) => prev.filter((e) => e.key !== key));
+  }
+
+  function updateExtra(key: string, field: keyof ExtraRow, value: string | boolean | number) {
+    setExtras((prev) => prev.map((e) => (e.key === key ? { ...e, [field]: value } : e)));
   }
 
   // ── Submit ─────────────────────────────────────────────────────
@@ -179,12 +238,19 @@ export default function AdminProductNewPage() {
         formData.set("compareAtPrice", String(Math.round(Number(compareAtPrice))));
       }
 
+      formData.set("vatRate", vatRate);
+
+      if (weightGrams) {
+        formData.set("weightGrams", weightGrams);
+      }
+
       if (mainImageUrl.trim()) {
         formData.set("mainImageUrl", mainImageUrl.trim());
       }
 
       formData.set("imageUrls", JSON.stringify(imageUrls));
       formData.set("isActive", String(isActive));
+      formData.set("publishedAt", publishedAt ? new Date(publishedAt).toISOString() : "");
       formData.set("categoryIds", JSON.stringify(selectedCategoryIds));
 
       // Build variants payload
@@ -198,8 +264,21 @@ export default function AdminProductNewPage() {
           priceOverride: v.priceOverride ? Number(v.priceOverride) : undefined,
           stockQuantity: Number(v.stockQuantity) || 0,
           isActive: v.isActive,
+          weightGrams: v.weightGrams ? Number(v.weightGrams) : undefined,
         }));
         formData.set("variants", JSON.stringify(variantsPayload));
+      }
+
+      // Extras
+      if (extras.length > 0) {
+        const extrasPayload = extras.map((e) => ({
+          extraProductId: e.extraProductId,
+          extraVariantId: e.extraVariantId || undefined,
+          label: e.label,
+          isDefaultChecked: e.isDefaultChecked,
+          sortOrder: e.sortOrder,
+        }));
+        formData.set("extras", JSON.stringify(extrasPayload));
       }
 
       const result = await adminCreateProduct(formData);
@@ -222,9 +301,7 @@ export default function AdminProductNewPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Új termék
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Új termék</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Töltse ki az alábbi mezőket az új termék létrehozásához.
           </p>
@@ -310,34 +387,77 @@ export default function AdminProductNewPage() {
             <CardHeader>
               <CardTitle>Árazás</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="basePrice">Alapár (HUF) *</Label>
-                <Input
-                  id="basePrice"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                  placeholder="0"
-                />
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="basePrice">Alapár (HUF) *</Label>
+                  <Input
+                    id="basePrice"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={basePrice}
+                    onChange={(e) => setBasePrice(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="compareAtPrice">Összehasonlító ár (HUF)</Label>
+                  <Input
+                    id="compareAtPrice"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={compareAtPrice}
+                    onChange={(e) => setCompareAtPrice(e.target.value)}
+                    placeholder="Opcionális"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ha megadja, a termék akciósként jelenik meg.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>ÁFA kulcs</Label>
+                  <Select
+                    value={vatRate}
+                    onValueChange={(val: string | null) =>
+                      setVatRate(val ?? String(siteConfig.tax.defaultVatRate))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteConfig.tax.availableRates.map((rate) => (
+                        <SelectItem key={rate} value={String(rate)}>
+                          {rate}%
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="compareAtPrice">Összehasonlító ár (HUF)</Label>
-                <Input
-                  id="compareAtPrice"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={compareAtPrice}
-                  onChange={(e) => setCompareAtPrice(e.target.value)}
-                  placeholder="Opcionális"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Ha megadja, a termék akciósként jelenik meg.
-                </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="weightGrams">Súly (gramm)</Label>
+                  <Input
+                    id="weightGrams"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={weightGrams}
+                    onChange={(e) => setWeightGrams(e.target.value)}
+                    placeholder={String(siteConfig.shipping.rules.defaultProductWeightGrams)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Üresen hagyva az alapértelmezett (
+                    {siteConfig.shipping.rules.defaultProductWeightGrams} g) kerül alkalmazásra. A
+                    variánsok felülírhatják.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -347,74 +467,22 @@ export default function AdminProductNewPage() {
             <CardHeader>
               <CardTitle>Képek</CardTitle>
               <CardDescription>
-                Adja meg a képek URL-jeit. A fő kép jelenik meg a listákban.
+                Húzza ide a képeket vagy kattintson a tallózáshoz. A fő kép jelenik meg a listákban.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="mainImageUrl">Fő kép URL</Label>
-                <Input
-                  id="mainImageUrl"
-                  type="url"
+                <Label>Fő kép</Label>
+                <SingleImageUpload
                   value={mainImageUrl}
-                  onChange={(e) => setMainImageUrl(e.target.value)}
-                  placeholder="https://..."
+                  onChange={setMainImageUrl}
+                  onRemove={() => setMainImageUrl("")}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Galéria képek</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="url"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="Kép URL hozzáadása..."
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addImageUrl();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addImageUrl}
-                  >
-                    <ImagePlus className="size-4" />
-                  </Button>
-                </div>
-
-                {imageUrls.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {imageUrls.map((url, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2"
-                      >
-                        <div className="size-8 shrink-0 overflow-hidden rounded bg-muted">
-                          <img
-                            src={url}
-                            alt=""
-                            className="size-full object-cover"
-                          />
-                        </div>
-                        <span className="flex-1 truncate text-xs font-mono">
-                          {url}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeImageUrl(i)}
-                          className="cursor-pointer text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <GalleryImageUpload value={imageUrls} onChange={setImageUrls} />
               </div>
             </CardContent>
           </Card>
@@ -429,12 +497,7 @@ export default function AdminProductNewPage() {
                     Opcionális. Méret, szín, stb. variánsok kezelése.
                   </CardDescription>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addVariant}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={addVariant}>
                   <Plus className="mr-2 size-4" />
                   Variáns
                 </Button>
@@ -443,14 +506,9 @@ export default function AdminProductNewPage() {
             {variants.length > 0 && (
               <CardContent className="space-y-4">
                 {variants.map((v, idx) => (
-                  <div
-                    key={v.key}
-                    className="rounded-lg border bg-muted/30 p-4 space-y-3"
-                  >
+                  <div key={v.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        Variáns #{idx + 1}
-                      </span>
+                      <span className="text-sm font-medium">Variáns #{idx + 1}</span>
                       <button
                         type="button"
                         onClick={() => removeVariant(v.key)}
@@ -465,9 +523,7 @@ export default function AdminProductNewPage() {
                         <Label className="text-xs">SKU</Label>
                         <Input
                           value={v.sku}
-                          onChange={(e) =>
-                            updateVariant(v.key, "sku", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "sku", e.target.value)}
                           placeholder="pl. TEE-BLK-M"
                           className="h-8 text-xs"
                         />
@@ -476,9 +532,7 @@ export default function AdminProductNewPage() {
                         <Label className="text-xs">Opció 1 neve</Label>
                         <Input
                           value={v.option1Name}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option1Name", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option1Name", e.target.value)}
                           placeholder="Méret"
                           className="h-8 text-xs"
                         />
@@ -487,9 +541,7 @@ export default function AdminProductNewPage() {
                         <Label className="text-xs">Opció 1 értéke *</Label>
                         <Input
                           value={v.option1Value}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option1Value", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option1Value", e.target.value)}
                           placeholder="M"
                           className="h-8 text-xs"
                         />
@@ -501,9 +553,7 @@ export default function AdminProductNewPage() {
                         <Label className="text-xs">Opció 2 neve</Label>
                         <Input
                           value={v.option2Name}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option2Name", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option2Name", e.target.value)}
                           placeholder="Szín (opcionális)"
                           className="h-8 text-xs"
                         />
@@ -512,9 +562,7 @@ export default function AdminProductNewPage() {
                         <Label className="text-xs">Opció 2 értéke</Label>
                         <Input
                           value={v.option2Value}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option2Value", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option2Value", e.target.value)}
                           placeholder="Fekete"
                           className="h-8 text-xs"
                         />
@@ -526,16 +574,14 @@ export default function AdminProductNewPage() {
                           min="0"
                           step="1"
                           value={v.priceOverride}
-                          onChange={(e) =>
-                            updateVariant(v.key, "priceOverride", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "priceOverride", e.target.value)}
                           placeholder="Alap ár"
                           className="h-8 text-xs"
                         />
                       </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-4">
                       <div className="space-y-1">
                         <Label className="text-xs">Készlet *</Label>
                         <Input
@@ -543,18 +589,26 @@ export default function AdminProductNewPage() {
                           min="0"
                           step="1"
                           value={v.stockQuantity}
-                          onChange={(e) =>
-                            updateVariant(v.key, "stockQuantity", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "stockQuantity", e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Súly (g)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={v.weightGrams}
+                          onChange={(e) => updateVariant(v.key, "weightGrams", e.target.value)}
+                          placeholder="Termék súly"
                           className="h-8 text-xs"
                         />
                       </div>
                       <div className="flex items-end gap-2 pb-1">
                         <Checkbox
                           checked={v.isActive}
-                          onCheckedChange={(checked) =>
-                            updateVariant(v.key, "isActive", !!checked)
-                          }
+                          onCheckedChange={(checked) => updateVariant(v.key, "isActive", !!checked)}
                         />
                         <Label className="text-xs">Aktív</Label>
                       </div>
@@ -563,6 +617,121 @@ export default function AdminProductNewPage() {
                 ))}
               </CardContent>
             )}
+          </Card>
+
+          {/* Extras */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Kiegészítő termékek</CardTitle>
+                  <CardDescription>
+                    Termékek, amelyeket a vásárlók egy jelölőnégyzettel hozzáadhatnak a kosárhoz.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Search for extra products */}
+              <div className="space-y-2">
+                <Label className="text-xs">Termék keresése</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={extraSearch}
+                    onChange={(e) => searchExtraProducts(e.target.value)}
+                    placeholder="Keresés név vagy slug alapján..."
+                    className="h-8 pl-9 text-xs"
+                  />
+                  {extraSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+
+                {/* Search results dropdown */}
+                {extraSearchResults.length > 0 && (
+                  <div className="rounded-md border bg-background shadow-md">
+                    {extraSearchResults.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => addExtra(p)}
+                        className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-xs hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="font-medium">{p.title}</span>
+                        <span className="text-muted-foreground font-mono">
+                          {Math.round(p.base_price).toLocaleString("hu-HU")} Ft
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Extras list */}
+              {extras.length > 0 && (
+                <div className="space-y-3">
+                  {extras.map((extra) => (
+                    <div key={extra.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="size-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">{extra.extraProductTitle}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeExtra(extra.key)}
+                          className="cursor-pointer text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-xs">Megjelenítési szöveg *</Label>
+                          <Input
+                            value={extra.label}
+                            onChange={(e) => updateExtra(extra.key, "label", e.target.value)}
+                            className="h-8 text-xs"
+                            placeholder="pl. Díszcsomag (+990 Ft)"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Sorrend</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={extra.sortOrder}
+                            onChange={(e) =>
+                              updateExtra(extra.key, "sortOrder", Number(e.target.value) || 0)
+                            }
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={extra.isDefaultChecked}
+                          onCheckedChange={(checked) =>
+                            updateExtra(extra.key, "isDefaultChecked", !!checked)
+                          }
+                        />
+                        <Label className="text-xs">Alapértelmezetten kijelölve</Label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {extras.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Nincs kiegészítő termék hozzárendelve. Keressen fent egy terméket a hozzáadáshoz.
+                </p>
+              )}
+            </CardContent>
           </Card>
         </div>
 
@@ -573,13 +742,28 @@ export default function AdminProductNewPage() {
             <CardHeader>
               <CardTitle>Státusz</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={isActive}
                   onCheckedChange={(checked) => setIsActive(!!checked)}
                 />
                 <Label>Aktív (megjelenik a webshopban)</Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="publishedAt" className="text-sm">
+                  Ütemezett megjelenés
+                </Label>
+                <Input
+                  id="publishedAt"
+                  type="datetime-local"
+                  value={publishedAt}
+                  onChange={(e) => setPublishedAt(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Hagyja üresen az azonnali megjelenéshez. Jövőbeli dátum esetén a termék addig
+                  rejtett marad a webshopban.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -593,10 +777,7 @@ export default function AdminProductNewPage() {
               {categories.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Nincsenek kategóriák.{" "}
-                  <Link
-                    href="/admin/categories"
-                    className="underline hover:text-foreground"
-                  >
+                  <Link href="/admin/categories" className="underline hover:text-foreground">
                     Létrehozás
                   </Link>
                 </p>
@@ -609,9 +790,7 @@ export default function AdminProductNewPage() {
                         onCheckedChange={() => toggleCategory(cat.id)}
                       />
                       <Label className="text-sm font-normal">
-                        {cat.parent_id && (
-                          <span className="text-muted-foreground">— </span>
-                        )}
+                        {cat.parent_id && <span className="text-muted-foreground">— </span>}
                         {cat.name}
                       </Label>
                     </div>

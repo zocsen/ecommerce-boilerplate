@@ -51,6 +51,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
             fill
             sizes="80px"
             className="object-cover"
+            unoptimized={item.image.startsWith("http://")}
           />
         ) : (
           <div className="flex h-full items-center justify-center">
@@ -83,9 +84,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
           </div>
 
           {item.variantLabel && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {item.variantLabel}
-            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{item.variantLabel}</p>
           )}
         </div>
 
@@ -119,9 +118,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
 
           {/* ── Line total ───────────────────────────── */}
           <div className="text-right">
-            <p className="text-sm font-medium tabular-nums">
-              {formatHUF(lineTotal)}
-            </p>
+            <p className="text-sm font-medium tabular-nums">{formatHUF(lineTotal)}</p>
             {item.quantity > 1 && (
               <p className="text-xs text-muted-foreground tabular-nums">
                 {formatHUF(item.price)} / db

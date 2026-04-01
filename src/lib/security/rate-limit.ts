@@ -29,7 +29,11 @@ export class RateLimiter {
     this.cleanupTimer = setInterval(() => this.cleanup(), 60_000);
 
     // Prevent the timer from keeping the process alive in tests / graceful shutdown
-    if (this.cleanupTimer && typeof this.cleanupTimer === "object" && "unref" in this.cleanupTimer) {
+    if (
+      this.cleanupTimer &&
+      typeof this.cleanupTimer === "object" &&
+      "unref" in this.cleanupTimer
+    ) {
       this.cleanupTimer.unref();
     }
   }
@@ -102,3 +106,6 @@ export const subscribeRateLimiter = new RateLimiter(5, 60_000);
 
 /** Auth endpoints (login, register, reset): 10 requests per 60 seconds */
 export const authRateLimiter = new RateLimiter(10, 60_000);
+
+/** Guest order tracking: 5 lookups per hour */
+export const orderTrackingRateLimiter = new RateLimiter(5, 3_600_000);

@@ -17,6 +17,7 @@ import {
   Heading,
   Text,
   Hr,
+  Link,
 } from "@react-email/components";
 
 import { siteConfig } from "@/lib/config/site.config";
@@ -45,14 +46,12 @@ export interface OrderReceiptEmailProps {
 
 // ── Component ─────────────────────────────────────────────────────
 
-export default function OrderReceiptEmail({
-  order,
-  items,
-}: OrderReceiptEmailProps) {
+export default function OrderReceiptEmail({ order, items }: OrderReceiptEmailProps) {
   const { store, branding, urls } = siteConfig;
   const shippingAddr = order.shipping_address;
   const billingAddr = order.billing_address;
   const isPickup = order.shipping_method === "pickup";
+  const isCod = order.payment_method === "cod";
 
   return (
     <Html lang="hu">
@@ -123,23 +122,42 @@ export default function OrderReceiptEmail({
             {/* ── Order meta ───────────────── */}
             <Section style={{ marginBottom: "24px", fontSize: "14px" }}>
               <Row>
-                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>Rendelésszám:</Column>
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                  Rendelésszám:
+                </Column>
                 <Column style={{ textAlign: "right", fontWeight: 600, padding: "4px 0" }}>
                   {order.id.slice(0, 8).toUpperCase()}
                 </Column>
               </Row>
               <Row>
-                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>Dátum:</Column>
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                  Dátum:
+                </Column>
                 <Column style={{ textAlign: "right", padding: "4px 0" }}>
                   {formatDate(order.created_at)}
                 </Column>
               </Row>
               <Row>
-                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>Státusz:</Column>
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                  Státusz:
+                </Column>
                 <Column
-                  style={{ textAlign: "right", fontWeight: 600, color: "#16a34a", padding: "4px 0" }}
+                  style={{
+                    textAlign: "right",
+                    fontWeight: 600,
+                    color: "#16a34a",
+                    padding: "4px 0",
+                  }}
                 >
-                  Fizetve
+                  {isCod ? "Feldolgozás alatt" : "Fizetve"}
+                </Column>
+              </Row>
+              <Row>
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                  Fizetési mód:
+                </Column>
+                <Column style={{ textAlign: "right", fontWeight: 600, padding: "4px 0" }}>
+                  {isCod ? "Utánvét" : "Online bankkártya"}
                 </Column>
               </Row>
             </Section>
@@ -245,20 +263,38 @@ export default function OrderReceiptEmail({
             {/* ── Totals ───────────────────── */}
             <Section style={{ marginBottom: "32px", fontSize: "14px" }}>
               <Row>
-                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>Részösszeg:</Column>
-                <Column style={{ textAlign: "right", padding: "4px 0" }}>{formatHuf(order.subtotal_amount)}</Column>
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                  Részösszeg:
+                </Column>
+                <Column style={{ textAlign: "right", padding: "4px 0" }}>
+                  {formatHuf(order.subtotal_amount)}
+                </Column>
               </Row>
               <Row>
-                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>Szállítás:</Column>
+                <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                  Szállítás:
+                </Column>
                 <Column style={{ textAlign: "right", padding: "4px 0" }}>
                   {order.shipping_fee === 0 ? "Ingyenes" : formatHuf(order.shipping_fee)}
                 </Column>
               </Row>
               {order.discount_total > 0 && (
                 <Row>
-                  <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>Kedvezmény:</Column>
+                  <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                    Kedvezmény:
+                  </Column>
                   <Column style={{ textAlign: "right", color: "#dc2626", padding: "4px 0" }}>
                     -{formatHuf(order.discount_total)}
+                  </Column>
+                </Row>
+              )}
+              {order.cod_fee > 0 && (
+                <Row>
+                  <Column style={{ color: branding.theme.mutedForeground, padding: "4px 0" }}>
+                    Utánvét kezelési díj:
+                  </Column>
+                  <Column style={{ textAlign: "right", padding: "4px 0" }}>
+                    {formatHuf(order.cod_fee)}
                   </Column>
                 </Row>
               )}
@@ -288,6 +324,26 @@ export default function OrderReceiptEmail({
             </Section>
 
             <Hr style={{ borderColor: branding.theme.border, margin: "0 0 24px" }} />
+
+            {/* ── Tracking CTA ─────────────── */}
+            <Section style={{ marginBottom: "24px", textAlign: "center" as const }}>
+              <Link
+                href={`${urls.siteUrl}/order-tracking?order=${encodeURIComponent(order.id.slice(0, 8).toUpperCase())}&email=${encodeURIComponent(order.email)}`}
+                style={{
+                  display: "inline-block",
+                  padding: "12px 32px",
+                  backgroundColor: branding.theme.foreground,
+                  color: branding.theme.background,
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  borderRadius: "8px",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Rendelés követése
+              </Link>
+            </Section>
 
             {/* ── Addresses ────────────────── */}
             <Section>
@@ -383,7 +439,10 @@ export default function OrderReceiptEmail({
                 lineHeight: "1.6",
               }}
             >
-              <a href={urls.siteUrl} style={{ color: branding.theme.mutedForeground, textDecoration: "underline" }}>
+              <a
+                href={urls.siteUrl}
+                style={{ color: branding.theme.mutedForeground, textDecoration: "underline" }}
+              >
                 {urls.siteUrl}
               </a>
             </Text>
@@ -405,8 +464,20 @@ OrderReceiptEmail.PreviewProps = {
     discount_total: 0,
     total_amount: 13490,
     shipping_method: "home",
-    shipping_address: { name: "Kovács János", street: "Váci utca 1.", city: "Budapest", zip: "1052", country: "HU" },
-    billing_address: { name: "Kovács János", street: "Váci utca 1.", city: "Budapest", zip: "1052", country: "HU" },
+    shipping_address: {
+      name: "Kovács János",
+      street: "Váci utca 1.",
+      city: "Budapest",
+      zip: "1052",
+      country: "HU",
+    },
+    billing_address: {
+      name: "Kovács János",
+      street: "Váci utca 1.",
+      city: "Budapest",
+      zip: "1052",
+      country: "HU",
+    },
     pickup_point_provider: null,
     pickup_point_label: null,
     coupon_code: null,
@@ -419,6 +490,8 @@ OrderReceiptEmail.PreviewProps = {
     barion_payment_id: null,
     barion_payment_request_id: null,
     barion_status: null,
+    payment_method: "barion",
+    cod_fee: 0,
     invoice_provider: null,
     invoice_number: null,
     invoice_url: null,
@@ -437,6 +510,7 @@ OrderReceiptEmail.PreviewProps = {
       unit_price_snapshot: 6000,
       quantity: 2,
       line_total: 12000,
+      vat_rate: 27,
     },
   ],
 } satisfies OrderReceiptEmailProps;

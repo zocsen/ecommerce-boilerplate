@@ -9,6 +9,8 @@ interface OrderSummaryProps {
   subtotal: number;
   shippingFee: number;
   discount: number;
+  /** Utánvét kezelési díj — only shown when > 0 */
+  codFee?: number;
   total: number;
 }
 
@@ -16,6 +18,7 @@ export function OrderSummary({
   subtotal,
   shippingFee,
   discount,
+  codFee = 0,
   total,
 }: OrderSummaryProps) {
   return (
@@ -33,12 +36,10 @@ export function OrderSummary({
         />
 
         {discount > 0 && (
-          <SummaryLine
-            label="Kedvezmény"
-            value={`-${formatHUF(discount)}`}
-            highlight
-          />
+          <SummaryLine label="Kedvezmény" value={`-${formatHUF(discount)}`} highlight />
         )}
+
+        {codFee > 0 && <SummaryLine label="Utánvét kezelési díj" value={formatHUF(codFee)} />}
       </div>
 
       <Separator className="my-4" />

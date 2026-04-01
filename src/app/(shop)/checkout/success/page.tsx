@@ -10,26 +10,18 @@ import { siteConfig } from "@/lib/config/site.config";
 import { formatHUF } from "@/lib/utils/format";
 import { formatDate } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import { Separator } from "@/components/ui/separator";
+import type { OrderStatus } from "@/lib/types/database";
 
 interface SuccessPageProps {
-  searchParams: Promise<{ orderId?: string }>;
+  searchParams: Promise<{ orderId?: string; method?: string }>;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Piszkozat",
-  awaiting_payment: "Fizetésre vár",
-  paid: "Fizetve",
-  processing: "Feldolgozás alatt",
-  shipped: "Kiszállítva",
-  cancelled: "Lemondva",
-  refunded: "Visszatérítve",
-};
 
 export default async function CheckoutSuccessPage({ searchParams }: SuccessPageProps) {
   const params = await searchParams;
   const orderId = params.orderId;
+  const isCod = params.method === "cod";
   const user = await getCurrentUser();
 
   // Attempt to fetch order details if user is logged in
@@ -56,9 +48,13 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
           <CheckCircle2 className="size-10 text-emerald-600 dark:text-emerald-400" />
         </div>
 
-        <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">Sikeres fizetés!</h1>
+        <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">
+          {isCod ? "Rendelés visszaigazolva!" : "Sikeres fizetés!"}
+        </h1>
         <p className="mt-2 text-muted-foreground">
-          Köszönjük a rendelését. Hamarosan e-mailben küldjük a visszaigazolást.
+          {isCod
+            ? "Köszönjük a rendelését. A fizetés a csomag átvételekor történik. Hamarosan e-mailben küldjük a visszaigazolást."
+            : "Köszönjük a rendelését. Hamarosan e-mailben küldjük a visszaigazolást."}
         </p>
       </div>
 
@@ -69,7 +65,7 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
               Rendelés részletei
             </h2>
-            <Badge variant="secondary">{STATUS_LABELS[orderData.status] ?? orderData.status}</Badge>
+            <OrderStatusBadge status={orderData.status as OrderStatus} />
           </div>
 
           <Separator className="my-4" />
@@ -103,10 +99,25 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
             <ArrowRight className="ml-1.5 size-4" />
           </Button>
         ) : (
-          <Button size="lg" render={<Link href="/products" />}>
-            Vissza a boltba
-            <ArrowRight className="ml-1.5 size-4" />
-          </Button>
+          <>
+            {orderId && (
+              <Button
+                size="lg"
+                render={
+                  <Link
+                    href={`/order-tracking?order=${encodeURIComponent(orderId.slice(0, 8).toUpperCase())}`}
+                  />
+                }
+              >
+                Rendelés követése
+                <ArrowRight className="ml-1.5 size-4" />
+              </Button>
+            )}
+            <Button size="lg" variant="outline" render={<Link href="/products" />}>
+              Vissza a boltba
+              <ArrowRight className="ml-1.5 size-4" />
+            </Button>
+          </>
         )}
 
         <Link

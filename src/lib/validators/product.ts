@@ -4,10 +4,19 @@
 
 import { z } from "zod";
 import { uuidSchema } from "@/lib/validators/uuid";
+import { siteConfig } from "@/lib/config/site.config";
 
 // ── Slug regex: lowercase letters, digits, hyphens ─────────────────
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+// ── VAT rate validator (constrained to configured available rates) ──
+
+const vatRateSchema = z
+  .int()
+  .refine((val) => (siteConfig.tax.availableRates as readonly number[]).includes(val), {
+    message: `Érvénytelen ÁFA kulcs. Engedélyezett értékek: ${siteConfig.tax.availableRates.join(", ")}%`,
+  });
 
 // ── Variant schema ─────────────────────────────────────────────────
 
@@ -20,6 +29,7 @@ export const variantSchema = z.object({
   priceOverride: z.int().min(0, "Az ár nem lehet negatív").optional(),
   stockQuantity: z.int().min(0, "A készlet nem lehet negatív"),
   isActive: z.boolean(),
+  weightGrams: z.int().min(0, "A súly nem lehet negatív").optional().nullable(),
 });
 
 export type VariantInput = z.infer<typeof variantSchema>;
@@ -35,9 +45,12 @@ export const productCreateSchema = z.object({
   description: z.string(),
   basePrice: z.int().min(0, "Az alapár nem lehet negatív"),
   compareAtPrice: z.int().min(0, "Az összehasonlító ár nem lehet negatív").optional(),
+  vatRate: vatRateSchema,
   mainImageUrl: z.url("Érvénytelen kép URL").optional(),
   imageUrls: z.array(z.string()),
   isActive: z.boolean(),
+  publishedAt: z.string().optional().nullable(),
+  weightGrams: z.int().min(0, "A súly nem lehet negatív").optional().nullable(),
   categoryIds: z.array(uuidSchema),
 });
 
@@ -55,14 +68,13 @@ export const productUpdateSchema = z.object({
     .optional(),
   description: z.string().optional(),
   basePrice: z.int().min(0, "Az alapár nem lehet negatív").optional(),
-  compareAtPrice: z
-    .int()
-    .min(0, "Az összehasonlító ár nem lehet negatív")
-    .optional()
-    .nullable(),
+  compareAtPrice: z.int().min(0, "Az összehasonlító ár nem lehet negatív").optional().nullable(),
+  vatRate: vatRateSchema.optional(),
   mainImageUrl: z.url("Érvénytelen kép URL").optional().nullable(),
   imageUrls: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
+  publishedAt: z.string().optional().nullable(),
+  weightGrams: z.int().min(0, "A súly nem lehet negatív").optional().nullable(),
   categoryIds: z.array(uuidSchema).optional(),
 });
 

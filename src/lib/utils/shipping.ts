@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/*  Shipping fee calculation                                           */
+/*  Shipping fee calculation — with weight-based tier support           */
 /* ------------------------------------------------------------------ */
 
 import { siteConfig } from "@/lib/config/site.config";
@@ -26,16 +26,53 @@ const PICKUP_CARRIERS: Carrier[] = [
   { id: "easybox", name: "Easybox", fee: 890 },
 ];
 
+// ── Weight tier lookup ─────────────────────────────────────────────
+
+/**
+ * Look up the shipping fee for a given total weight (in grams) using
+ * the configured weight tiers.
+ *
+ * - Tiers are sorted ascending by `maxWeightKg`.
+ * - Returns the fee of the first tier whose `maxWeightKg` >= totalWeightKg.
+ * - If weight exceeds all tiers, returns the highest tier's fee.
+ * - If no tiers are configured, returns `null` (caller uses baseFee).
+ */
+export function getWeightTierFee(totalWeightGrams: number): number | null {
+  const { weightTiers } = siteConfig.shipping.rules;
+
+  if (weightTiers.length === 0) return null;
+
+  const totalKg = totalWeightGrams / 1000;
+
+  // Tiers are assumed sorted ascending; sort defensively
+  const sorted = [...weightTiers].sort((a, b) => a.maxWeightKg - b.maxWeightKg);
+
+  for (const tier of sorted) {
+    if (totalKg <= tier.maxWeightKg) {
+      return tier.fee;
+    }
+  }
+
+  // Exceeds all tiers — use highest tier fee
+  return sorted[sorted.length - 1]!.fee;
+}
+
 // ── Fee calculation ────────────────────────────────────────────────
 
 /**
- * Calculate shipping fee based on method and subtotal.
- * Returns 0 if subtotal reaches or exceeds the free shipping threshold.
- * Otherwise returns the configured baseFee.
+ * Calculate shipping fee based on method, subtotal, and optional total weight.
+ *
+ * Priority:
+ * 1. Free shipping if subtotal >= freeOver threshold
+ * 2. Weight-based tier fee (if weight provided and tiers configured)
+ * 3. Configured baseFee (fallback)
+ *
+ * For pickup method, fee is capped at the minimum pickup carrier fee.
  */
 export function calculateShippingFee(
   method: "home" | "pickup",
   subtotal: number,
+  totalWeightGrams?: number,
 ): number {
   const { rules } = siteConfig.shipping;
 
@@ -44,15 +81,23 @@ export function calculateShippingFee(
     return 0;
   }
 
-  // Use the minimum carrier fee for the given method as fallback,
-  // but prefer the configured baseFee
-  if (method === "pickup") {
-    // Pickup points are typically cheaper — use baseFee as the floor
-    const minPickupFee = Math.min(...PICKUP_CARRIERS.map((c) => c.fee));
-    return Math.min(rules.baseFee, minPickupFee);
+  // Determine base fee — weight tier or baseFee
+  let fee: number;
+
+  if (totalWeightGrams != null && totalWeightGrams > 0) {
+    const tierFee = getWeightTierFee(totalWeightGrams);
+    fee = tierFee ?? rules.baseFee;
+  } else {
+    fee = rules.baseFee;
   }
 
-  return rules.baseFee;
+  // Pickup points: cap at the minimum pickup carrier fee
+  if (method === "pickup") {
+    const minPickupFee = Math.min(...PICKUP_CARRIERS.map((c) => c.fee));
+    return Math.min(fee, minPickupFee);
+  }
+
+  return fee;
 }
 
 // ── Available carriers ─────────────────────────────────────────────
@@ -73,12 +118,15 @@ export function getAvailableCarriers(method: "home" | "pickup"): Carrier[] {
 
 /**
  * Get the fee for a specific carrier by id.
+ * If weight tiers are configured and totalWeightGrams is provided,
+ * the weight-tier fee replaces the carrier's fixed fee.
  * Returns null if the carrier is not found or not enabled.
  */
 export function getCarrierFee(
   method: "home" | "pickup",
   carrierId: string,
   subtotal: number,
+  totalWeightGrams?: number,
 ): number | null {
   const { rules } = siteConfig.shipping;
 
@@ -89,5 +137,13 @@ export function getCarrierFee(
 
   const carriers = getAvailableCarriers(method);
   const carrier = carriers.find((c) => c.id === carrierId);
-  return carrier?.fee ?? null;
+  if (!carrier) return null;
+
+  // If weight is provided and tiers are configured, use tier fee
+  if (totalWeightGrams != null && totalWeightGrams > 0) {
+    const tierFee = getWeightTierFee(totalWeightGrams);
+    if (tierFee != null) return tierFee;
+  }
+
+  return carrier.fee;
 }

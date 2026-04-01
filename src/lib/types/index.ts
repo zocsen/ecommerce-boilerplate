@@ -7,6 +7,7 @@ export type {
   AppRole,
   OrderStatus,
   SubscriberStatus,
+  PaymentMethod,
   AddressJson,
   VariantSnapshotJson,
   ProfileRow,
@@ -16,8 +17,25 @@ export type {
   CouponRow,
   OrderRow,
   OrderItemRow,
+  OrderNoteRow,
+  OrderNoteInsert,
+  OrderNoteWithAuthor,
   SubscriberRow,
   AuditLogRow,
+  ShopPageRow,
+  ShopPageInsert,
+  ShopPageUpdate,
+  AboutUsContent,
+  AboutUsHeroSection,
+  AboutUsStorySection,
+  AboutUsTeamMember,
+  AboutUsValue,
+  AboutUsContactSection,
+  ProductExtraRow,
+  ProductExtraInsert,
+  ProductExtraWithProduct,
+  PriceHistoryRow,
+  PriceHistoryInsert,
 } from "@/lib/types/database";
 
 // ── Address ────────────────────────────────────────────────────────
@@ -42,6 +60,8 @@ export interface CartItem {
   image: string | null;
   slug: string;
   stock: number;
+  /** Weight in grams (variant override ?? product weight ?? config default) */
+  weightGrams: number;
 }
 
 // ── Shipping method discriminator ──────────────────────────────────
@@ -79,6 +99,9 @@ export interface CheckoutFormData {
 
   /** Home delivery carrier (only when shippingMethod === 'home') */
   carrier: HomeDeliveryCarrier | null;
+
+  /** Payment */
+  paymentMethod: "barion" | "cod";
 
   /** Extras */
   notes: string;

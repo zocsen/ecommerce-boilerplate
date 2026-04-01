@@ -20,12 +20,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function makeProduct(overrides: Partial<{
-  id: string;
-  title: string;
-  base_price: number;
-  is_active: boolean;
-}> = {}) {
+function makeProduct(
+  overrides: Partial<{
+    id: string;
+    title: string;
+    base_price: number;
+    is_active: boolean;
+  }> = {},
+) {
   return {
     id: "aaaaaaaa-0000-0000-0000-000000000001",
     title: "Teszt Termék",
@@ -42,13 +44,15 @@ function makeProduct(overrides: Partial<{
   };
 }
 
-function makeVariant(overrides: Partial<{
-  id: string;
-  product_id: string;
-  price_override: number | null;
-  stock_quantity: number;
-  is_active: boolean;
-}> = {}) {
+function makeVariant(
+  overrides: Partial<{
+    id: string;
+    product_id: string;
+    price_override: number | null;
+    stock_quantity: number;
+    is_active: boolean;
+  }> = {},
+) {
   return {
     id: "bbbbbbbb-0000-0000-0000-000000000001",
     product_id: "aaaaaaaa-0000-0000-0000-000000000001",
@@ -66,13 +70,16 @@ function makeVariant(overrides: Partial<{
   };
 }
 
-function makeCartItem(overrides: Partial<{
-  productId: string;
-  variantId: string | null;
-  price: number;
-  quantity: number;
-  stock: number;
-}> = {}) {
+function makeCartItem(
+  overrides: Partial<{
+    productId: string;
+    variantId: string | null;
+    price: number;
+    quantity: number;
+    stock: number;
+    weightGrams: number;
+  }> = {},
+) {
   return {
     productId: "aaaaaaaa-0000-0000-0000-000000000001",
     variantId: "bbbbbbbb-0000-0000-0000-000000000001",
@@ -83,14 +90,17 @@ function makeCartItem(overrides: Partial<{
     image: null,
     slug: "teszt-termek",
     stock: 5,
+    weightGrams: 500,
     ...overrides,
   };
 }
 
-function makeCheckout(overrides: Partial<{
-  couponCode: string;
-  shippingMethod: "home" | "pickup";
-}> = {}) {
+function makeCheckout(
+  overrides: Partial<{
+    couponCode: string;
+    shippingMethod: "home" | "pickup";
+  }> = {},
+) {
   return {
     email: "teszt@example.com",
     phone: "+36301234567",
@@ -133,9 +143,7 @@ vi.mock("@/lib/security/roles", () => ({
   getCurrentUser: vi.fn().mockResolvedValue(null),
   requireAuth: vi.fn().mockResolvedValue({ id: "user-001", role: "customer" }),
   requireAdmin: vi.fn().mockResolvedValue({ id: "admin-001", role: "admin" }),
-  requireAdminOrViewer: vi
-    .fn()
-    .mockResolvedValue({ id: "admin-001", role: "admin" }),
+  requireAdminOrViewer: vi.fn().mockResolvedValue({ id: "admin-001", role: "admin" }),
   getCurrentProfile: vi.fn().mockResolvedValue(null),
 }));
 
@@ -162,6 +170,7 @@ type MockChain = {
   delete: ReturnType<typeof vi.fn>;
   eq: ReturnType<typeof vi.fn>;
   in: ReturnType<typeof vi.fn>;
+  or: ReturnType<typeof vi.fn>;
   single: ReturnType<typeof vi.fn>;
   order: ReturnType<typeof vi.fn>;
   range: ReturnType<typeof vi.fn>;
@@ -180,6 +189,7 @@ function makeChain(result: { data: unknown; error: null | { message: string } })
     delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue(result),
     order: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -250,7 +260,8 @@ describe("createOrderFromCart – integration", () => {
     // Verify the order insert was called with correct amounts
     // subtotal = 10000 * 2 = 20000; shipping = siteConfig default; discount = 0
     const ordersChain = mockFrom.mock.results.find(
-      (r) => r.value?._result?.data?.id === insertedOrderId ||
+      (r) =>
+        r.value?._result?.data?.id === insertedOrderId ||
         // The orders chain is called at insert time
         mockFrom.mock.calls.some((c) => c[0] === "orders"),
     );
@@ -339,7 +350,10 @@ describe("createOrderFromCart – integration", () => {
         const origInsert = chain.insert.getMockImplementation();
         chain.insert = vi.fn().mockImplementation((data: Record<string, unknown>) => {
           capturedInsert = data;
-          return { ...chain, single: vi.fn().mockResolvedValue({ data: { id: insertedOrderId }, error: null }) };
+          return {
+            ...chain,
+            single: vi.fn().mockResolvedValue({ data: { id: insertedOrderId }, error: null }),
+          };
         });
         return chain;
       }
@@ -393,7 +407,10 @@ describe("createOrderFromCart – integration", () => {
         const chain = makeChain({ data: { id: insertedOrderId }, error: null });
         chain.insert = vi.fn().mockImplementation((data: Record<string, unknown>) => {
           capturedInsert = data;
-          return { ...chain, single: vi.fn().mockResolvedValue({ data: { id: insertedOrderId }, error: null }) };
+          return {
+            ...chain,
+            single: vi.fn().mockResolvedValue({ data: { id: insertedOrderId }, error: null }),
+          };
         });
         return chain;
       }

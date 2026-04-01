@@ -44,9 +44,21 @@ export interface BarionConfig {
   };
 }
 
+export interface CodConfig {
+  /** Whether cash on delivery is available as a payment method */
+  enabled: boolean;
+  /** Utánvét kezelési díj in HUF (added to total_amount) */
+  fee: number;
+  /** Maximum order amount (before COD fee) for which COD is available (HUF). 0 = no limit. */
+  maxOrderAmount: number;
+  /** Which shipping methods allow COD */
+  allowedShippingMethods: Array<"home" | "pickup">;
+}
+
 export interface PaymentsConfig {
   provider: "barion";
   barion: BarionConfig;
+  cod: CodConfig;
 }
 
 export type HomeDeliveryCarrier = "gls" | "mpl" | "express_one";
@@ -60,6 +72,8 @@ export type PickupPointProvider =
 export interface ShippingRules {
   baseFee: number;
   freeOver: number;
+  /** Default weight for products without explicit weight_grams (in grams) */
+  defaultProductWeightGrams: number;
   weightTiers: Array<{
     maxWeightKg: number;
     fee: number;
@@ -101,6 +115,13 @@ export interface EmailConfig {
   sendAdminOrderNotification: boolean;
 }
 
+export interface TaxConfig {
+  /** Default ÁFA rate for new products (percentage) */
+  defaultVatRate: number;
+  /** Available ÁFA rates in the admin product form */
+  availableRates: readonly number[];
+}
+
 export interface BrandingConfig {
   logoText: string;
   logoUrl: string | null;
@@ -125,6 +146,7 @@ export interface SiteConfig {
   invoicing: InvoicingConfig;
   admin: AdminConfig;
   email: EmailConfig;
+  tax: TaxConfig;
   branding: BrandingConfig;
 }
 
@@ -191,6 +213,12 @@ export const siteConfig: SiteConfig = {
         callback: `${siteUrl}/api/payments/barion/callback`,
       },
     },
+    cod: {
+      enabled: true,
+      fee: 590,
+      maxOrderAmount: 100_000,
+      allowedShippingMethods: ["home", "pickup"],
+    },
   },
 
   /* ── shipping ─────────────────────────────────────────── */
@@ -204,7 +232,13 @@ export const siteConfig: SiteConfig = {
     rules: {
       baseFee: 1490,
       freeOver: 15000,
-      weightTiers: [],
+      defaultProductWeightGrams: 500,
+      weightTiers: [
+        { maxWeightKg: 2, fee: 1490 },
+        { maxWeightKg: 5, fee: 1990 },
+        { maxWeightKg: 10, fee: 2990 },
+        { maxWeightKg: 20, fee: 4490 },
+      ],
     },
     pickupPointProviders: {
       foxpost: true,
@@ -233,6 +267,12 @@ export const siteConfig: SiteConfig = {
     sendSignupConfirmation: true,
     sendWelcomeEmail: true,
     sendAdminOrderNotification: true,
+  },
+
+  /* ── tax (ÁFA) ───────────────────────────────────────── */
+  tax: {
+    defaultVatRate: 27,
+    availableRates: [5, 18, 27] as const,
   },
 
   /* ── branding ─────────────────────────────────────────── */

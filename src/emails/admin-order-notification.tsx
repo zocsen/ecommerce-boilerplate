@@ -39,6 +39,7 @@ export interface AdminOrderNotificationEmailProps {
   itemCount: number;
   total: number;
   shippingMethod: string;
+  paymentMethod?: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────
@@ -51,12 +52,14 @@ export default function AdminOrderNotificationEmail({
   itemCount,
   total,
   shippingMethod,
+  paymentMethod,
 }: AdminOrderNotificationEmailProps) {
   const { store, branding, urls } = siteConfig;
 
   const adminOrderUrl = `${urls.siteUrl}/admin/orders/${orderId}`;
 
   const shippingLabel = shippingMethod === "pickup" ? "Csomagpont" : "Házhozszállítás";
+  const paymentLabel = paymentMethod === "cod" ? "Utánvét" : "Online bankkártya";
 
   return (
     <Html lang="hu">
@@ -169,6 +172,14 @@ export default function AdminOrderNotificationEmail({
                   Szállítás:
                 </Column>
                 <Column style={{ textAlign: "right", padding: "5px 0" }}>{shippingLabel}</Column>
+              </Row>
+              <Row>
+                <Column style={{ color: branding.theme.mutedForeground, padding: "5px 0" }}>
+                  Fizetési mód:
+                </Column>
+                <Column style={{ textAlign: "right", fontWeight: 600, padding: "5px 0" }}>
+                  {paymentLabel}
+                </Column>
               </Row>
               <Row>
                 <Column

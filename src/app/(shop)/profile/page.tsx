@@ -3,7 +3,7 @@ import { Package, ChevronRight, ArrowRight } from "lucide-react";
 import { getCurrentProfile } from "@/lib/security/roles";
 import { listUserOrders } from "@/lib/actions/profile";
 import { formatHUF, formatDate } from "@/lib/utils/format";
-import { Badge } from "@/components/ui/badge";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import { redirect } from "next/navigation";
 import type { OrderStatus } from "@/lib/types/database";
 
@@ -11,33 +11,13 @@ import type { OrderStatus } from "@/lib/types/database";
 /*  Profile dashboard — welcome + recent orders                        */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  draft: "Piszkozat",
-  awaiting_payment: "Fizetésre vár",
-  paid: "Fizetve",
-  processing: "Feldolgozás alatt",
-  shipped: "Kiszállítva",
-  cancelled: "Lemondva",
-  refunded: "Visszatérítve",
-};
-
-const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  draft: "outline",
-  awaiting_payment: "secondary",
-  paid: "default",
-  processing: "secondary",
-  shipped: "default",
-  cancelled: "destructive",
-  refunded: "destructive",
-};
-
 export default async function ProfilePage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
   const ordersResult = await listUserOrders({ page: 1, perPage: 5 });
-  const recentOrders = ordersResult.success ? ordersResult.data?.orders ?? [] : [];
-  const totalOrders = ordersResult.success ? ordersResult.data?.total ?? 0 : 0;
+  const recentOrders = ordersResult.success ? (ordersResult.data?.orders ?? []) : [];
+  const totalOrders = ordersResult.success ? (ordersResult.data?.total ?? 0) : 0;
 
   return (
     <div className="space-y-10">
@@ -64,7 +44,9 @@ export default async function ProfilePage() {
         <div className="rounded-xl border border-border p-5">
           <p className="text-xs text-muted-foreground">Telefon</p>
           <p className="mt-1 text-2xl font-semibold">
-            {profile.phone || <span className="text-base text-muted-foreground">Nincs megadva</span>}
+            {profile.phone || (
+              <span className="text-base text-muted-foreground">Nincs megadva</span>
+            )}
           </p>
         </div>
       </div>
@@ -89,9 +71,7 @@ export default async function ProfilePage() {
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
               <Package className="size-6 text-muted-foreground" />
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Még nincsenek rendeléseid.
-            </p>
+            <p className="mt-3 text-sm text-muted-foreground">Még nincsenek rendeléseid.</p>
             <Link
               href="/products"
               className="mt-4 text-sm font-medium underline underline-offset-2 transition-colors hover:text-foreground/70"
@@ -114,10 +94,10 @@ export default async function ProfilePage() {
                     </p>
                   </div>
                   <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
-                  <p className="text-sm font-medium tabular-nums">{formatHUF(order.total_amount)}</p>
-                  <Badge variant={STATUS_VARIANTS[order.status] ?? "outline"}>
-                    {STATUS_LABELS[order.status] ?? order.status}
-                  </Badge>
+                  <p className="text-sm font-medium tabular-nums">
+                    {formatHUF(order.total_amount)}
+                  </p>
+                  <OrderStatusBadge status={order.status as OrderStatus} />
                 </div>
                 <ChevronRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5" />
               </Link>

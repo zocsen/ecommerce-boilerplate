@@ -15,9 +15,7 @@ export const addressSchema = z.object({
   name: z.string().min(1, "A név megadása kötelező"),
   street: z.string().min(1, "Az utca megadása kötelező"),
   city: z.string().min(1, "A város megadása kötelező"),
-  zip: z
-    .string()
-    .regex(/^\d{4}$/, "Az irányítószám 4 számjegyű kell legyen"),
+  zip: z.string().regex(/^\d{4}$/, "Az irányítószám 4 számjegyű kell legyen"),
   country: z.string().default("HU"),
 });
 
@@ -49,13 +47,7 @@ export type HomeDeliveryInput = z.infer<typeof homeDeliverySchema>;
 // ── Pickup point schema ────────────────────────────────────────────
 
 export const pickupPointSchema = z.object({
-  provider: z.literal([
-    "Foxpost",
-    "GLS Automata",
-    "Packeta",
-    "MPL Automata",
-    "Easybox",
-  ]),
+  provider: z.literal(["Foxpost", "GLS Automata", "Packeta", "MPL Automata", "Easybox"]),
   pointId: z.string().min(1, "Az átvételi pont azonosítója kötelező"),
   pointLabel: z.string().min(1, "Az átvételi pont megnevezése kötelező"),
   phone: z
@@ -74,6 +66,7 @@ export const checkoutSchema = z.object({
   pickupPoint: pickupPointSchema.optional(),
   billingAddress: addressSchema,
   sameAsBilling: z.boolean(),
+  paymentMethod: z.literal(["barion", "cod"]),
   notes: z.string().optional(),
   couponCode: z.string().optional(),
 });

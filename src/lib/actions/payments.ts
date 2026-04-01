@@ -30,9 +30,7 @@ interface StartPaymentData {
  * 4. Updates order with barion_payment_id and barion_payment_request_id
  * 5. Returns the gateway redirect URL
  */
-export async function startPaymentAction(
-  orderId: string,
-): Promise<ActionResult<StartPaymentData>> {
+export async function startPaymentAction(orderId: string): Promise<ActionResult<StartPaymentData>> {
   try {
     const idParsed = uuidSchema.safeParse(orderId);
     if (!idParsed.success) {
@@ -60,6 +58,14 @@ export async function startPaymentAction(
       };
     }
 
+    // COD orders should never reach Barion
+    if (order.payment_method === "cod") {
+      return {
+        success: false,
+        error: "Utánvétes rendeléshez nem szükséges online fizetés.",
+      };
+    }
+
     // If already has a Barion payment, return the existing gateway URL
     if (order.barion_payment_id) {
       return {
@@ -80,10 +86,7 @@ export async function startPaymentAction(
     }
 
     // Start Barion payment
-    const barionResult = await startBarionPayment(
-      order as OrderRow,
-      items as OrderItemRow[],
-    );
+    const barionResult = await startBarionPayment(order as OrderRow, items as OrderItemRow[]);
 
     // Update order with Barion payment details
     const { error: updateError } = await admin

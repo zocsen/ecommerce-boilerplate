@@ -1,19 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminOrViewer } from "@/lib/security/roles";
 import { formatHUF, formatDate } from "@/lib/utils/format";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import Link from "next/link";
-import {
-  DashboardCharts,
-  type DailyDataPoint,
-} from "@/components/admin/dashboard-charts";
+import { DashboardCharts, type DailyDataPoint } from "@/components/admin/dashboard-charts";
+import type { OrderStatus } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Dashboard — "God view" KPIs                                  */
@@ -36,9 +28,7 @@ interface KpiData {
 
 async function getDashboardData(): Promise<KpiData> {
   const admin = createAdminClient();
-  const thirtyDaysAgo = new Date(
-    Date.now() - 30 * 24 * 60 * 60 * 1000,
-  ).toISOString();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const [ordersResult, lowStockResult, recentResult] = await Promise.all([
     // Orders in last 30 days that are paid or beyond
@@ -90,13 +80,11 @@ async function getDashboardData(): Promise<KpiData> {
     }
   }
 
-  const dailyData: DailyDataPoint[] = Array.from(dailyMap.entries()).map(
-    ([date, vals]) => ({
-      date,
-      revenue: vals.revenue,
-      orders: vals.orders,
-    }),
-  );
+  const dailyData: DailyDataPoint[] = Array.from(dailyMap.entries()).map(([date, vals]) => ({
+    date,
+    revenue: vals.revenue,
+    orders: vals.orders,
+  }));
 
   return {
     revenue30d,
@@ -108,21 +96,6 @@ async function getDashboardData(): Promise<KpiData> {
   };
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    draft: { label: "Piszkozat", variant: "outline" },
-    awaiting_payment: { label: "Fizetésre vár", variant: "secondary" },
-    paid: { label: "Fizetve", variant: "default" },
-    processing: { label: "Feldolgozás", variant: "default" },
-    shipped: { label: "Kiszállítva", variant: "secondary" },
-    cancelled: { label: "Törölve", variant: "destructive" },
-    refunded: { label: "Visszatérítve", variant: "destructive" },
-  };
-
-  const entry = map[status] ?? { label: status, variant: "outline" as const };
-  return <Badge variant={entry.variant}>{entry.label}</Badge>;
-}
-
 export default async function AdminDashboardPage() {
   await requireAdminOrViewer();
   const data = await getDashboardData();
@@ -132,9 +105,7 @@ export default async function AdminDashboardPage() {
       {/* Page heading */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Áttekintés az elmúlt 30 napról
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Áttekintés az elmúlt 30 napról</p>
       </div>
 
       {/* KPI cards */}
@@ -142,27 +113,21 @@ export default async function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <CardDescription>Bevétel (30 nap)</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">
-              {formatHUF(data.revenue30d)}
-            </CardTitle>
+            <CardTitle className="text-2xl tabular-nums">{formatHUF(data.revenue30d)}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader>
             <CardDescription>Rendelések (30 nap)</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">
-              {data.orders30d}
-            </CardTitle>
+            <CardTitle className="text-2xl tabular-nums">{data.orders30d}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader>
             <CardDescription>Átlagos rendelési érték</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">
-              {formatHUF(data.aov)}
-            </CardTitle>
+            <CardTitle className="text-2xl tabular-nums">{formatHUF(data.aov)}</CardTitle>
           </CardHeader>
         </Card>
 
@@ -171,9 +136,7 @@ export default async function AdminDashboardPage() {
             <CardDescription>Alacsony készlet</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
               {data.lowStockVariants}
-              <span className="ml-1 text-sm font-normal text-muted-foreground">
-                változat
-              </span>
+              <span className="ml-1 text-sm font-normal text-muted-foreground">változat</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -186,15 +149,11 @@ export default async function AdminDashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Legutóbbi fizetett rendelések</CardTitle>
-          <CardDescription>
-            Az utolsó 5 kifizetett rendelés
-          </CardDescription>
+          <CardDescription>Az utolsó 5 kifizetett rendelés</CardDescription>
         </CardHeader>
         <CardContent>
           {data.recentPaidOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nincsenek rendelések.
-            </p>
+            <p className="text-sm text-muted-foreground">Nincsenek rendelések.</p>
           ) : (
             <div className="space-y-3">
               {data.recentPaidOrders.map((order) => (
@@ -212,7 +171,7 @@ export default async function AdminDashboardPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <StatusBadge status={order.status} />
+                    <OrderStatusBadge status={order.status as OrderStatus} />
                     <span className="text-sm font-medium tabular-nums">
                       {formatHUF(order.total_amount)}
                     </span>

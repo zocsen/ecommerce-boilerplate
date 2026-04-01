@@ -5,13 +5,21 @@
 /* ------------------------------------------------------------------ */
 
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import { productCreateSchema, productUpdateSchema } from "@/lib/validators/product";
 import { uuidSchema } from "@/lib/validators/uuid";
-import type { ProductRow, ProductVariantRow, CategoryRow } from "@/lib/types/database";
+import type {
+  ProductRow,
+  ProductVariantRow,
+  CategoryRow,
+  ProductExtraRow,
+  ProductExtraWithProduct,
+  Database,
+} from "@/lib/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -42,6 +50,7 @@ interface ProductDetail {
   product: ProductRow;
   variants: ProductVariantRow[];
   categories: CategoryRow[];
+  extras: ProductExtraWithProduct[];
 }
 
 // ── Filter validation ──────────────────────────────────────────────
@@ -67,15 +76,7 @@ export async function listProducts(
       return { success: false, error: "Érvénytelen szűrő paraméterek." };
     }
 
-    const {
-      category,
-      minPrice,
-      maxPrice,
-      inStock,
-      sort,
-      page = 1,
-      perPage = 12,
-    } = parsed.data;
+    const { category, minPrice, maxPrice, inStock, sort, page = 1, perPage = 12 } = parsed.data;
 
     const supabase = await createClient();
 
@@ -112,11 +113,13 @@ export async function listProducts(
       }
     }
 
-    // Build query
+    // Build query — filter active products with valid publish date
+    const now = new Date().toISOString();
     let query = supabase
       .from("products")
       .select("*", { count: "exact" })
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .or(`published_at.is.null,published_at.lte.${now}`);
 
     if (productIdsInCategory) {
       query = query.in("id", productIdsInCategory);
@@ -199,9 +202,7 @@ export async function listProducts(
   }
 }
 
-export async function getProductBySlug(
-  slug: string,
-): Promise<ActionResult<ProductDetail>> {
+export async function getProductBySlug(slug: string): Promise<ActionResult<ProductDetail>> {
   try {
     const parsed = z.string().min(1).safeParse(slug);
     if (!parsed.success) {
@@ -210,12 +211,14 @@ export async function getProductBySlug(
 
     const supabase = await createClient();
 
-    // Fetch product
+    // Fetch product — defense-in-depth: also filter by published_at
+    const now = new Date().toISOString();
     const { data: product, error: productError } = await supabase
       .from("products")
       .select("*")
       .eq("slug", parsed.data)
       .eq("is_active", true)
+      .or(`published_at.is.null,published_at.lte.${now}`)
       .single();
 
     if (productError || !product) {
@@ -223,25 +226,26 @@ export async function getProductBySlug(
     }
 
     // Fetch variants and category joins in parallel
-    const [variantsResult, categoriesJoinResult] = await Promise.all([
+    const [variantsResult, categoriesJoinResult, extrasResult] = await Promise.all([
       supabase
         .from("product_variants")
         .select("*")
         .eq("product_id", product.id)
         .eq("is_active", true)
         .order("created_at", { ascending: true }),
+      supabase.from("product_categories").select("category_id").eq("product_id", product.id),
       supabase
-        .from("product_categories")
-        .select("category_id")
-        .eq("product_id", product.id),
+        .from("product_extras")
+        .select("*")
+        .eq("product_id", product.id)
+        .order("sort_order", { ascending: true }),
     ]);
 
     const variants = variantsResult.data ?? [];
+    const extrasRaw: ProductExtraRow[] = extrasResult.data ?? [];
 
     // Fetch actual category rows
-    const categoryIds = (categoriesJoinResult.data ?? []).map(
-      (pc) => pc.category_id,
-    );
+    const categoryIds = (categoriesJoinResult.data ?? []).map((pc) => pc.category_id);
     let categories: CategoryRow[] = [];
 
     if (categoryIds.length > 0) {
@@ -254,9 +258,12 @@ export async function getProductBySlug(
       categories = catRows ?? [];
     }
 
+    // Enrich extras with extra product details
+    const extras = await enrichExtras(supabase, extrasRaw);
+
     return {
       success: true,
-      data: { product, variants, categories },
+      data: { product, variants, categories, extras },
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -301,19 +308,11 @@ export async function adminListProducts(
       return { success: false, error: "Érvénytelen szűrő paraméterek." };
     }
 
-    const {
-      search,
-      isActive,
-      sort,
-      page = 1,
-      perPage = 20,
-    } = parsed.data;
+    const { search, isActive, sort, page = 1, perPage = 20 } = parsed.data;
 
     const admin = createAdminClient();
 
-    let query = admin
-      .from("products")
-      .select("*", { count: "exact" });
+    let query = admin.from("products").select("*", { count: "exact" });
 
     // Filter by active status (admins can see both active and inactive)
     if (isActive !== undefined) {
@@ -366,7 +365,11 @@ export async function adminListProducts(
 
       if (pcRows) {
         for (const row of pcRows) {
-          const cat = row.categories as { id: string; name: string; parent_id: string | null } | null;
+          const cat = row.categories as {
+            id: string;
+            name: string;
+            parent_id: string | null;
+          } | null;
           if (!cat) continue;
           // Only include top-level (main) categories — parent_id is null
           if (cat.parent_id !== null) continue;
@@ -395,9 +398,7 @@ export async function adminListProducts(
   }
 }
 
-export async function adminGetProduct(
-  id: string,
-): Promise<ActionResult<ProductDetail>> {
+export async function adminGetProduct(id: string): Promise<ActionResult<ProductDetail>> {
   try {
     await requireAdminOrViewer();
 
@@ -420,38 +421,39 @@ export async function adminGetProduct(
     }
 
     // Fetch variants and category joins in parallel
-    const [variantsResult, categoriesJoinResult] = await Promise.all([
+    const [variantsResult, categoriesJoinResult, extrasResult] = await Promise.all([
       admin
         .from("product_variants")
         .select("*")
         .eq("product_id", product.id)
         .order("created_at", { ascending: true }),
+      admin.from("product_categories").select("category_id").eq("product_id", product.id),
       admin
-        .from("product_categories")
-        .select("category_id")
-        .eq("product_id", product.id),
+        .from("product_extras")
+        .select("*")
+        .eq("product_id", product.id)
+        .order("sort_order", { ascending: true }),
     ]);
 
     const variants = variantsResult.data ?? [];
+    const extrasRaw: ProductExtraRow[] = extrasResult.data ?? [];
 
     // Fetch actual category rows (including inactive for admin)
-    const categoryIds = (categoriesJoinResult.data ?? []).map(
-      (pc) => pc.category_id,
-    );
+    const categoryIds = (categoriesJoinResult.data ?? []).map((pc) => pc.category_id);
     let categories: CategoryRow[] = [];
 
     if (categoryIds.length > 0) {
-      const { data: catRows } = await admin
-        .from("categories")
-        .select("*")
-        .in("id", categoryIds);
+      const { data: catRows } = await admin.from("categories").select("*").in("id", categoryIds);
 
       categories = catRows ?? [];
     }
 
+    // Enrich extras with extra product details
+    const extras = await enrichExtras(admin, extrasRaw);
+
     return {
       success: true,
-      data: { product, variants, categories },
+      data: { product, variants, categories, extras },
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -477,14 +479,18 @@ export async function adminCreateProduct(
       compareAtPrice: formData.get("compareAtPrice")
         ? Number(formData.get("compareAtPrice"))
         : undefined,
+      vatRate: formData.has("vatRate") ? Number(formData.get("vatRate")) : 27,
       mainImageUrl: (formData.get("mainImageUrl") as string) || undefined,
-      imageUrls: JSON.parse(
-        (formData.get("imageUrls") as string) || "[]",
-      ) as string[],
+      imageUrls: JSON.parse((formData.get("imageUrls") as string) || "[]") as string[],
       isActive: formData.get("isActive") === "true",
-      categoryIds: JSON.parse(
-        (formData.get("categoryIds") as string) || "[]",
-      ) as string[],
+      publishedAt: formData.has("publishedAt")
+        ? (formData.get("publishedAt") as string) || null
+        : undefined,
+      weightGrams:
+        formData.has("weightGrams") && formData.get("weightGrams") !== ""
+          ? Number(formData.get("weightGrams"))
+          : null,
+      categoryIds: JSON.parse((formData.get("categoryIds") as string) || "[]") as string[],
     };
 
     const parsed = productCreateSchema.safeParse(raw);
@@ -508,9 +514,12 @@ export async function adminCreateProduct(
         description: input.description,
         base_price: input.basePrice,
         compare_at_price: input.compareAtPrice ?? null,
+        vat_rate: input.vatRate,
         main_image_url: input.mainImageUrl ?? null,
         image_urls: input.imageUrls,
         is_active: input.isActive,
+        published_at: input.publishedAt ?? null,
+        weight_grams: input.weightGrams ?? null,
       })
       .select("id")
       .single();
@@ -530,15 +539,10 @@ export async function adminCreateProduct(
         category_id: categoryId,
       }));
 
-      const { error: linkError } = await admin
-        .from("product_categories")
-        .insert(categoryLinks);
+      const { error: linkError } = await admin.from("product_categories").insert(categoryLinks);
 
       if (linkError) {
-        console.error(
-          "[adminCreateProduct] Category link error:",
-          linkError.message,
-        );
+        console.error("[adminCreateProduct] Category link error:", linkError.message);
       }
     }
 
@@ -554,6 +558,7 @@ export async function adminCreateProduct(
         priceOverride?: number;
         stockQuantity: number;
         isActive: boolean;
+        weightGrams?: number | null;
       }>;
 
       if (variantsArr.length > 0) {
@@ -567,17 +572,42 @@ export async function adminCreateProduct(
           price_override: v.priceOverride ?? null,
           stock_quantity: v.stockQuantity,
           is_active: v.isActive,
+          weight_grams: v.weightGrams ?? null,
         }));
 
-        const { error: variantError } = await admin
-          .from("product_variants")
-          .insert(variantRows);
+        const { error: variantError } = await admin.from("product_variants").insert(variantRows);
 
         if (variantError) {
-          console.error(
-            "[adminCreateProduct] Variant insert error:",
-            variantError.message,
-          );
+          console.error("[adminCreateProduct] Variant insert error:", variantError.message);
+        }
+      }
+    }
+
+    // Parse and insert extras if provided
+    const extrasRaw = formData.get("extras") as string | null;
+    if (extrasRaw) {
+      const extrasArr = JSON.parse(extrasRaw) as Array<{
+        extraProductId: string;
+        extraVariantId?: string;
+        label: string;
+        isDefaultChecked: boolean;
+        sortOrder: number;
+      }>;
+
+      if (extrasArr.length > 0) {
+        const extraRows = extrasArr.map((e) => ({
+          product_id: product.id,
+          extra_product_id: e.extraProductId,
+          extra_variant_id: e.extraVariantId ?? null,
+          label: e.label,
+          is_default_checked: e.isDefaultChecked,
+          sort_order: e.sortOrder,
+        }));
+
+        const { error: extrasError } = await admin.from("product_extras").insert(extraRows);
+
+        if (extrasError) {
+          console.error("[adminCreateProduct] Extras insert error:", extrasError.message);
         }
       }
     }
@@ -618,22 +648,27 @@ export async function adminUpdateProduct(
       description: formData.has("description")
         ? (formData.get("description") as string)
         : undefined,
-      basePrice: formData.has("basePrice")
-        ? Number(formData.get("basePrice"))
-        : undefined,
+      basePrice: formData.has("basePrice") ? Number(formData.get("basePrice")) : undefined,
       compareAtPrice: formData.has("compareAtPrice")
         ? formData.get("compareAtPrice")
           ? Number(formData.get("compareAtPrice"))
           : null
         : undefined,
+      vatRate: formData.has("vatRate") ? Number(formData.get("vatRate")) : undefined,
       mainImageUrl: formData.has("mainImageUrl")
         ? (formData.get("mainImageUrl") as string) || null
         : undefined,
       imageUrls: formData.has("imageUrls")
         ? (JSON.parse(formData.get("imageUrls") as string) as string[])
         : undefined,
-      isActive: formData.has("isActive")
-        ? formData.get("isActive") === "true"
+      isActive: formData.has("isActive") ? formData.get("isActive") === "true" : undefined,
+      publishedAt: formData.has("publishedAt")
+        ? (formData.get("publishedAt") as string) || null
+        : undefined,
+      weightGrams: formData.has("weightGrams")
+        ? formData.get("weightGrams") !== ""
+          ? Number(formData.get("weightGrams"))
+          : null
         : undefined,
       categoryIds: formData.has("categoryIds")
         ? (JSON.parse(formData.get("categoryIds") as string) as string[])
@@ -656,17 +691,15 @@ export async function adminUpdateProduct(
     const updatePayload: Record<string, unknown> = {};
     if (input.title !== undefined) updatePayload.title = input.title;
     if (input.slug !== undefined) updatePayload.slug = input.slug;
-    if (input.description !== undefined)
-      updatePayload.description = input.description;
-    if (input.basePrice !== undefined)
-      updatePayload.base_price = input.basePrice;
-    if (input.compareAtPrice !== undefined)
-      updatePayload.compare_at_price = input.compareAtPrice;
-    if (input.mainImageUrl !== undefined)
-      updatePayload.main_image_url = input.mainImageUrl;
-    if (input.imageUrls !== undefined)
-      updatePayload.image_urls = input.imageUrls;
+    if (input.description !== undefined) updatePayload.description = input.description;
+    if (input.basePrice !== undefined) updatePayload.base_price = input.basePrice;
+    if (input.compareAtPrice !== undefined) updatePayload.compare_at_price = input.compareAtPrice;
+    if (input.vatRate !== undefined) updatePayload.vat_rate = input.vatRate;
+    if (input.mainImageUrl !== undefined) updatePayload.main_image_url = input.mainImageUrl;
+    if (input.imageUrls !== undefined) updatePayload.image_urls = input.imageUrls;
     if (input.isActive !== undefined) updatePayload.is_active = input.isActive;
+    if (input.publishedAt !== undefined) updatePayload.published_at = input.publishedAt;
+    if (input.weightGrams !== undefined) updatePayload.weight_grams = input.weightGrams;
     updatePayload.updated_at = new Date().toISOString();
 
     const { error: updateError } = await admin
@@ -685,10 +718,7 @@ export async function adminUpdateProduct(
     // Update category links if provided
     if (input.categoryIds !== undefined) {
       // Remove existing links
-      await admin
-        .from("product_categories")
-        .delete()
-        .eq("product_id", idParsed.data);
+      await admin.from("product_categories").delete().eq("product_id", idParsed.data);
 
       // Insert new links
       if (input.categoryIds.length > 0) {
@@ -714,13 +744,11 @@ export async function adminUpdateProduct(
         priceOverride?: number;
         stockQuantity: number;
         isActive: boolean;
+        weightGrams?: number | null;
       }>;
 
       // Delete existing variants and recreate (simple approach)
-      await admin
-        .from("product_variants")
-        .delete()
-        .eq("product_id", idParsed.data);
+      await admin.from("product_variants").delete().eq("product_id", idParsed.data);
 
       if (variantsArr.length > 0) {
         const variantRows = variantsArr.map((v) => ({
@@ -733,9 +761,42 @@ export async function adminUpdateProduct(
           price_override: v.priceOverride ?? null,
           stock_quantity: v.stockQuantity,
           is_active: v.isActive,
+          weight_grams: v.weightGrams ?? null,
         }));
 
         await admin.from("product_variants").insert(variantRows);
+      }
+    }
+
+    // Update extras if provided (delete-and-recreate)
+    const extrasRaw = formData.get("extras") as string | null;
+    if (extrasRaw) {
+      const extrasArr = JSON.parse(extrasRaw) as Array<{
+        extraProductId: string;
+        extraVariantId?: string;
+        label: string;
+        isDefaultChecked: boolean;
+        sortOrder: number;
+      }>;
+
+      // Delete existing extras
+      await admin.from("product_extras").delete().eq("product_id", idParsed.data);
+
+      if (extrasArr.length > 0) {
+        const extraRows = extrasArr.map((e) => ({
+          product_id: idParsed.data,
+          extra_product_id: e.extraProductId,
+          extra_variant_id: e.extraVariantId ?? null,
+          label: e.label,
+          is_default_checked: e.isDefaultChecked,
+          sort_order: e.sortOrder,
+        }));
+
+        const { error: extrasError } = await admin.from("product_extras").insert(extraRows);
+
+        if (extrasError) {
+          console.error("[adminUpdateProduct] Extras insert error:", extrasError.message);
+        }
       }
     }
 
@@ -756,9 +817,7 @@ export async function adminUpdateProduct(
   }
 }
 
-export async function adminDeleteProduct(
-  id: string,
-): Promise<ActionResult> {
+export async function adminDeleteProduct(id: string): Promise<ActionResult> {
   try {
     const profile = await requireAdmin();
 
@@ -836,9 +895,7 @@ export async function adminToggleProductActive(
   }
 }
 
-export async function adminHardDeleteProduct(
-  id: string,
-): Promise<ActionResult> {
+export async function adminHardDeleteProduct(id: string): Promise<ActionResult> {
   try {
     const profile = await requireAdmin();
 
@@ -849,10 +906,7 @@ export async function adminHardDeleteProduct(
 
     const admin = createAdminClient();
 
-    const { error } = await admin
-      .from("products")
-      .delete()
-      .eq("id", idParsed.data);
+    const { error } = await admin.from("products").delete().eq("id", idParsed.data);
 
     if (error) {
       console.error("[adminHardDeleteProduct] Delete error:", error.message);
@@ -871,6 +925,272 @@ export async function adminHardDeleteProduct(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[adminHardDeleteProduct] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+
+/**
+ * Enrich raw product_extras rows with the extra product's live details
+ * (title, slug, price, image, stock).
+ */
+async function enrichExtras(
+  client: SupabaseClient<Database>,
+  extrasRaw: ProductExtraRow[],
+): Promise<ProductExtraWithProduct[]> {
+  if (extrasRaw.length === 0) return [];
+
+  const extraProductIds = [...new Set(extrasRaw.map((e) => e.extra_product_id))];
+  const extraVariantIds = extrasRaw
+    .map((e) => e.extra_variant_id)
+    .filter((id): id is string => id !== null);
+
+  // Fetch extra products and variants in parallel
+  const [productsResult, variantsResult] = await Promise.all([
+    client
+      .from("products")
+      .select("id,title,slug,base_price,main_image_url,is_active")
+      .in("id", extraProductIds),
+    extraVariantIds.length > 0
+      ? client
+          .from("product_variants")
+          .select("id,price_override,stock_quantity,is_active")
+          .in("id", extraVariantIds)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+  ]);
+
+  const productMap = new Map<
+    string,
+    {
+      title: string;
+      slug: string;
+      base_price: number;
+      main_image_url: string | null;
+      is_active: boolean;
+    }
+  >();
+  for (const p of (productsResult.data ?? []) as Array<{
+    id: string;
+    title: string;
+    slug: string;
+    base_price: number;
+    main_image_url: string | null;
+    is_active: boolean;
+  }>) {
+    productMap.set(p.id, p);
+  }
+
+  const variantMap = new Map<
+    string,
+    {
+      price_override: number | null;
+      stock_quantity: number;
+      is_active: boolean;
+    }
+  >();
+  for (const v of (variantsResult.data ?? []) as Array<{
+    id: string;
+    price_override: number | null;
+    stock_quantity: number;
+    is_active: boolean;
+  }>) {
+    variantMap.set(v.id, v);
+  }
+
+  return extrasRaw
+    .map((extra) => {
+      const prod = productMap.get(extra.extra_product_id);
+      if (!prod) return null;
+
+      const variant = extra.extra_variant_id ? variantMap.get(extra.extra_variant_id) : null;
+
+      return {
+        ...extra,
+        extra_product_title: prod.title,
+        extra_product_slug: prod.slug,
+        extra_product_price: prod.base_price,
+        extra_product_image: prod.main_image_url,
+        extra_product_is_active: prod.is_active,
+        extra_variant_price: variant?.price_override ?? null,
+        extra_variant_stock: variant?.stock_quantity ?? null,
+        extra_variant_is_active: variant?.is_active ?? null,
+      } satisfies ProductExtraWithProduct;
+    })
+    .filter((e): e is ProductExtraWithProduct => e !== null);
+}
+
+// ── Extra product actions ──────────────────────────────────────────
+
+const extrasInputSchema = z.array(
+  z.object({
+    extraProductId: uuidSchema,
+    extraVariantId: uuidSchema.optional(),
+    label: z.string().min(1).max(200),
+    isDefaultChecked: z.boolean(),
+    sortOrder: z.number().int().min(0),
+  }),
+);
+
+export async function getProductExtras(
+  productId: string,
+): Promise<ActionResult<ProductExtraWithProduct[]>> {
+  try {
+    const idParsed = uuidSchema.safeParse(productId);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen termék azonosító." };
+    }
+
+    const supabase = await createClient();
+
+    const { data: extrasRaw, error } = await supabase
+      .from("product_extras")
+      .select("*")
+      .eq("product_id", idParsed.data)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("[getProductExtras] DB error:", error.message);
+      return { success: false, error: "Hiba a kiegészítők lekérésekor." };
+    }
+
+    const extras = await enrichExtras(supabase, extrasRaw ?? []);
+
+    return { success: true, data: extras };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[getProductExtras] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+export async function adminSetProductExtras(
+  productId: string,
+  extras: Array<{
+    extraProductId: string;
+    extraVariantId?: string;
+    label: string;
+    isDefaultChecked: boolean;
+    sortOrder: number;
+  }>,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin();
+
+    const idParsed = uuidSchema.safeParse(productId);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen termék azonosító." };
+    }
+
+    const parsed = extrasInputSchema.safeParse(extras);
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      return {
+        success: false,
+        error: firstIssue?.message ?? "Érvénytelen kiegészítő adatok.",
+      };
+    }
+
+    // Validate no self-reference
+    for (const extra of parsed.data) {
+      if (extra.extraProductId === idParsed.data) {
+        return {
+          success: false,
+          error: "Egy termék nem lehet a saját kiegészítője.",
+        };
+      }
+    }
+
+    const admin = createAdminClient();
+
+    // Delete existing extras
+    await admin.from("product_extras").delete().eq("product_id", idParsed.data);
+
+    // Insert new extras
+    if (parsed.data.length > 0) {
+      const rows = parsed.data.map((e) => ({
+        product_id: idParsed.data,
+        extra_product_id: e.extraProductId,
+        extra_variant_id: e.extraVariantId ?? null,
+        label: e.label,
+        is_default_checked: e.isDefaultChecked,
+        sort_order: e.sortOrder,
+      }));
+
+      const { error: insertError } = await admin.from("product_extras").insert(rows);
+
+      if (insertError) {
+        console.error("[adminSetProductExtras] Insert error:", insertError.message);
+        return { success: false, error: "Hiba a kiegészítők mentésekor." };
+      }
+    }
+
+    await logAudit({
+      actorId: profile.id,
+      actorRole: profile.role,
+      action: "product.set_extras",
+      entityType: "product",
+      entityId: idParsed.data,
+      metadata: { extrasCount: parsed.data.length },
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[adminSetProductExtras] Unexpected error:", message);
+    return { success: false, error: "Váratlan hiba történt." };
+  }
+}
+
+// ── Price History (FE-006) ──────────────────────────────────────────
+
+export async function getProductPriceHistory(
+  productId: string,
+  days: number = 30,
+): Promise<
+  ActionResult<{
+    history: Array<{ price: number; compareAtPrice: number | null; date: string }>;
+  }>
+> {
+  try {
+    await requireAdminOrViewer();
+
+    const idParsed = uuidSchema.safeParse(productId);
+    if (!idParsed.success) {
+      return { success: false, error: "Érvénytelen termék azonosító." };
+    }
+
+    const admin = createAdminClient();
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    const { data, error } = await admin
+      .from("price_history")
+      .select("price, compare_at_price, recorded_at")
+      .eq("product_id", idParsed.data)
+      .is("variant_id", null)
+      .gte("recorded_at", cutoffDate.toISOString())
+      .order("recorded_at", { ascending: true });
+
+    if (error) {
+      console.error("[getProductPriceHistory] Error:", error.message);
+      return { success: false, error: "Hiba az ártörténet lekérésekor." };
+    }
+
+    return {
+      success: true,
+      data: {
+        history: (data ?? []).map((row) => ({
+          price: row.price,
+          compareAtPrice: row.compare_at_price,
+          date: row.recorded_at,
+        })),
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[getProductPriceHistory] Unexpected error:", message);
     return { success: false, error: "Váratlan hiba történt." };
   }
 }

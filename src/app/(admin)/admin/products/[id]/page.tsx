@@ -7,29 +7,42 @@ import {
   Trash2,
   Save,
   Loader2,
-  ImagePlus,
   AlertTriangle,
   Eye,
   EyeOff,
+  Search,
+  GripVertical,
 } from "lucide-react";
-import { adminUpdateProduct, adminHardDeleteProduct, adminToggleProductActive, adminGetProduct } from "@/lib/actions/products";
+import {
+  adminUpdateProduct,
+  adminHardDeleteProduct,
+  adminToggleProductActive,
+  adminGetProduct,
+  adminListProducts,
+  getProductPriceHistory,
+} from "@/lib/actions/products";
 import { listCategories } from "@/lib/actions/categories";
+import { SingleImageUpload, GalleryImageUpload } from "@/components/admin/image-upload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { siteConfig } from "@/lib/config/site.config";
+import { PriceSparkline } from "@/components/admin/price-sparkline";
 import type {
   ProductRow,
   ProductVariantRow,
   CategoryRow,
+  ProductExtraWithProduct,
 } from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
@@ -47,6 +60,7 @@ interface VariantRow {
   priceOverride: string;
   stockQuantity: string;
   isActive: boolean;
+  weightGrams: string;
 }
 
 function variantFromDB(v: ProductVariantRow): VariantRow {
@@ -61,6 +75,7 @@ function variantFromDB(v: ProductVariantRow): VariantRow {
     priceOverride: v.price_override != null ? String(v.price_override) : "",
     stockQuantity: String(v.stock_quantity),
     isActive: v.is_active,
+    weightGrams: v.weight_grams != null ? String(v.weight_grams) : "",
   };
 }
 
@@ -75,6 +90,33 @@ function emptyVariant(): VariantRow {
     priceOverride: "",
     stockQuantity: "0",
     isActive: true,
+    weightGrams: "",
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Extra row type (client-side)                                       */
+/* ------------------------------------------------------------------ */
+
+interface ExtraRow {
+  key: string;
+  extraProductId: string;
+  extraVariantId: string | null;
+  extraProductTitle: string;
+  label: string;
+  isDefaultChecked: boolean;
+  sortOrder: number;
+}
+
+function extraFromDB(e: ProductExtraWithProduct): ExtraRow {
+  return {
+    key: e.id,
+    extraProductId: e.extra_product_id,
+    extraVariantId: e.extra_variant_id,
+    extraProductTitle: e.extra_product_title,
+    label: e.label,
+    isDefaultChecked: e.is_default_checked,
+    sortOrder: e.sort_order,
   };
 }
 
@@ -82,11 +124,7 @@ function emptyVariant(): VariantRow {
 /*  Admin Product Edit Page                                            */
 /* ------------------------------------------------------------------ */
 
-export default function AdminProductEditPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function AdminProductEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
 
@@ -101,15 +139,28 @@ export default function AdminProductEditPage({
   const [description, setDescription] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [compareAtPrice, setCompareAtPrice] = useState("");
+  const [vatRate, setVatRate] = useState(String(siteConfig.tax.defaultVatRate));
+  const [weightGrams, setWeightGrams] = useState("");
   const [mainImageUrl, setMainImageUrl] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [publishedAt, setPublishedAt] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [variants, setVariants] = useState<VariantRow[]>([]);
 
+  // Extras
+  const [extras, setExtras] = useState<ExtraRow[]>([]);
+  const [extraSearch, setExtraSearch] = useState("");
+  const [extraSearchResults, setExtraSearchResults] = useState<
+    Array<{ id: string; title: string; slug: string; base_price: number }>
+  >([]);
+  const [extraSearching, setExtraSearching] = useState(false);
+
   // Categories
   const [categories, setCategories] = useState<CategoryRow[]>([]);
+
+  // Price history (FE-006)
+  const [priceHistory, setPriceHistory] = useState<Array<{ price: number; date: string }>>([]);
 
   // Submit / delete
   const [submitting, setSubmitting] = useState(false);
@@ -132,26 +183,53 @@ export default function AdminProductEditPage({
         return;
       }
 
-      const { product: prod, variants: dbVariants, categories: prodCategories } = result.data;
+      const {
+        product: prod,
+        variants: dbVariants,
+        categories: prodCategories,
+        extras: dbExtras,
+      } = result.data;
 
       setProduct(prod);
       setTitle(prod.title);
       setSlug(prod.slug);
       setDescription(prod.description ?? "");
       setBasePrice(String(prod.base_price));
-      setCompareAtPrice(
-        prod.compare_at_price != null ? String(prod.compare_at_price) : "",
-      );
+      setCompareAtPrice(prod.compare_at_price != null ? String(prod.compare_at_price) : "");
+      setVatRate(String(prod.vat_rate));
+      setWeightGrams(prod.weight_grams != null ? String(prod.weight_grams) : "");
       setMainImageUrl(prod.main_image_url ?? "");
       setImageUrls(prod.image_urls ?? []);
       setIsActive(prod.is_active);
+
+      // Convert published_at ISO string to datetime-local format for the input
+      if (prod.published_at) {
+        const dt = new Date(prod.published_at);
+        const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 16);
+        setPublishedAt(local);
+      } else {
+        setPublishedAt("");
+      }
 
       if (dbVariants) {
         setVariants(dbVariants.map(variantFromDB));
       }
 
+      if (dbExtras) {
+        setExtras(dbExtras.map(extraFromDB));
+      }
+
       setSelectedCategoryIds(prodCategories.map((c: CategoryRow) => c.id));
       setLoading(false);
+
+      // Fetch price history for sparkline (FE-006)
+      getProductPriceHistory(id).then((res) => {
+        if (res.success && res.data) {
+          setPriceHistory(res.data.history.map((h) => ({ price: h.price, date: h.date })));
+        }
+      });
     }
 
     load();
@@ -173,19 +251,6 @@ export default function AdminProductEditPage({
     );
   }
 
-  // ── Image management ───────────────────────────────────────────
-  function addImageUrl() {
-    const url = newImageUrl.trim();
-    if (url && !imageUrls.includes(url)) {
-      setImageUrls((prev) => [...prev, url]);
-      setNewImageUrl("");
-    }
-  }
-
-  function removeImageUrl(index: number) {
-    setImageUrls((prev) => prev.filter((_, i) => i !== index));
-  }
-
   // ── Variant management ─────────────────────────────────────────
   function addVariant() {
     setVariants((prev) => [...prev, emptyVariant()]);
@@ -195,14 +260,60 @@ export default function AdminProductEditPage({
     setVariants((prev) => prev.filter((v) => v.key !== key));
   }
 
-  function updateVariant(
-    key: string,
-    field: keyof VariantRow,
-    value: string | boolean,
-  ) {
-    setVariants((prev) =>
-      prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)),
-    );
+  function updateVariant(key: string, field: keyof VariantRow, value: string | boolean) {
+    setVariants((prev) => prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)));
+  }
+
+  // ── Extras management ──────────────────────────────────────────
+  async function searchExtraProducts(query: string) {
+    setExtraSearch(query);
+    if (query.trim().length < 2) {
+      setExtraSearchResults([]);
+      return;
+    }
+    setExtraSearching(true);
+    try {
+      const result = await adminListProducts({ search: query.trim(), perPage: 10 });
+      if (result.success && result.data) {
+        // Filter out current product and already-added extras
+        const existingIds = new Set(extras.map((e) => e.extraProductId));
+        setExtraSearchResults(
+          result.data.products
+            .filter((p) => p.id !== id && !existingIds.has(p.id))
+            .map((p) => ({ id: p.id, title: p.title, slug: p.slug, base_price: p.base_price })),
+        );
+      }
+    } finally {
+      setExtraSearching(false);
+    }
+  }
+
+  function addExtra(productResult: {
+    id: string;
+    title: string;
+    slug: string;
+    base_price: number;
+  }) {
+    const newExtra: ExtraRow = {
+      key: crypto.randomUUID(),
+      extraProductId: productResult.id,
+      extraVariantId: null,
+      extraProductTitle: productResult.title,
+      label: `${productResult.title} (+${Math.round(productResult.base_price).toLocaleString("hu-HU")} Ft)`,
+      isDefaultChecked: false,
+      sortOrder: extras.length,
+    };
+    setExtras((prev) => [...prev, newExtra]);
+    setExtraSearch("");
+    setExtraSearchResults([]);
+  }
+
+  function removeExtra(key: string) {
+    setExtras((prev) => prev.filter((e) => e.key !== key));
+  }
+
+  function updateExtra(key: string, field: keyof ExtraRow, value: string | boolean | number) {
+    setExtras((prev) => prev.map((e) => (e.key === key ? { ...e, [field]: value } : e)));
   }
 
   // ── Save ───────────────────────────────────────────────────────
@@ -234,17 +345,21 @@ export default function AdminProductEditPage({
       formData.set("basePrice", String(Math.round(Number(basePrice))));
 
       if (compareAtPrice) {
-        formData.set(
-          "compareAtPrice",
-          String(Math.round(Number(compareAtPrice))),
-        );
+        formData.set("compareAtPrice", String(Math.round(Number(compareAtPrice))));
       } else {
         formData.set("compareAtPrice", "");
+      }
+
+      formData.set("vatRate", vatRate);
+
+      if (weightGrams) {
+        formData.set("weightGrams", weightGrams);
       }
 
       formData.set("mainImageUrl", mainImageUrl.trim());
       formData.set("imageUrls", JSON.stringify(imageUrls));
       formData.set("isActive", String(isActive));
+      formData.set("publishedAt", publishedAt ? new Date(publishedAt).toISOString() : "");
       formData.set("categoryIds", JSON.stringify(selectedCategoryIds));
 
       // Variants
@@ -258,8 +373,19 @@ export default function AdminProductEditPage({
         priceOverride: v.priceOverride ? Number(v.priceOverride) : undefined,
         stockQuantity: Number(v.stockQuantity) || 0,
         isActive: v.isActive,
+        weightGrams: v.weightGrams ? Number(v.weightGrams) : undefined,
       }));
       formData.set("variants", JSON.stringify(variantsPayload));
+
+      // Extras
+      const extrasPayload = extras.map((e) => ({
+        extraProductId: e.extraProductId,
+        extraVariantId: e.extraVariantId || undefined,
+        label: e.label,
+        isDefaultChecked: e.isDefaultChecked,
+        sortOrder: e.sortOrder,
+      }));
+      formData.set("extras", JSON.stringify(extrasPayload));
 
       const result = await adminUpdateProduct(id, formData);
 
@@ -344,12 +470,8 @@ export default function AdminProductEditPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Termék szerkesztése
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground font-mono">
-            {product?.slug}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">Termék szerkesztése</h1>
+          <p className="mt-1 text-sm text-muted-foreground font-mono">{product?.slug}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Toggle active / inactive */}
@@ -411,8 +533,7 @@ export default function AdminProductEditPage({
       {confirmDelete && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive flex items-center gap-2">
           <AlertTriangle className="size-4 shrink-0" />
-          Biztosan törölni szeretné ezt a terméket? Kattintson ismét a Megerősítés
-          gombra.
+          Biztosan törölni szeretné ezt a terméket? Kattintson ismét a Megerősítés gombra.
           <button
             type="button"
             className="ml-auto cursor-pointer underline"
@@ -434,11 +555,7 @@ export default function AdminProductEditPage({
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Termék neve *</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
 
               <div className="space-y-2">
@@ -469,32 +586,77 @@ export default function AdminProductEditPage({
             <CardHeader>
               <CardTitle>Árazás</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="basePrice">Alapár (HUF) *</Label>
-                <Input
-                  id="basePrice"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                />
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="basePrice">Alapár (HUF) *</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="basePrice"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={basePrice}
+                      onChange={(e) => setBasePrice(e.target.value)}
+                      className="flex-1"
+                    />
+                    <PriceSparkline history={priceHistory} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="compareAtPrice">Összehasonlító ár (HUF)</Label>
+                  <Input
+                    id="compareAtPrice"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={compareAtPrice}
+                    onChange={(e) => setCompareAtPrice(e.target.value)}
+                    placeholder="Opcionális"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>ÁFA kulcs</Label>
+                  <Select
+                    value={vatRate}
+                    onValueChange={(val: string | null) =>
+                      setVatRate(val ?? String(siteConfig.tax.defaultVatRate))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteConfig.tax.availableRates.map((rate) => (
+                        <SelectItem key={rate} value={String(rate)}>
+                          {rate}%
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="compareAtPrice">
-                  Összehasonlító ár (HUF)
-                </Label>
-                <Input
-                  id="compareAtPrice"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={compareAtPrice}
-                  onChange={(e) => setCompareAtPrice(e.target.value)}
-                  placeholder="Opcionális"
-                />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="weightGrams">Súly (gramm)</Label>
+                  <Input
+                    id="weightGrams"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={weightGrams}
+                    onChange={(e) => setWeightGrams(e.target.value)}
+                    placeholder={String(siteConfig.shipping.rules.defaultProductWeightGrams)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Üresen hagyva az alapértelmezett (
+                    {siteConfig.shipping.rules.defaultProductWeightGrams} g) kerül alkalmazásra. A
+                    variánsok felülírhatják.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -504,71 +666,19 @@ export default function AdminProductEditPage({
             <CardHeader>
               <CardTitle>Képek</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="mainImageUrl">Fő kép URL</Label>
-                <Input
-                  id="mainImageUrl"
-                  type="url"
+                <Label>Fő kép</Label>
+                <SingleImageUpload
                   value={mainImageUrl}
-                  onChange={(e) => setMainImageUrl(e.target.value)}
-                  placeholder="https://..."
+                  onChange={setMainImageUrl}
+                  onRemove={() => setMainImageUrl("")}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Galéria képek</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="url"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="Kép URL hozzáadása..."
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addImageUrl();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addImageUrl}
-                  >
-                    <ImagePlus className="size-4" />
-                  </Button>
-                </div>
-
-                {imageUrls.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {imageUrls.map((url, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2"
-                      >
-                        <div className="size-8 shrink-0 overflow-hidden rounded bg-muted">
-                          <img
-                            src={url}
-                            alt=""
-                            className="size-full object-cover"
-                          />
-                        </div>
-                        <span className="flex-1 truncate text-xs font-mono">
-                          {url}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeImageUrl(i)}
-                          className="cursor-pointer text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <GalleryImageUpload value={imageUrls} onChange={setImageUrls} />
               </div>
             </CardContent>
           </Card>
@@ -579,16 +689,9 @@ export default function AdminProductEditPage({
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Variánsok</CardTitle>
-                  <CardDescription>
-                    Méret, szín stb. variánsok kezelése.
-                  </CardDescription>
+                  <CardDescription>Méret, szín stb. variánsok kezelése.</CardDescription>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addVariant}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={addVariant}>
                   <Plus className="mr-2 size-4" />
                   Variáns
                 </Button>
@@ -597,10 +700,7 @@ export default function AdminProductEditPage({
             {variants.length > 0 && (
               <CardContent className="space-y-4">
                 {variants.map((v, idx) => (
-                  <div
-                    key={v.key}
-                    className="rounded-lg border bg-muted/30 p-4 space-y-3"
-                  >
+                  <div key={v.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">
                         Variáns #{idx + 1}
@@ -624,9 +724,7 @@ export default function AdminProductEditPage({
                         <Label className="text-xs">SKU</Label>
                         <Input
                           value={v.sku}
-                          onChange={(e) =>
-                            updateVariant(v.key, "sku", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "sku", e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
@@ -634,9 +732,7 @@ export default function AdminProductEditPage({
                         <Label className="text-xs">Opció 1 neve</Label>
                         <Input
                           value={v.option1Name}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option1Name", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option1Name", e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
@@ -644,9 +740,7 @@ export default function AdminProductEditPage({
                         <Label className="text-xs">Opció 1 értéke *</Label>
                         <Input
                           value={v.option1Value}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option1Value", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option1Value", e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
@@ -657,9 +751,7 @@ export default function AdminProductEditPage({
                         <Label className="text-xs">Opció 2 neve</Label>
                         <Input
                           value={v.option2Name}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option2Name", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option2Name", e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
@@ -667,9 +759,7 @@ export default function AdminProductEditPage({
                         <Label className="text-xs">Opció 2 értéke</Label>
                         <Input
                           value={v.option2Value}
-                          onChange={(e) =>
-                            updateVariant(v.key, "option2Value", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "option2Value", e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
@@ -680,15 +770,13 @@ export default function AdminProductEditPage({
                           min="0"
                           step="1"
                           value={v.priceOverride}
-                          onChange={(e) =>
-                            updateVariant(v.key, "priceOverride", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "priceOverride", e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-4">
                       <div className="space-y-1">
                         <Label className="text-xs">Készlet *</Label>
                         <Input
@@ -696,18 +784,26 @@ export default function AdminProductEditPage({
                           min="0"
                           step="1"
                           value={v.stockQuantity}
-                          onChange={(e) =>
-                            updateVariant(v.key, "stockQuantity", e.target.value)
-                          }
+                          onChange={(e) => updateVariant(v.key, "stockQuantity", e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Súly (g)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={v.weightGrams}
+                          onChange={(e) => updateVariant(v.key, "weightGrams", e.target.value)}
+                          placeholder="Termék súly"
                           className="h-8 text-xs"
                         />
                       </div>
                       <div className="flex items-end gap-2 pb-1">
                         <Checkbox
                           checked={v.isActive}
-                          onCheckedChange={(checked) =>
-                            updateVariant(v.key, "isActive", !!checked)
-                          }
+                          onCheckedChange={(checked) => updateVariant(v.key, "isActive", !!checked)}
                         />
                         <Label className="text-xs">Aktív</Label>
                       </div>
@@ -717,16 +813,129 @@ export default function AdminProductEditPage({
               </CardContent>
             )}
           </Card>
-        </div>
 
-        {/* Right column */}
+          {/* Extras */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Kiegészítő termékek</CardTitle>
+                  <CardDescription>
+                    Termékek, amelyeket a vásárlók egy jelölőnégyzettel hozzáadhatnak a kosárhoz.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Search for extra products */}
+              <div className="space-y-2">
+                <Label className="text-xs">Termék keresése</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={extraSearch}
+                    onChange={(e) => searchExtraProducts(e.target.value)}
+                    placeholder="Keresés név vagy slug alapján..."
+                    className="h-8 pl-9 text-xs"
+                  />
+                  {extraSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+
+                {/* Search results dropdown */}
+                {extraSearchResults.length > 0 && (
+                  <div className="rounded-md border bg-background shadow-md">
+                    {extraSearchResults.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => addExtra(p)}
+                        className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-xs hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="font-medium">{p.title}</span>
+                        <span className="text-muted-foreground font-mono">
+                          {Math.round(p.base_price).toLocaleString("hu-HU")} Ft
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Extras list */}
+              {extras.length > 0 && (
+                <div className="space-y-3">
+                  {extras.map((extra, idx) => (
+                    <div key={extra.key} className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="size-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">{extra.extraProductTitle}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeExtra(extra.key)}
+                          className="cursor-pointer text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-xs">Megjelenítési szöveg *</Label>
+                          <Input
+                            value={extra.label}
+                            onChange={(e) => updateExtra(extra.key, "label", e.target.value)}
+                            className="h-8 text-xs"
+                            placeholder="pl. Díszcsomag (+990 Ft)"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Sorrend</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={extra.sortOrder}
+                            onChange={(e) =>
+                              updateExtra(extra.key, "sortOrder", Number(e.target.value) || 0)
+                            }
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={extra.isDefaultChecked}
+                          onCheckedChange={(checked) =>
+                            updateExtra(extra.key, "isDefaultChecked", !!checked)
+                          }
+                        />
+                        <Label className="text-xs">Alapértelmezetten kijelölve</Label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {extras.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Nincs kiegészítő termék hozzárendelve. Keressen fent egy terméket a hozzáadáshoz.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
         <div className="space-y-6">
           {/* Status */}
           <Card>
             <CardHeader>
               <CardTitle>Státusz</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={isActive}
@@ -739,6 +948,26 @@ export default function AdminProductEditPage({
                   Inaktív — nem látható a vásárlóknak
                 </Badge>
               )}
+              <div className="space-y-2">
+                <Label htmlFor="publishedAt" className="text-sm">
+                  Ütemezett megjelenés
+                </Label>
+                <Input
+                  id="publishedAt"
+                  type="datetime-local"
+                  value={publishedAt}
+                  onChange={(e) => setPublishedAt(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Hagyja üresen az azonnali megjelenéshez. Jövőbeli dátum esetén a termék addig
+                  rejtett marad a webshopban.
+                </p>
+                {publishedAt && new Date(publishedAt) > new Date() && isActive && (
+                  <Badge variant="secondary" className="text-xs">
+                    Ütemezett — megjelenik: {new Date(publishedAt).toLocaleDateString("hu-HU")}
+                  </Badge>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -749,9 +978,7 @@ export default function AdminProductEditPage({
             </CardHeader>
             <CardContent>
               {categories.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nincsenek kategóriák.
-                </p>
+                <p className="text-sm text-muted-foreground">Nincsenek kategóriák.</p>
               ) : (
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {categories.map((cat) => (
@@ -761,9 +988,7 @@ export default function AdminProductEditPage({
                         onCheckedChange={() => toggleCategory(cat.id)}
                       />
                       <Label className="text-sm font-normal">
-                        {cat.parent_id && (
-                          <span className="text-muted-foreground">— </span>
-                        )}
+                        {cat.parent_id && <span className="text-muted-foreground">— </span>}
                         {cat.name}
                       </Label>
                     </div>

@@ -17,11 +17,8 @@ export type OrderStatus =
   | "shipped"
   | "cancelled"
   | "refunded";
-export type SubscriberStatus =
-  | "subscribed"
-  | "unsubscribed"
-  | "bounced"
-  | "complained";
+export type SubscriberStatus = "subscribed" | "unsubscribed" | "bounced" | "complained";
+export type PaymentMethod = "barion" | "cod";
 
 // ── Helper aliases ─────────────────────────────────────────────────
 type Uuid = string;
@@ -130,9 +127,12 @@ export type ProductRow = {
   description: string | null;
   base_price: number;
   compare_at_price: number | null;
+  vat_rate: number;
   main_image_url: string | null;
   image_urls: string[];
   is_active: boolean;
+  published_at: Timestamptz | null;
+  weight_grams: number | null;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 };
@@ -144,9 +144,12 @@ export type ProductInsert = {
   description?: string | null;
   base_price: number;
   compare_at_price?: number | null;
+  vat_rate?: number;
   main_image_url?: string | null;
   image_urls?: string[];
   is_active?: boolean;
+  published_at?: Timestamptz | null;
+  weight_grams?: number | null;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 };
@@ -158,9 +161,12 @@ export type ProductUpdate = {
   description?: string | null;
   base_price?: number;
   compare_at_price?: number | null;
+  vat_rate?: number;
   main_image_url?: string | null;
   image_urls?: string[];
   is_active?: boolean;
+  published_at?: Timestamptz | null;
+  weight_grams?: number | null;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 };
@@ -177,6 +183,7 @@ export type ProductVariantRow = {
   price_override: number | null;
   stock_quantity: number;
   is_active: boolean;
+  weight_grams: number | null;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 };
@@ -192,6 +199,7 @@ export type ProductVariantInsert = {
   price_override?: number | null;
   stock_quantity?: number;
   is_active?: boolean;
+  weight_grams?: number | null;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 };
@@ -207,6 +215,7 @@ export type ProductVariantUpdate = {
   price_override?: number | null;
   stock_quantity?: number;
   is_active?: boolean;
+  weight_grams?: number | null;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 };
@@ -298,6 +307,8 @@ export type OrderRow = {
   paid_at: Timestamptz | null;
   shipped_at: Timestamptz | null;
   idempotency_key: string | null;
+  payment_method: PaymentMethod;
+  cod_fee: number;
 };
 
 export type OrderInsert = {
@@ -330,6 +341,8 @@ export type OrderInsert = {
   paid_at?: Timestamptz | null;
   shipped_at?: Timestamptz | null;
   idempotency_key?: string | null;
+  payment_method?: PaymentMethod;
+  cod_fee?: number;
 };
 
 export type OrderUpdate = {
@@ -362,6 +375,8 @@ export type OrderUpdate = {
   paid_at?: Timestamptz | null;
   shipped_at?: Timestamptz | null;
   idempotency_key?: string | null;
+  payment_method?: PaymentMethod;
+  cod_fee?: number;
 };
 
 /* ---------- order_items ---------- */
@@ -375,6 +390,7 @@ export type OrderItemRow = {
   unit_price_snapshot: number;
   quantity: number;
   line_total: number;
+  vat_rate: number;
 };
 
 export type OrderItemInsert = {
@@ -387,6 +403,7 @@ export type OrderItemInsert = {
   unit_price_snapshot: number;
   quantity: number;
   line_total: number;
+  vat_rate?: number;
 };
 
 export type OrderItemUpdate = {
@@ -399,6 +416,29 @@ export type OrderItemUpdate = {
   unit_price_snapshot?: number;
   quantity?: number;
   line_total?: number;
+  vat_rate?: number;
+};
+
+/* ---------- order_notes ---------- */
+export type OrderNoteRow = {
+  id: Uuid;
+  order_id: Uuid;
+  author_id: Uuid;
+  content: string;
+  created_at: Timestamptz;
+};
+
+export type OrderNoteInsert = {
+  id?: Uuid;
+  order_id: Uuid;
+  author_id: Uuid;
+  content: string;
+  created_at?: Timestamptz;
+};
+
+/** OrderNote with resolved author name for display */
+export type OrderNoteWithAuthor = OrderNoteRow & {
+  author_name: string | null;
 };
 
 /* ---------- subscribers ---------- */
@@ -479,6 +519,131 @@ export type AuditLogUpdate = {
   entity_id?: Uuid | null;
   metadata?: Record<string, unknown>;
   created_at?: Timestamptz;
+};
+
+// ── Shop Pages (FE-023) ────────────────────────────────────────────
+
+export type ShopPageRow = {
+  id: Uuid;
+  page_key: string;
+  content: Record<string, unknown>;
+  is_published: boolean;
+  created_at: Timestamptz;
+  updated_at: Timestamptz;
+};
+
+export type ShopPageInsert = {
+  id?: Uuid;
+  page_key: string;
+  content?: Record<string, unknown>;
+  is_published?: boolean;
+  created_at?: Timestamptz;
+  updated_at?: Timestamptz;
+};
+
+export type ShopPageUpdate = {
+  id?: Uuid;
+  page_key?: string;
+  content?: Record<string, unknown>;
+  is_published?: boolean;
+  created_at?: Timestamptz;
+  updated_at?: Timestamptz;
+};
+
+/** Structured content for the About Us page */
+export type AboutUsHeroSection = {
+  title: string;
+  subtitle: string;
+  imageUrl: string | null;
+};
+
+export type AboutUsStorySection = {
+  title: string;
+  body: string;
+};
+
+export type AboutUsTeamMember = {
+  name: string;
+  role: string;
+  imageUrl: string | null;
+  bio: string;
+};
+
+export type AboutUsValue = {
+  title: string;
+  description: string;
+  icon: string;
+};
+
+export type AboutUsContactSection = {
+  address: string;
+  phone: string;
+  email: string;
+  mapEmbedUrl: string | null;
+};
+
+export type AboutUsContent = {
+  hero: AboutUsHeroSection;
+  story: AboutUsStorySection;
+  team: AboutUsTeamMember[];
+  values: AboutUsValue[];
+  contact: AboutUsContactSection;
+};
+
+// ── Product Extras (FE-025) ────────────────────────────────────────
+
+export type ProductExtraRow = {
+  id: Uuid;
+  product_id: Uuid;
+  extra_product_id: Uuid;
+  extra_variant_id: Uuid | null;
+  label: string;
+  is_default_checked: boolean;
+  sort_order: number;
+  created_at: Timestamptz;
+};
+
+export type ProductExtraInsert = {
+  id?: Uuid;
+  product_id: Uuid;
+  extra_product_id: Uuid;
+  extra_variant_id?: Uuid | null;
+  label: string;
+  is_default_checked?: boolean;
+  sort_order?: number;
+  created_at?: Timestamptz;
+};
+
+/** Extra row enriched with the extra product's live price and stock info */
+export type ProductExtraWithProduct = ProductExtraRow & {
+  extra_product_title: string;
+  extra_product_slug: string;
+  extra_product_price: number;
+  extra_product_image: string | null;
+  extra_product_is_active: boolean;
+  extra_variant_price: number | null;
+  extra_variant_stock: number | null;
+  extra_variant_is_active: boolean | null;
+};
+
+// ── Price History (FE-006) ──────────────────────────────────────────
+
+export type PriceHistoryRow = {
+  id: Uuid;
+  product_id: Uuid;
+  variant_id: Uuid | null;
+  price: number;
+  compare_at_price: number | null;
+  recorded_at: Timestamptz;
+};
+
+export type PriceHistoryInsert = {
+  id?: Uuid;
+  product_id: Uuid;
+  variant_id?: Uuid | null;
+  price: number;
+  compare_at_price?: number | null;
+  recorded_at?: Timestamptz;
 };
 
 // ── Database type (Supabase client generic) ────────────────────────
@@ -603,6 +768,27 @@ export type Database = {
           },
         ];
       };
+      order_notes: {
+        Row: OrderNoteRow;
+        Insert: OrderNoteInsert;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "order_notes_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_notes_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       subscribers: {
         Row: SubscriberRow;
         Insert: SubscriberInsert;
@@ -619,6 +805,61 @@ export type Database = {
             columns: ["actor_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      shop_pages: {
+        Row: ShopPageRow;
+        Insert: ShopPageInsert;
+        Update: ShopPageUpdate;
+        Relationships: [];
+      };
+      product_extras: {
+        Row: ProductExtraRow;
+        Insert: ProductExtraInsert;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "product_extras_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_extras_extra_product_id_fkey";
+            columns: ["extra_product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_extras_extra_variant_id_fkey";
+            columns: ["extra_variant_id"];
+            isOneToOne: false;
+            referencedRelation: "product_variants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      price_history: {
+        Row: PriceHistoryRow;
+        Insert: PriceHistoryInsert;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "price_history_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "price_history_variant_id_fkey";
+            columns: ["variant_id"];
+            isOneToOne: false;
+            referencedRelation: "product_variants";
             referencedColumns: ["id"];
           },
         ];

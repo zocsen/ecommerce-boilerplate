@@ -14,12 +14,12 @@ interface ProductCardProps {
 
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="group block"
-    >
+    <Link href={`/products/${product.slug}`} className="group block">
       {/* ── Image ──────────────────────────────────────── */}
-      <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-muted transition-all duration-500 ease-out group-hover:shadow-lg group-hover:shadow-black/5">
+      <div
+        className="relative overflow-hidden rounded-lg bg-muted transition-all duration-500 ease-out group-hover:shadow-lg group-hover:shadow-black/5"
+        style={{ aspectRatio: "4/5" }}
+      >
         {product.main_image_url ? (
           <Image
             src={product.main_image_url}
@@ -28,6 +28,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
             priority={priority}
+            unoptimized={product.main_image_url.startsWith("http://")}
           />
         ) : (
           <div className="flex h-full items-center justify-center">
@@ -38,12 +39,11 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         )}
 
         {/* Sale indicator — top-right corner */}
-        {product.compare_at_price != null &&
-          product.compare_at_price > product.base_price && (
-            <div className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-background">
-              Akció
-            </div>
-          )}
+        {product.compare_at_price != null && product.compare_at_price > product.base_price && (
+          <div className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-background">
+            Akció
+          </div>
+        )}
       </div>
 
       {/* ── Details ────────────────────────────────────── */}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Package, ChevronRight, ChevronLeft } from "lucide-react";
 import { listUserOrders } from "@/lib/actions/profile";
 import { formatHUF, formatDate } from "@/lib/utils/format";
-import { Badge } from "@/components/ui/badge";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import type { OrderStatus } from "@/lib/types/database";
@@ -10,26 +10,6 @@ import type { OrderStatus } from "@/lib/types/database";
 /* ------------------------------------------------------------------ */
 /*  Profile orders list page                                           */
 /* ------------------------------------------------------------------ */
-
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  draft: "Piszkozat",
-  awaiting_payment: "Fizetésre vár",
-  paid: "Fizetve",
-  processing: "Feldolgozás alatt",
-  shipped: "Kiszállítva",
-  cancelled: "Lemondva",
-  refunded: "Visszatérítve",
-};
-
-const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  draft: "outline",
-  awaiting_payment: "secondary",
-  paid: "default",
-  processing: "secondary",
-  shipped: "default",
-  cancelled: "destructive",
-  refunded: "destructive",
-};
 
 export default async function ProfileOrdersPage({
   searchParams,
@@ -40,26 +20,17 @@ export default async function ProfileOrdersPage({
   const page = Math.max(1, Number(params.page ?? "1"));
 
   const result = await listUserOrders({ page, perPage: 20 });
-  const orders = result.success ? result.data?.orders ?? [] : [];
-  const totalPages = result.success ? result.data?.totalPages ?? 0 : 0;
-  const total = result.success ? result.data?.total ?? 0 : 0;
+  const orders = result.success ? (result.data?.orders ?? []) : [];
+  const totalPages = result.success ? (result.data?.totalPages ?? 0) : 0;
+  const total = result.success ? (result.data?.total ?? 0) : 0;
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Fiókom", href: "/profile" },
-          { label: "Rendeléseim" },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: "Fiókom", href: "/profile" }, { label: "Rendeléseim" }]} />
 
       <div>
-        <h1 className="text-3xl font-semibold tracking-[-0.03em]">
-          Rendeléseim
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {total} rendelés összesen
-        </p>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Rendeléseim</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{total} rendelés összesen</p>
       </div>
 
       {orders.length === 0 ? (
@@ -67,9 +38,7 @@ export default async function ProfileOrdersPage({
           <div className="flex size-16 items-center justify-center rounded-full bg-muted">
             <Package className="size-7 text-muted-foreground" />
           </div>
-          <h2 className="mt-4 text-lg font-medium">
-            Még nincsenek rendeléseid
-          </h2>
+          <h2 className="mt-4 text-lg font-medium">Még nincsenek rendeléseid</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Amint leadod az első rendelést, itt fog megjelenni.
           </p>
@@ -106,9 +75,7 @@ export default async function ProfileOrdersPage({
                       {formatHUF(order.total_amount)}
                     </p>
                   </div>
-                  <Badge variant={STATUS_VARIANTS[order.status] ?? "outline"}>
-                    {STATUS_LABELS[order.status] ?? order.status}
-                  </Badge>
+                  <OrderStatusBadge status={order.status as OrderStatus} />
                 </div>
                 <ChevronRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5" />
               </Link>
@@ -126,11 +93,7 @@ export default async function ProfileOrdersPage({
                   variant="outline"
                   size="sm"
                   disabled={page <= 1}
-                  render={
-                    page > 1 ? (
-                      <Link href={`/profile/orders?page=${page - 1}`} />
-                    ) : undefined
-                  }
+                  render={page > 1 ? <Link href={`/profile/orders?page=${page - 1}`} /> : undefined}
                 >
                   <ChevronLeft className="size-4" />
                 </Button>

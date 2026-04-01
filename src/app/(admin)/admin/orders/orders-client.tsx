@@ -3,12 +3,31 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { adminListOrders } from "@/lib/actions/orders";
+import { Search, ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
+import { adminListOrders, exportOrdersCsv } from "@/lib/actions/orders";
 import { formatHUF, formatDateTime } from "@/lib/utils/format";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { OrderStatusBadge } from "@/components/admin/order-status-badge";
+import { ORDER_STATUS_LABELS } from "@/lib/constants/order-status";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -18,33 +37,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import type { OrderStatus } from "@/lib/types/database";
+
 /* ------------------------------------------------------------------ */
 /*  Admin Orders List (client component)                                */
 /* ------------------------------------------------------------------ */
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "", label: "Összes" },
-  { value: "awaiting_payment", label: "Fizetésre vár" },
-  { value: "paid", label: "Fizetve" },
-  { value: "processing", label: "Feldolgozás" },
-  { value: "shipped", label: "Kiszállítva" },
-  { value: "cancelled", label: "Törölve" },
-  { value: "refunded", label: "Visszatérítve" },
+  ...Object.entries(ORDER_STATUS_LABELS)
+    .filter(([key]) => key !== "draft")
+    .map(([value, label]) => ({ value, label })),
 ];
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    draft: { label: "Piszkozat", variant: "outline" },
-    awaiting_payment: { label: "Fizetésre vár", variant: "secondary" },
-    paid: { label: "Fizetve", variant: "default" },
-    processing: { label: "Feldolgozás", variant: "default" },
-    shipped: { label: "Kiszállítva", variant: "secondary" },
-    cancelled: { label: "Törölve", variant: "destructive" },
-    refunded: { label: "Visszatérítve", variant: "destructive" },
-  };
-  const entry = map[status] ?? { label: status, variant: "outline" as const };
-  return <Badge variant={entry.variant}>{entry.label}</Badge>;
-}
+const EXPORT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "all", label: "Összes státusz" },
+  ...Object.entries(ORDER_STATUS_LABELS)
+    .filter(([key]) => key !== "draft")
+    .map(([value, label]) => ({ value, label })),
+];
 
 interface OrderRow {
   id: string;
@@ -54,6 +65,175 @@ interface OrderRow {
   created_at: string;
   shipping_method: string;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Export Dialog                                                        */
+/* ------------------------------------------------------------------ */
+
+function ExportDialog() {
+  const [open, setOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [exportStatus, setExportStatus] = useState("all");
+  const [includeLineItems, setIncludeLineItems] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+
+  function resetForm() {
+    setDateFrom("");
+    setDateTo("");
+    setExportStatus("all");
+    setIncludeLineItems(false);
+    setExportError("");
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    setExportError("");
+
+    try {
+      const result = await exportOrdersCsv({
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        status: exportStatus === "all" ? undefined : exportStatus,
+        includeLineItems,
+      });
+
+      if (!result.success || !result.data) {
+        setExportError(result.error ?? "Ismeretlen hiba történt.");
+        return;
+      }
+
+      // Trigger browser download
+      const blob = new Blob([result.data.csv], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = result.data.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+
+      setOpen(false);
+      resetForm();
+    } catch {
+      setExportError("Váratlan hiba történt az exportálás során.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) resetForm();
+      }}
+    >
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5" />}>
+        <Download className="size-4" />
+        Exportálás
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Rendelések exportálása</DialogTitle>
+          <DialogDescription>
+            Válaszd ki a szűrőket, majd kattints a letöltésre. A fájl CSV formátumban készül, UTF-8
+            kódolással (Excel-kompatibilis).
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Date range */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="export-date-from">Dátum -tól</Label>
+              <Input
+                id="export-date-from"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="export-date-to">Dátum -ig</Label>
+              <Input
+                id="export-date-to"
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Status filter */}
+          <div className="space-y-1.5">
+            <Label>Státusz szűrő</Label>
+            <Select
+              value={exportStatus}
+              onValueChange={(val: string | null) => setExportStatus(val ?? "all")}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {EXPORT_STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Include line items */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="export-line-items"
+              checked={includeLineItems}
+              onCheckedChange={(checked) => setIncludeLineItems(checked === true)}
+            />
+            <Label htmlFor="export-line-items" className="cursor-pointer">
+              Tételek részletezése (terméksorok)
+            </Label>
+          </div>
+
+          {/* Error banner */}
+          {exportError && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {exportError}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button onClick={handleExport} disabled={exporting} className="gap-1.5">
+            {exporting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Exportálás...
+              </>
+            ) : (
+              <>
+                <Download className="size-4" />
+                Letöltés
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Orders Client                                                  */
+/* ------------------------------------------------------------------ */
 
 export function AdminOrdersClient() {
   const router = useRouter();
@@ -104,11 +284,12 @@ export function AdminOrdersClient() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Rendelések</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {total} rendelés összesen
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Rendelések</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{total} rendelés összesen</p>
+        </div>
+        <ExportDialog />
       </div>
 
       {/* Filters */}
@@ -178,16 +359,12 @@ export function AdminOrdersClient() {
                     {order.id.slice(0, 8).toUpperCase()}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {order.email}
-                </TableCell>
+                <TableCell className="text-muted-foreground">{order.email}</TableCell>
                 <TableCell>
-                  <StatusBadge status={order.status} />
+                  <OrderStatusBadge status={order.status as OrderStatus} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {order.shipping_method === "home"
-                    ? "Házhozszállítás"
-                    : "Csomagautomata"}
+                  {order.shipping_method === "home" ? "Házhozszállítás" : "Csomagautomata"}
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {formatHUF(order.total_amount)}

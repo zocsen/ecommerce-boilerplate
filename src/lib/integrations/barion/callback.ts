@@ -277,7 +277,7 @@ async function handlePaymentSucceeded(
     try {
       const { data: paidOrder } = await supabase
         .from("orders")
-        .select("id, email, total_amount, shipping_method, shipping_address")
+        .select("id, email, total_amount, shipping_method, shipping_address, payment_method")
         .eq("id", orderId)
         .single();
 
@@ -298,6 +298,7 @@ async function handlePaymentSucceeded(
           itemCount: orderItems?.length ?? 0,
           total: paidOrder.total_amount,
           shippingMethod: paidOrder.shipping_method ?? "—",
+          paymentMethod: paidOrder.payment_method ?? "barion",
         });
       }
     } catch (err) {

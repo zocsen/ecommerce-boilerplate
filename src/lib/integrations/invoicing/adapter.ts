@@ -10,6 +10,24 @@
 import { siteConfig } from "@/lib/config/site.config";
 import type { OrderRow, OrderItemRow } from "@/lib/types/database";
 
+// ── Helpers ───────────────────────────────────────────────────────
+
+/** Billingo expects VAT as a string like "27%" */
+function billingoVatString(vatRate: number): string {
+  return `${vatRate}%`;
+}
+
+/** Calculate net price from gross price and VAT rate */
+function grossToNet(gross: number, vatRate: number): number {
+  return Math.round(gross / (1 + vatRate / 100));
+}
+
+/** Calculate VAT amount from gross price and VAT rate */
+function grossToVat(gross: number, vatRate: number): number {
+  const net = grossToNet(gross, vatRate);
+  return gross - net;
+}
+
 // ── Interface ─────────────────────────────────────────────────────
 
 export interface InvoiceResult {
@@ -19,10 +37,7 @@ export interface InvoiceResult {
 
 export interface InvoicingAdapter {
   readonly provider: string;
-  createInvoice(
-    order: OrderRow,
-    items: OrderItemRow[],
-  ): Promise<InvoiceResult>;
+  createInvoice(order: OrderRow, items: OrderItemRow[]): Promise<InvoiceResult>;
 }
 
 // ── Billingo Adapter ──────────────────────────────────────────────
@@ -41,10 +56,7 @@ export class BillingoAdapter implements InvoicingAdapter {
     return key;
   }
 
-  async createInvoice(
-    order: OrderRow,
-    items: OrderItemRow[],
-  ): Promise<InvoiceResult> {
+  async createInvoice(order: OrderRow, items: OrderItemRow[]): Promise<InvoiceResult> {
     let apiKey: string;
     try {
       apiKey = this.getApiKey();
@@ -80,14 +92,13 @@ export class BillingoAdapter implements InvoicingAdapter {
       unit_price_type: "gross",
       quantity: item.quantity,
       unit: "db",
-      vat: "27%",
-      comment:
-        item.variant_snapshot.option1Value
-          ? `${item.variant_snapshot.option1Name ?? "Méret"}: ${item.variant_snapshot.option1Value}`
-          : "",
+      vat: billingoVatString(item.vat_rate),
+      comment: item.variant_snapshot.option1Value
+        ? `${item.variant_snapshot.option1Name ?? "Méret"}: ${item.variant_snapshot.option1Value}`
+        : "",
     }));
 
-    // Add shipping as a line item if applicable
+    // Add shipping as a line item if applicable (service → general VAT rate)
     if (order.shipping_fee > 0) {
       invoiceItems.push({
         name: "Szállítási költség",
@@ -95,12 +106,12 @@ export class BillingoAdapter implements InvoicingAdapter {
         unit_price_type: "gross",
         quantity: 1,
         unit: "db",
-        vat: "27%",
+        vat: billingoVatString(siteConfig.tax.defaultVatRate),
         comment: "",
       });
     }
 
-    // Add discount as negative line item if applicable
+    // Add discount as negative line item if applicable (use general VAT rate)
     if (order.discount_total > 0) {
       invoiceItems.push({
         name: `Kedvezmény${order.coupon_code ? ` (${order.coupon_code})` : ""}`,
@@ -108,7 +119,20 @@ export class BillingoAdapter implements InvoicingAdapter {
         unit_price_type: "gross",
         quantity: 1,
         unit: "db",
-        vat: "27%",
+        vat: billingoVatString(siteConfig.tax.defaultVatRate),
+        comment: "",
+      });
+    }
+
+    // Add COD fee as a line item if applicable
+    if (order.cod_fee > 0) {
+      invoiceItems.push({
+        name: "Utánvét kezelési díj",
+        unit_price: order.cod_fee,
+        unit_price_type: "gross",
+        quantity: 1,
+        unit: "db",
+        vat: billingoVatString(siteConfig.tax.defaultVatRate),
         comment: "",
       });
     }
@@ -127,9 +151,7 @@ export class BillingoAdapter implements InvoicingAdapter {
 
     if (!partnerResponse.ok) {
       const errorText = await partnerResponse.text();
-      throw new Error(
-        `Billingo partner creation failed (${partnerResponse.status}): ${errorText}`,
-      );
+      throw new Error(`Billingo partner creation failed (${partnerResponse.status}): ${errorText}`);
     }
 
     const partner = (await partnerResponse.json()) as { id: number };
@@ -140,7 +162,7 @@ export class BillingoAdapter implements InvoicingAdapter {
       block_id: 0, // Default block
       bank_account_id: 0,
       type: "invoice",
-      payment_method: "online_bankcard",
+      payment_method: order.payment_method === "cod" ? "cash_on_delivery" : "online_bankcard",
       currency: "HUF",
       language: "hu",
       electronic: true,
@@ -161,9 +183,7 @@ export class BillingoAdapter implements InvoicingAdapter {
 
     if (!invoiceResponse.ok) {
       const errorText = await invoiceResponse.text();
-      throw new Error(
-        `Billingo invoice creation failed (${invoiceResponse.status}): ${errorText}`,
-      );
+      throw new Error(`Billingo invoice creation failed (${invoiceResponse.status}): ${errorText}`);
     }
 
     const invoice = (await invoiceResponse.json()) as {
@@ -180,9 +200,7 @@ export class BillingoAdapter implements InvoicingAdapter {
 
   private createMockInvoice(order: OrderRow): InvoiceResult {
     const mockNumber = `BILL-${Date.now()}-${order.id.slice(0, 4).toUpperCase()}`;
-    console.info(
-      `[invoicing:billingo] Mock invoice created: ${mockNumber} for order ${order.id}`,
-    );
+    console.info(`[invoicing:billingo] Mock invoice created: ${mockNumber} for order ${order.id}`);
     return {
       invoiceNumber: mockNumber,
       invoiceUrl: `https://app.billingo.hu/mock/${mockNumber}`,
@@ -206,10 +224,7 @@ export class SzamlazzAdapter implements InvoicingAdapter {
     return key;
   }
 
-  async createInvoice(
-    order: OrderRow,
-    items: OrderItemRow[],
-  ): Promise<InvoiceResult> {
+  async createInvoice(order: OrderRow, items: OrderItemRow[]): Promise<InvoiceResult> {
     let agentKey: string;
     try {
       agentKey = this.getAgentKey();
@@ -233,16 +248,17 @@ export class SzamlazzAdapter implements InvoicingAdapter {
         <megnevezes>${escapeXml(item.title_snapshot)}</megnevezes>
         <mennyiseg>${item.quantity}</mennyiseg>
         <mennyisegiEgyseg>db</mennyisegiEgyseg>
-        <nettoEgysegar>${Math.round(item.unit_price_snapshot / 1.27)}</nettoEgysegar>
-        <afakulcs>27</afakulcs>
-        <nettoErtek>${Math.round(item.line_total / 1.27)}</nettoErtek>
-        <afaErtek>${item.line_total - Math.round(item.line_total / 1.27)}</afaErtek>
+        <nettoEgysegar>${grossToNet(item.unit_price_snapshot, item.vat_rate)}</nettoEgysegar>
+        <afakulcs>${item.vat_rate}</afakulcs>
+        <nettoErtek>${grossToNet(item.line_total, item.vat_rate)}</nettoErtek>
+        <afaErtek>${grossToVat(item.line_total, item.vat_rate)}</afaErtek>
         <bruttoErtek>${item.line_total}</bruttoErtek>
       </tetel>`,
       )
       .join("");
 
-    // Add shipping line item
+    // Add shipping line item (service → general VAT rate)
+    const shippingVat = siteConfig.tax.defaultVatRate;
     const shippingXml =
       order.shipping_fee > 0
         ? `
@@ -250,11 +266,28 @@ export class SzamlazzAdapter implements InvoicingAdapter {
         <megnevezes>Szállítási költség</megnevezes>
         <mennyiseg>1</mennyiseg>
         <mennyisegiEgyseg>db</mennyisegiEgyseg>
-        <nettoEgysegar>${Math.round(order.shipping_fee / 1.27)}</nettoEgysegar>
-        <afakulcs>27</afakulcs>
-        <nettoErtek>${Math.round(order.shipping_fee / 1.27)}</nettoErtek>
-        <afaErtek>${order.shipping_fee - Math.round(order.shipping_fee / 1.27)}</afaErtek>
+        <nettoEgysegar>${grossToNet(order.shipping_fee, shippingVat)}</nettoEgysegar>
+        <afakulcs>${shippingVat}</afakulcs>
+        <nettoErtek>${grossToNet(order.shipping_fee, shippingVat)}</nettoErtek>
+        <afaErtek>${grossToVat(order.shipping_fee, shippingVat)}</afaErtek>
         <bruttoErtek>${order.shipping_fee}</bruttoErtek>
+      </tetel>`
+        : "";
+
+    // Add COD fee line item if applicable
+    const codVat = siteConfig.tax.defaultVatRate;
+    const codFeeXml =
+      order.cod_fee > 0
+        ? `
+      <tetel>
+        <megnevezes>Utánvét kezelési díj</megnevezes>
+        <mennyiseg>1</mennyiseg>
+        <mennyisegiEgyseg>db</mennyisegiEgyseg>
+        <nettoEgysegar>${grossToNet(order.cod_fee, codVat)}</nettoEgysegar>
+        <afakulcs>${codVat}</afakulcs>
+        <nettoErtek>${grossToNet(order.cod_fee, codVat)}</nettoErtek>
+        <afaErtek>${grossToVat(order.cod_fee, codVat)}</afaErtek>
+        <bruttoErtek>${order.cod_fee}</bruttoErtek>
       </tetel>`
         : "";
 
@@ -270,7 +303,7 @@ export class SzamlazzAdapter implements InvoicingAdapter {
     <keltDatum>${formatDateForXml(new Date())}</keltDatum>
     <teljesitesDatum>${formatDateForXml(new Date())}</teljesitesDatum>
     <fizetesiHataridoDatum>${formatDateForXml(new Date())}</fizetesiHataridoDatum>
-    <fizmod>Bankkártya (online)</fizmod>
+    <fizmod>${order.payment_method === "cod" ? "Utánvét" : "Bankkártya (online)"}</fizmod>
     <ppienz>HUF</ppienz>
     <szamlaNyelve>hu</szamlaNyelve>
     <megjegyzes>Rendelés: ${order.id.slice(0, 8).toUpperCase()}</megjegyzes>
@@ -288,28 +321,23 @@ export class SzamlazzAdapter implements InvoicingAdapter {
   <tetelek>
     ${xmlItems}
     ${shippingXml}
+    ${codFeeXml}
   </tetelek>
 </xmlszamla>`;
 
-    const response = await fetch(
-      "https://www.szamlazz.hu/szamla/",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/xml" },
-        body: xmlPayload,
-      },
-    );
+    const response = await fetch("https://www.szamlazz.hu/szamla/", {
+      method: "POST",
+      headers: { "Content-Type": "application/xml" },
+      body: xmlPayload,
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Számlázz.hu invoice creation failed (${response.status}): ${errorText}`,
-      );
+      throw new Error(`Számlázz.hu invoice creation failed (${response.status}): ${errorText}`);
     }
 
     // Parse response headers for invoice number and PDF URL
-    const invoiceNumber =
-      response.headers.get("szlahu_szamlaszam") ?? `SZ-${Date.now()}`;
+    const invoiceNumber = response.headers.get("szlahu_szamlaszam") ?? `SZ-${Date.now()}`;
     const invoiceUrl =
       response.headers.get("szlahu_szamlapdf") ??
       `https://www.szamlazz.hu/szamla/?action=szamlapdf&id=${invoiceNumber}`;
@@ -319,9 +347,7 @@ export class SzamlazzAdapter implements InvoicingAdapter {
 
   private createMockInvoice(order: OrderRow): InvoiceResult {
     const mockNumber = `SZ-${Date.now()}-${order.id.slice(0, 4).toUpperCase()}`;
-    console.info(
-      `[invoicing:szamlazz] Mock invoice created: ${mockNumber} for order ${order.id}`,
-    );
+    console.info(`[invoicing:szamlazz] Mock invoice created: ${mockNumber} for order ${order.id}`);
     return {
       invoiceNumber: mockNumber,
       invoiceUrl: `https://www.szamlazz.hu/mock/${mockNumber}`,
@@ -334,13 +360,8 @@ export class SzamlazzAdapter implements InvoicingAdapter {
 export class NullAdapter implements InvoicingAdapter {
   readonly provider = "none";
 
-  async createInvoice(
-    _order: OrderRow,
-    _items: OrderItemRow[],
-  ): Promise<InvoiceResult> {
-    console.info(
-      "[invoicing:none] No invoicing provider configured. Skipping invoice generation.",
-    );
+  async createInvoice(_order: OrderRow, _items: OrderItemRow[]): Promise<InvoiceResult> {
+    console.info("[invoicing:none] No invoicing provider configured. Skipping invoice generation.");
     return {
       invoiceNumber: "",
       invoiceUrl: "",
@@ -375,9 +396,7 @@ export function getInvoicingAdapter(): InvoicingAdapter {
       break;
   }
 
-  console.info(
-    `[invoicing] Initialized adapter: ${cachedAdapter.provider}`,
-  );
+  console.info(`[invoicing] Initialized adapter: ${cachedAdapter.provider}`);
 
   return cachedAdapter;
 }

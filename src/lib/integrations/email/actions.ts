@@ -350,6 +350,7 @@ export async function sendAdminOrderNotification(params: {
   itemCount: number;
   total: number;
   shippingMethod: string;
+  paymentMethod?: string;
 }): Promise<EmailActionResult> {
   if (!siteConfig.email.sendAdminOrderNotification) {
     return { success: true };

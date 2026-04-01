@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -36,16 +37,16 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
           const isLast = index === items.length - 1;
 
           return (
-            <BreadcrumbItem key={`${item.label}-${index}`}>
+            <Fragment key={`${item.label}-${index}`}>
               <BreadcrumbSeparator />
-              {isLast || !item.href ? (
-                <BreadcrumbPage>{item.label}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink render={<Link href={item.href} />}>
-                  {item.label}
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
+              <BreadcrumbItem>
+                {isLast || !item.href ? (
+                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink render={<Link href={item.href} />}>{item.label}</BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
           );
         })}
       </BreadcrumbList>

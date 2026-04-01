@@ -791,6 +791,60 @@ INSERT INTO public.orders (
   now() - interval '8 days', now() - interval '7 days', now() - interval '8 days'
 );
 
+-- ── COD (Utánvét) orders ──────────────────────────────────────────
+
+-- Order 13: COD, processing (just placed, awaiting shipment)
+INSERT INTO public.orders (
+  id, user_id, email, status, payment_method, cod_fee, currency, subtotal_amount, shipping_fee, discount_total, total_amount,
+  shipping_method, shipping_address, shipping_phone, billing_address,
+  created_at, updated_at
+) VALUES (
+  'e0000001-0000-0000-0000-000000000013',
+  '44444444-4444-4444-4444-444444444444',
+  'customer1@test.hu',
+  'processing', 'cod', 590, 'HUF', 15980, 1490, 0, 18060,
+  'home',
+  '{"name":"Kovács Mária","street":"Váci utca 12.","city":"Budapest","zip":"1052","country":"Magyarország"}'::jsonb,
+  '+36 20 444 4444',
+  '{"name":"Kovács Mária","street":"Váci utca 12.","city":"Budapest","zip":"1052","country":"Magyarország"}'::jsonb,
+  now() - interval '2 days', now() - interval '2 days'
+);
+
+-- Order 14: COD, shipped (courier is delivering, payment not yet collected)
+INSERT INTO public.orders (
+  id, user_id, email, status, payment_method, cod_fee, currency, subtotal_amount, shipping_fee, discount_total, total_amount,
+  shipping_method, shipping_address, shipping_phone, billing_address,
+  notes, created_at, updated_at, shipped_at
+) VALUES (
+  'e0000001-0000-0000-0000-000000000014',
+  '55555555-5555-5555-5555-555555555555',
+  'customer2@test.hu',
+  'shipped', 'cod', 590, 'HUF', 24990, 0, 0, 25580,
+  'pickup',
+  '{"name":"","street":"","city":"","zip":"","country":"HU"}'::jsonb,
+  '+36 30 555 5555',
+  '{"name":"Tóth Péter","street":"Kossuth utca 5.","city":"Debrecen","zip":"4024","country":"Magyarország"}'::jsonb,
+  'Nyomkövetési szám: GLS-COD-001',
+  now() - interval '5 days', now() - interval '3 days', now() - interval '3 days'
+);
+
+-- Order 15: COD, shipped → paid (courier collected cash, admin marked paid)
+INSERT INTO public.orders (
+  id, user_id, email, status, payment_method, cod_fee, currency, subtotal_amount, shipping_fee, discount_total, total_amount,
+  shipping_method, shipping_address, shipping_phone, billing_address,
+  created_at, updated_at, shipped_at, paid_at
+) VALUES (
+  'e0000001-0000-0000-0000-000000000015',
+  NULL,
+  'vendeg.cod@gmail.com',
+  'paid', 'cod', 590, 'HUF', 7990, 1490, 0, 10070,
+  'home',
+  '{"name":"COD Vendég","street":"Rákóczi út 20.","city":"Szeged","zip":"6720","country":"Magyarország"}'::jsonb,
+  '+36 70 123 4567',
+  '{"name":"COD Vendég","street":"Rákóczi út 20.","city":"Szeged","zip":"6720","country":"Magyarország"}'::jsonb,
+  now() - interval '10 days', now() - interval '7 days', now() - interval '9 days', now() - interval '7 days'
+);
+
 -- ── 9. ORDER ITEMS ────────────────────────────────────────────────
 
 -- Order 1 items (Customer 1, shipped)
@@ -858,6 +912,21 @@ INSERT INTO public.order_items (order_id, product_id, variant_id, title_snapshot
 INSERT INTO public.order_items (order_id, product_id, variant_id, title_snapshot, variant_snapshot, unit_price_snapshot, quantity, line_total) VALUES
   ('e0000001-0000-0000-0000-000000000012', 'a0000001-0000-0000-0000-000000000014', 'b0000001-0014-0000-0000-000000000002',
    'Outlet Póló Csomag (3 db)', '{"Méret":"M"}'::jsonb, 9990, 1, 9990);
+
+-- Order 13 items (COD, processing)
+INSERT INTO public.order_items (order_id, product_id, variant_id, title_snapshot, variant_snapshot, unit_price_snapshot, quantity, line_total) VALUES
+  ('e0000001-0000-0000-0000-000000000013', 'a0000001-0000-0000-0000-000000000001', 'b0000001-0001-0000-0000-000000000002',
+   'Prémium Pamut Póló', '{"Méret":"M","Szín":"Fekete"}'::jsonb, 7990, 2, 15980);
+
+-- Order 14 items (COD, shipped, pickup)
+INSERT INTO public.order_items (order_id, product_id, variant_id, title_snapshot, variant_snapshot, unit_price_snapshot, quantity, line_total) VALUES
+  ('e0000001-0000-0000-0000-000000000014', 'a0000001-0000-0000-0000-000000000003', 'b0000001-0003-0000-0000-000000000002',
+   'Merinó Gyapjú Pulóver', '{"Méret":"M","Szín":"Szürke"}'::jsonb, 24990, 1, 24990);
+
+-- Order 15 items (COD, paid, guest)
+INSERT INTO public.order_items (order_id, product_id, variant_id, title_snapshot, variant_snapshot, unit_price_snapshot, quantity, line_total) VALUES
+  ('e0000001-0000-0000-0000-000000000015', 'a0000001-0000-0000-0000-000000000001', 'b0000001-0001-0000-0000-000000000005',
+   'Prémium Pamut Póló', '{"Méret":"S","Szín":"Fehér"}'::jsonb, 7990, 1, 7990);
 
 -- ── 10. SUBSCRIBERS ───────────────────────────────────────────────
 

@@ -25,11 +25,9 @@ export function Gallery({ mainImage, images }: GalleryProps) {
   // No images at all — show placeholder
   if (allImages.length === 0) {
     return (
-      <div className="aspect-[4/5] w-full rounded-lg bg-muted">
+      <div className="w-full rounded-lg bg-muted" style={{ aspectRatio: "4/5" }}>
         <div className="flex h-full items-center justify-center">
-          <span className="text-6xl font-light text-muted-foreground/30">
-            ?
-          </span>
+          <span className="text-6xl font-light text-muted-foreground/30">?</span>
         </div>
       </div>
     );
@@ -40,7 +38,7 @@ export function Gallery({ mainImage, images }: GalleryProps) {
   return (
     <div className="space-y-3">
       {/* ── Main image ──────────────────────────────────── */}
-      <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-muted">
+      <div className="relative overflow-hidden rounded-lg bg-muted" style={{ aspectRatio: "4/5" }}>
         <Image
           src={currentImage}
           alt="Termékfotó"
@@ -48,6 +46,7 @@ export function Gallery({ mainImage, images }: GalleryProps) {
           sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover transition-opacity duration-500 ease-out"
           priority
+          unoptimized={currentImage.startsWith("http://")}
         />
       </div>
 
@@ -73,6 +72,7 @@ export function Gallery({ mainImage, images }: GalleryProps) {
                 fill
                 sizes="64px"
                 className="object-cover"
+                unoptimized={src.startsWith("http://")}
               />
             </button>
           ))}
@@ -87,10 +87,7 @@ export function Gallery({ mainImage, images }: GalleryProps) {
 /* ------------------------------------------------------------------ */
 
 /** Builds a deduplicated image list with mainImage first. */
-function buildImageList(
-  mainImage: string | null,
-  images: string[],
-): string[] {
+function buildImageList(mainImage: string | null, images: string[]): string[] {
   const result: string[] = [];
   const seen = new Set<string>();
 

@@ -253,8 +253,8 @@ INSERT INTO auth.identities (
 -- The handle_new_user trigger creates 'customer' profiles for each,
 -- but we override roles for admin/agency_viewer.
 
-UPDATE public.profiles SET role = 'admin',           full_name = 'Nagy István',   phone = '+36 30 111 1111' WHERE id = '11111111-1111-1111-1111-111111111111';
-UPDATE public.profiles SET role = 'admin',           full_name = 'Szabó Anna',    phone = '+36 30 222 2222' WHERE id = '22222222-2222-2222-2222-222222222222';
+UPDATE public.profiles SET role = 'admin', is_agency_owner = true,  full_name = 'Nagy István',   phone = '+36 30 111 1111' WHERE id = '11111111-1111-1111-1111-111111111111';
+UPDATE public.profiles SET role = 'admin',                         full_name = 'Szabó Anna',    phone = '+36 30 222 2222' WHERE id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.profiles SET role = 'agency_viewer',   full_name = 'Tóth Péter',    phone = '+36 30 333 3333' WHERE id = '33333333-3333-3333-3333-333333333333';
 UPDATE public.profiles SET                           full_name = 'Kovács Mária',  phone = '+36 20 444 4444' WHERE id = '44444444-4444-4444-4444-444444444444';
 UPDATE public.profiles SET                           full_name = 'Kiss János',    phone = '+36 70 555 5555' WHERE id = '55555555-5555-5555-5555-555555555555';
@@ -957,6 +957,61 @@ INSERT INTO public.audit_logs (actor_id, actor_role, action, entity_type, entity
   ('33333333-3333-3333-3333-333333333333', 'agency_viewer', 'admin.login', 'system', NULL, '{"ip":"192.168.1.100"}'::jsonb, now() - interval '3 days'),
   ('11111111-1111-1111-1111-111111111111', 'admin', 'subscriber.tag', 'subscriber', NULL, '{"email":"customer1@test.hu","tags":["vip","women"]}'::jsonb, now() - interval '2 days'),
   ('22222222-2222-2222-2222-222222222222', 'admin', 'order.status_change', 'order', 'e0000001-0000-0000-0000-000000000009', '{"from":"processing","to":"shipped","tracking":"MPL-87654321"}'::jsonb, now() - interval '65 days');
+
+-- ── SUBSCRIPTION SYSTEM (FE-003) ──────────────────────────────────
+-- Note: shop_plans seed data is inserted by migration 013.
+-- Here we add a demo subscription for testing purposes.
+
+-- Demo subscription: "demo-bolt" shop on the Basic plan (f1000001-...)
+INSERT INTO public.shop_subscriptions (
+  id, plan_id, shop_identifier, status, billing_cycle,
+  current_period_start, current_period_end, feature_overrides, notes
+) VALUES (
+  'b0000001-0000-0000-0000-000000000001',
+  'f1000001-0000-0000-0000-000000000001',
+  'demo-bolt',
+  'active',
+  'monthly',
+  now() - interval '15 days',
+  now() + interval '15 days',
+  '{}'::jsonb,
+  'Demo bolt – Basic csomag teszteléshez'
+);
+
+-- One paid invoice for the demo subscription
+INSERT INTO public.subscription_invoices (
+  id, subscription_id, amount, currency,
+  billing_period_start, billing_period_end,
+  status, paid_at, invoice_number, notes
+) VALUES (
+  'd0000001-0000-0000-0000-000000000001',
+  'b0000001-0000-0000-0000-000000000001',
+  9900,
+  'HUF',
+  now() - interval '45 days',
+  now() - interval '15 days',
+  'paid',
+  now() - interval '44 days',
+  'DEMO-2026-001',
+  'Első havi díj'
+);
+
+-- One pending invoice for the current period
+INSERT INTO public.subscription_invoices (
+  id, subscription_id, amount, currency,
+  billing_period_start, billing_period_end,
+  status, invoice_number, notes
+) VALUES (
+  'd0000001-0000-0000-0000-000000000002',
+  'b0000001-0000-0000-0000-000000000001',
+  9900,
+  'HUF',
+  now() - interval '15 days',
+  now() + interval '15 days',
+  'pending',
+  'DEMO-2026-002',
+  'Aktuális havi díj'
+);
 
 -- ================================================================
 -- Seed complete.

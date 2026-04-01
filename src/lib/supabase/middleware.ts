@@ -6,17 +6,17 @@
 /*  returns the updated NextResponse + authenticated user info.        */
 /* ------------------------------------------------------------------ */
 
-import { createServerClient } from "@supabase/ssr";
-import { type NextRequest, NextResponse } from "next/server";
-import type { Database, AppRole } from "@/lib/types/database";
+import { createServerClient } from "@supabase/ssr"
+import { type NextRequest, NextResponse } from "next/server"
+import type { Database, AppRole } from "@/lib/types/database"
 
 export interface SessionResult {
-  response: NextResponse;
-  user: { id: string; role: AppRole } | null;
+  response: NextResponse
+  user: { id: string; role: AppRole; isAgencyOwner: boolean } | null
 }
 
 export async function updateSession(request: NextRequest): Promise<SessionResult> {
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,44 +24,43 @@ export async function updateSession(request: NextRequest): Promise<SessionResult
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll();
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
 
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({ request })
 
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
-          );
+          )
         },
       },
     },
-  );
+  )
 
   // IMPORTANT: Calling `getUser()` ensures the auth token is refreshed
   // before the response is sent to the browser. Do NOT remove this.
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
   if (!user) {
-    return { response: supabaseResponse, user: null };
+    return { response: supabaseResponse, user: null }
   }
 
   // Fetch role from profiles table (single query, reusing the same client)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, is_agency_owner")
     .eq("id", user.id)
-    .single();
+    .single()
 
-  const role: AppRole = profile?.role ?? "customer";
+  const role: AppRole = profile?.role ?? "customer"
+  const isAgencyOwner: boolean = profile?.is_agency_owner ?? false
 
   return {
     response: supabaseResponse,
-    user: { id: user.id, role },
-  };
+    user: { id: user.id, role, isAgencyOwner },
+  }
 }

@@ -1,0 +1,19 @@
+# Build output
+.next/
+out/
+build/
+dist/
+
+# Dependencies
+node_modules/
+
+# Package manager
+pnpm-lock.yaml
+
+# Auto-generated
+next-env.d.ts
+*.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/

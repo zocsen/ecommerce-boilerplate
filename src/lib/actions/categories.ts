@@ -1,28 +1,29 @@
-"use server";
+"use server"
 
 /* ------------------------------------------------------------------ */
 /*  Category server actions                                            */
 /* ------------------------------------------------------------------ */
 
-import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
-import { logAudit } from "@/lib/security/logger";
-import { uuidSchema } from "@/lib/validators/uuid";
-import type { CategoryRow } from "@/lib/types/database";
+import { z } from "zod"
+import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles"
+import { logAudit } from "@/lib/security/logger"
+import { getPlanGate } from "@/lib/security/plan-gate"
+import { uuidSchema } from "@/lib/validators/uuid"
+import type { CategoryRow } from "@/lib/types/database"
 
 // ── Types ──────────────────────────────────────────────────────────
 
 interface ActionResult<T = undefined> {
-  success: boolean;
-  data?: T;
-  error?: string;
+  success: boolean
+  data?: T
+  error?: string
 }
 
 // ── Validation schemas ─────────────────────────────────────────────
 
-const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 const categoryCreateSchema = z.object({
   slug: z
@@ -32,7 +33,7 @@ const categoryCreateSchema = z.object({
   name: z.string().min(1, "A kategória neve kötelező"),
   parentId: uuidSchema.optional(),
   sortOrder: z.number().int().min(0).optional(),
-});
+})
 
 const categoryUpdateSchema = z.object({
   slug: z
@@ -43,33 +44,31 @@ const categoryUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   parentId: uuidSchema.nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
-});
+})
 
 // ── Public actions ─────────────────────────────────────────────────
 
-export async function listCategories(): Promise<
-  ActionResult<CategoryRow[]>
-> {
+export async function listCategories(): Promise<ActionResult<CategoryRow[]>> {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from("categories")
       .select("*")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
+      .order("name", { ascending: true })
 
     if (error) {
-      console.error("[listCategories] DB error:", error.message);
-      return { success: false, error: "Hiba a kategóriák lekérésekor." };
+      console.error("[listCategories] DB error:", error.message)
+      return { success: false, error: "Hiba a kategóriák lekérésekor." }
     }
 
-    return { success: true, data: data ?? [] };
+    return { success: true, data: data ?? [] }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[listCategories] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[listCategories] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }
 
@@ -79,53 +78,62 @@ export async function listCategories(): Promise<
  * List ALL categories (including inactive/soft-deleted) for admin view.
  * Uses the admin client to bypass RLS.
  */
-export async function adminListCategories(): Promise<
-  ActionResult<CategoryRow[]>
-> {
+export async function adminListCategories(): Promise<ActionResult<CategoryRow[]>> {
   try {
-    await requireAdminOrViewer();
+    await requireAdminOrViewer()
 
-    const admin = createAdminClient();
+    const admin = createAdminClient()
 
     const { data, error } = await admin
       .from("categories")
       .select("*")
       .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
+      .order("name", { ascending: true })
 
     if (error) {
-      console.error("[adminListCategories] DB error:", error.message);
-      return { success: false, error: "Hiba a kategóriák lekérésekor." };
+      console.error("[adminListCategories] DB error:", error.message)
+      return { success: false, error: "Hiba a kategóriák lekérésekor." }
     }
 
-    return { success: true, data: data ?? [] };
+    return { success: true, data: data ?? [] }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[adminListCategories] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[adminListCategories] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }
 
 export async function adminCreateCategory(data: {
-  slug: string;
-  name: string;
-  parentId?: string;
-  sortOrder?: number;
+  slug: string
+  name: string
+  parentId?: string
+  sortOrder?: number
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const profile = await requireAdmin();
+    const profile = await requireAdmin()
 
-    const parsed = categoryCreateSchema.safeParse(data);
+    // Plan gate: check category count limit
+    const gate = await getPlanGate()
+    const adminForCount = createAdminClient()
+    const { count: categoryCount } = await adminForCount
+      .from("categories")
+      .select("id", { count: "exact", head: true })
+    const gateCheck = gate.checkLimit("max_categories", categoryCount ?? 0)
+    if (!gateCheck.allowed) {
+      return { success: false, error: gateCheck.reason ?? "Kategória limit elérve." }
+    }
+
+    const parsed = categoryCreateSchema.safeParse(data)
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0];
+      const firstIssue = parsed.error.issues[0]
       return {
         success: false,
         error: firstIssue?.message ?? "Érvénytelen adatok.",
-      };
+      }
     }
 
-    const input = parsed.data;
-    const admin = createAdminClient();
+    const input = parsed.data
+    const admin = createAdminClient()
 
     // Verify parent exists if provided
     if (input.parentId) {
@@ -133,10 +141,10 @@ export async function adminCreateCategory(data: {
         .from("categories")
         .select("id")
         .eq("id", input.parentId)
-        .single();
+        .single()
 
       if (!parent) {
-        return { success: false, error: "A szülő kategória nem található." };
+        return { success: false, error: "A szülő kategória nem található." }
       }
     }
 
@@ -150,14 +158,14 @@ export async function adminCreateCategory(data: {
         is_active: true,
       })
       .select("id")
-      .single();
+      .single()
 
     if (error || !category) {
       if (error?.code === "23505") {
-        return { success: false, error: "Ez a slug már foglalt." };
+        return { success: false, error: "Ez a slug már foglalt." }
       }
-      console.error("[adminCreateCategory] Insert error:", error?.message);
-      return { success: false, error: "Hiba a kategória létrehozásakor." };
+      console.error("[adminCreateCategory] Insert error:", error?.message)
+      return { success: false, error: "Hiba a kategória létrehozásakor." }
     }
 
     await logAudit({
@@ -167,51 +175,51 @@ export async function adminCreateCategory(data: {
       entityType: "category",
       entityId: category.id,
       metadata: { name: input.name, slug: input.slug },
-    });
+    })
 
-    return { success: true, data: { id: category.id } };
+    return { success: true, data: { id: category.id } }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[adminCreateCategory] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[adminCreateCategory] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }
 
 export async function adminUpdateCategory(
   id: string,
   data: {
-    slug?: string;
-    name?: string;
-    parentId?: string | null;
-    sortOrder?: number;
+    slug?: string
+    name?: string
+    parentId?: string | null
+    sortOrder?: number
   },
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const profile = await requireAdmin();
+    const profile = await requireAdmin()
 
-    const idParsed = uuidSchema.safeParse(id);
+    const idParsed = uuidSchema.safeParse(id)
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen kategória azonosító." };
+      return { success: false, error: "Érvénytelen kategória azonosító." }
     }
 
-    const parsed = categoryUpdateSchema.safeParse(data);
+    const parsed = categoryUpdateSchema.safeParse(data)
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0];
+      const firstIssue = parsed.error.issues[0]
       return {
         success: false,
         error: firstIssue?.message ?? "Érvénytelen adatok.",
-      };
+      }
     }
 
-    const input = parsed.data;
-    const admin = createAdminClient();
+    const input = parsed.data
+    const admin = createAdminClient()
 
     // Prevent self-referencing parent
     if (input.parentId === idParsed.data) {
       return {
         success: false,
         error: "A kategória nem lehet saját maga szülője.",
-      };
+      }
     }
 
     // Verify parent exists if provided
@@ -220,36 +228,31 @@ export async function adminUpdateCategory(
         .from("categories")
         .select("id")
         .eq("id", input.parentId)
-        .single();
+        .single()
 
       if (!parent) {
-        return { success: false, error: "A szülő kategória nem található." };
+        return { success: false, error: "A szülő kategória nem található." }
       }
     }
 
-    const updatePayload: Record<string, unknown> = {};
-    if (input.slug !== undefined) updatePayload.slug = input.slug;
-    if (input.name !== undefined) updatePayload.name = input.name;
-    if (input.parentId !== undefined)
-      updatePayload.parent_id = input.parentId;
-    if (input.sortOrder !== undefined)
-      updatePayload.sort_order = input.sortOrder;
+    const updatePayload: Record<string, unknown> = {}
+    if (input.slug !== undefined) updatePayload.slug = input.slug
+    if (input.name !== undefined) updatePayload.name = input.name
+    if (input.parentId !== undefined) updatePayload.parent_id = input.parentId
+    if (input.sortOrder !== undefined) updatePayload.sort_order = input.sortOrder
 
     if (Object.keys(updatePayload).length === 0) {
-      return { success: false, error: "Nincs frissítendő mező." };
+      return { success: false, error: "Nincs frissítendő mező." }
     }
 
-    const { error } = await admin
-      .from("categories")
-      .update(updatePayload)
-      .eq("id", idParsed.data);
+    const { error } = await admin.from("categories").update(updatePayload).eq("id", idParsed.data)
 
     if (error) {
       if (error.code === "23505") {
-        return { success: false, error: "Ez a slug már foglalt." };
+        return { success: false, error: "Ez a slug már foglalt." }
       }
-      console.error("[adminUpdateCategory] Update error:", error.message);
-      return { success: false, error: "Hiba a kategória frissítésekor." };
+      console.error("[adminUpdateCategory] Update error:", error.message)
+      return { success: false, error: "Hiba a kategória frissítésekor." }
     }
 
     await logAudit({
@@ -259,38 +262,36 @@ export async function adminUpdateCategory(
       entityType: "category",
       entityId: idParsed.data,
       metadata: { updatedFields: Object.keys(updatePayload) },
-    });
+    })
 
-    return { success: true, data: { id: idParsed.data } };
+    return { success: true, data: { id: idParsed.data } }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[adminUpdateCategory] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[adminUpdateCategory] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }
 
-export async function adminDeleteCategory(
-  id: string,
-): Promise<ActionResult> {
+export async function adminDeleteCategory(id: string): Promise<ActionResult> {
   try {
-    const profile = await requireAdmin();
+    const profile = await requireAdmin()
 
-    const idParsed = uuidSchema.safeParse(id);
+    const idParsed = uuidSchema.safeParse(id)
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen kategória azonosító." };
+      return { success: false, error: "Érvénytelen kategória azonosító." }
     }
 
-    const admin = createAdminClient();
+    const admin = createAdminClient()
 
     // Soft-delete: set is_active = false
     const { error } = await admin
       .from("categories")
       .update({ is_active: false })
-      .eq("id", idParsed.data);
+      .eq("id", idParsed.data)
 
     if (error) {
-      console.error("[adminDeleteCategory] Update error:", error.message);
-      return { success: false, error: "Hiba a kategória törlésekor." };
+      console.error("[adminDeleteCategory] Update error:", error.message)
+      return { success: false, error: "Hiba a kategória törlésekor." }
     }
 
     await logAudit({
@@ -299,38 +300,35 @@ export async function adminDeleteCategory(
       action: "category.soft_delete",
       entityType: "category",
       entityId: idParsed.data,
-    });
+    })
 
-    return { success: true };
+    return { success: true }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[adminDeleteCategory] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[adminDeleteCategory] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }
 
-export async function adminToggleCategory(
-  id: string,
-  isActive: boolean,
-): Promise<ActionResult> {
+export async function adminToggleCategory(id: string, isActive: boolean): Promise<ActionResult> {
   try {
-    const profile = await requireAdmin();
+    const profile = await requireAdmin()
 
-    const idParsed = uuidSchema.safeParse(id);
+    const idParsed = uuidSchema.safeParse(id)
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen kategória azonosító." };
+      return { success: false, error: "Érvénytelen kategória azonosító." }
     }
 
-    const admin = createAdminClient();
+    const admin = createAdminClient()
 
     const { error } = await admin
       .from("categories")
       .update({ is_active: isActive })
-      .eq("id", idParsed.data);
+      .eq("id", idParsed.data)
 
     if (error) {
-      console.error("[adminToggleCategory] Update error:", error.message);
-      return { success: false, error: "Hiba a kategória státuszának módosításakor." };
+      console.error("[adminToggleCategory] Update error:", error.message)
+      return { success: false, error: "Hiba a kategória státuszának módosításakor." }
     }
 
     await logAudit({
@@ -339,55 +337,47 @@ export async function adminToggleCategory(
       action: isActive ? "category.activate" : "category.deactivate",
       entityType: "category",
       entityId: idParsed.data,
-    });
+    })
 
-    return { success: true };
+    return { success: true }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[adminToggleCategory] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[adminToggleCategory] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }
 
-export async function adminHardDeleteCategory(
-  id: string,
-): Promise<ActionResult> {
+export async function adminHardDeleteCategory(id: string): Promise<ActionResult> {
   try {
-    const profile = await requireAdmin();
+    const profile = await requireAdmin()
 
-    const idParsed = uuidSchema.safeParse(id);
+    const idParsed = uuidSchema.safeParse(id)
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen kategória azonosító." };
+      return { success: false, error: "Érvénytelen kategória azonosító." }
     }
 
-    const admin = createAdminClient();
+    const admin = createAdminClient()
 
     // Remove category from all products first (product_categories join table)
     const { error: joinError } = await admin
       .from("product_categories")
       .delete()
-      .eq("category_id", idParsed.data);
+      .eq("category_id", idParsed.data)
 
     if (joinError) {
-      console.error("[adminHardDeleteCategory] Join delete error:", joinError.message);
-      return { success: false, error: "Hiba a kategória törlésének előkészítésekor." };
+      console.error("[adminHardDeleteCategory] Join delete error:", joinError.message)
+      return { success: false, error: "Hiba a kategória törlésének előkészítésekor." }
     }
 
     // Also clear parent_id references so children become top-level
-    await admin
-      .from("categories")
-      .update({ parent_id: null })
-      .eq("parent_id", idParsed.data);
+    await admin.from("categories").update({ parent_id: null }).eq("parent_id", idParsed.data)
 
     // Hard-delete the category
-    const { error } = await admin
-      .from("categories")
-      .delete()
-      .eq("id", idParsed.data);
+    const { error } = await admin.from("categories").delete().eq("id", idParsed.data)
 
     if (error) {
-      console.error("[adminHardDeleteCategory] Delete error:", error.message);
-      return { success: false, error: "Hiba a kategória törlésekor." };
+      console.error("[adminHardDeleteCategory] Delete error:", error.message)
+      return { success: false, error: "Hiba a kategória törlésekor." }
     }
 
     await logAudit({
@@ -396,37 +386,35 @@ export async function adminHardDeleteCategory(
       action: "category.hard_delete",
       entityType: "category",
       entityId: idParsed.data,
-    });
+    })
 
-    return { success: true };
+    return { success: true }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[adminHardDeleteCategory] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[adminHardDeleteCategory] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }
 
-export async function adminRestoreCategory(
-  id: string,
-): Promise<ActionResult> {
+export async function adminRestoreCategory(id: string): Promise<ActionResult> {
   try {
-    const profile = await requireAdmin();
+    const profile = await requireAdmin()
 
-    const idParsed = uuidSchema.safeParse(id);
+    const idParsed = uuidSchema.safeParse(id)
     if (!idParsed.success) {
-      return { success: false, error: "Érvénytelen kategória azonosító." };
+      return { success: false, error: "Érvénytelen kategória azonosító." }
     }
 
-    const admin = createAdminClient();
+    const admin = createAdminClient()
 
     const { error } = await admin
       .from("categories")
       .update({ is_active: true })
-      .eq("id", idParsed.data);
+      .eq("id", idParsed.data)
 
     if (error) {
-      console.error("[adminRestoreCategory] Update error:", error.message);
-      return { success: false, error: "Hiba a kategória visszaállításakor." };
+      console.error("[adminRestoreCategory] Update error:", error.message)
+      return { success: false, error: "Hiba a kategória visszaállításakor." }
     }
 
     await logAudit({
@@ -435,12 +423,12 @@ export async function adminRestoreCategory(
       action: "category.restore",
       entityType: "category",
       entityId: idParsed.data,
-    });
+    })
 
-    return { success: true };
+    return { success: true }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[adminRestoreCategory] Unexpected error:", message);
-    return { success: false, error: "Váratlan hiba történt." };
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[adminRestoreCategory] Unexpected error:", message)
+    return { success: false, error: "Váratlan hiba történt." }
   }
 }

@@ -2,7 +2,7 @@
 
 > **Last updated:** 2026-04-01
 > **Codebase:** 11 commits, ~210 files, ~46,000 lines of code
-> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **46 features** planned across 4 priority tiers (P0-P3) — 13 completed (FE-000, FE-002, FE-006, FE-007, FE-013, FE-018, FE-023, FE-025, FE-026, FE-029, FE-037, FE-044, FE-045). See Feature Roadmap.
+> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **46 features** planned across 4 priority tiers (P0-P3) — 14 completed (FE-000, FE-002, FE-003, FE-006, FE-007, FE-013, FE-018, FE-023, FE-025, FE-026, FE-029, FE-037, FE-044, FE-045). Agency/Admin separation complete — agency pages moved to `/agency/*` route group with `enableAgencyMode` config flag. See Feature Roadmap.
 
 ---
 
@@ -16,18 +16,19 @@
 5. [Storefront Pages (Complete)](#storefront-pages)
 6. [Customer Profile Section (Complete)](#customer-profile-section)
 7. [Admin Panel (Complete)](#admin-panel)
-8. [Server Actions (Complete)](#server-actions)
-9. [Integrations (Complete)](#integrations)
-10. [API Route Handlers (Complete)](#api-route-handlers)
-11. [Components Inventory (Complete)](#components-inventory)
-12. [Email Templates (Complete)](#email-templates)
-13. [Configuration System (Complete)](#configuration-system)
-14. [SEO & Performance (Complete)](#seo--performance)
-15. [Testing (Complete)](#testing)
-16. [Documentation (Complete)](#documentation)
-17. [Seed Data (Complete)](#seed-data)
-18. [Known Issues & Minor Gaps](#known-issues--minor-gaps)
-19. [Plan Tiers & Pricing](#plan-tiers--pricing)
+8. [Agency Panel (Complete)](#agency-panel)
+9. [Server Actions (Complete)](#server-actions)
+10. [Integrations (Complete)](#integrations)
+11. [API Route Handlers (Complete)](#api-route-handlers)
+12. [Components Inventory (Complete)](#components-inventory)
+13. [Email Templates (Complete)](#email-templates)
+14. [Configuration System (Complete)](#configuration-system)
+15. [SEO & Performance (Complete)](#seo--performance)
+16. [Testing (Complete)](#testing)
+17. [Documentation (Complete)](#documentation)
+18. [Seed Data (Complete)](#seed-data)
+19. [Known Issues & Minor Gaps](#known-issues--minor-gaps)
+20. [Plan Tiers & Pricing](#plan-tiers--pricing)
 
 ---
 
@@ -82,26 +83,27 @@ A single change often affects **multiple sections**. Always update all relevant 
 
 ## Tech Stack
 
-| Layer             | Technology                            | Version               |
-| ----------------- | ------------------------------------- | --------------------- |
-| Framework         | Next.js (App Router)                  | 16.1.6                |
-| Language          | TypeScript (strict mode)              | 5.x                   |
-| UI                | React                                 | 19.2                  |
-| Styling           | Tailwind CSS                          | v4                    |
-| Component Library | shadcn/ui (base-ui/react)             | 4.0.2                 |
-| Database          | Supabase (Postgres 17)                | Latest                |
-| Auth              | Supabase Auth                         | via @supabase/ssr     |
-| Storage           | Supabase Storage                      | Product images bucket |
-| State Management  | Zustand + persist                     | Latest                |
-| Forms             | react-hook-form + @hookform/resolvers | Latest                |
-| Validation        | Zod                                   | v4                    |
-| Payments          | Barion Smart Gateway v2               | Custom client         |
-| Email             | Resend + React Email                  | Latest                |
-| Invoicing         | Billingo / Szamlazz.hu adapters       | Custom                |
-| Charts            | Recharts                              | Latest                |
-| Testing           | Vitest + Playwright                   | Latest                |
-| Linting           | ESLint (next/core-web-vitals)         | Latest                |
-| Package Manager   | pnpm                                  | Latest                |
+| Layer             | Technology                             | Version               |
+| ----------------- | -------------------------------------- | --------------------- |
+| Framework         | Next.js (App Router)                   | 16.1.6                |
+| Language          | TypeScript (strict mode)               | 5.x                   |
+| UI                | React                                  | 19.2                  |
+| Styling           | Tailwind CSS                           | v4                    |
+| Component Library | shadcn/ui (base-ui/react)              | 4.0.2                 |
+| Database          | Supabase (Postgres 17)                 | Latest                |
+| Auth              | Supabase Auth                          | via @supabase/ssr     |
+| Storage           | Supabase Storage                       | Product images bucket |
+| State Management  | Zustand + persist                      | Latest                |
+| Forms             | react-hook-form + @hookform/resolvers  | Latest                |
+| Validation        | Zod                                    | v4                    |
+| Payments          | Barion Smart Gateway v2                | Custom client         |
+| Email             | Resend + React Email                   | Latest                |
+| Invoicing         | Billingo / Szamlazz.hu adapters        | Custom                |
+| Charts            | Recharts                               | Latest                |
+| Testing           | Vitest + Playwright                    | Latest                |
+| Linting           | ESLint (next/core-web-vitals)          | Latest                |
+| Formatting        | Prettier + prettier-plugin-tailwindcss | 3.x + 0.7.x           |
+| Package Manager   | pnpm                                   | Latest                |
 
 **React Compiler:** Enabled in `next.config.ts`.
 
@@ -115,9 +117,10 @@ src/
     (shop)/          # Storefront route group (public + customer)
     (auth)/          # Login, register, reset-password
     (admin)/admin/   # Admin panel (role-protected)
+    (agency)/agency/ # Agency panel (agency-owner-only, gated by enableAgencyMode)
     api/             # Route handlers (Barion callback, email webhooks, etc.)
   components/
-    shared/          # Header, Footer, AdminSidebar, Breadcrumbs, etc.
+    shared/          # Header, Footer, AdminSidebar, AgencySidebar, Breadcrumbs, etc.
     product/         # ProductCard, ProductGrid, Gallery, VariantSelector, etc.
     cart/            # CartLineItem, CouponInput, OrderSummary, etc.
     admin/           # DashboardCharts, OrderNotes
@@ -129,7 +132,7 @@ src/
     integrations/    # barion/, email/, invoicing/
     security/        # roles.ts, rate-limit.ts, logger.ts, unsubscribe-token.ts
     supabase/        # server.ts, client.ts, admin.ts, middleware.ts
-    store/           # Zustand cart store
+    store/           # Zustand stores: cart.ts (persist), ui.ts (no persist — cartDrawerOpen)
     types/           # database.ts (842 lines), index.ts
     utils/           # format.ts, shipping.ts, price-history.ts, price-history-shared.ts
     validators/      # checkout.ts, coupon.ts, product.ts, subscriber.ts, uuid.ts
@@ -153,7 +156,7 @@ src/
 
 ## Database Schema
 
-**Status: COMPLETE** — 12 migrations applied, 14 tables, 3 enums, 27 indexes, 45 RLS policies, 4 storage policies. **3 additional tables planned** (shop_plans, shop_subscriptions, subscription_invoices) + 1 new enum (subscription_status) + cost_price columns on products/variants.
+**Status: COMPLETE** — 13 migrations applied, 17 tables, 4 enums, 27 indexes, 45 RLS policies, 4 storage policies.
 
 ### Enums
 
@@ -162,22 +165,23 @@ src/
 | `app_role`            | `customer`, `admin`, `agency_viewer`                                                  |
 | `order_status`        | `draft`, `awaiting_payment`, `paid`, `processing`, `shipped`, `cancelled`, `refunded` |
 | `subscriber_status`   | `subscribed`, `unsubscribed`, `bounced`, `complained`                                 |
-| `subscription_status` | `active`, `past_due`, `cancelled`, `trialing` **(PLANNED)**                           |
+| `subscription_status` | `active`, `past_due`, `cancelled`, `trialing`                                         |
 
 ### Tables
 
 #### 1. `profiles`
 
-| Column                     | Type        | Constraints                                                      |
-| -------------------------- | ----------- | ---------------------------------------------------------------- |
-| `id`                       | uuid PK     | References `auth.users(id) ON DELETE CASCADE`                    |
-| `role`                     | app_role    | NOT NULL, DEFAULT `'customer'`                                   |
-| `full_name`                | text        | Nullable                                                         |
-| `phone`                    | text        | Nullable                                                         |
-| `default_shipping_address` | jsonb       | `{name, street, city, zip, country}`                             |
-| `default_billing_address`  | jsonb       | `{name, street, city, zip, country, company_name?, tax_number?}` |
-| `default_pickup_point`     | jsonb       | `{provider, point_id, point_label}`                              |
-| `created_at`               | timestamptz | DEFAULT now()                                                    |
+| Column                     | Type        | Constraints                                                                            |
+| -------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| `id`                       | uuid PK     | References `auth.users(id) ON DELETE CASCADE`                                          |
+| `role`                     | app_role    | NOT NULL, DEFAULT `'customer'`                                                         |
+| `full_name`                | text        | Nullable                                                                               |
+| `phone`                    | text        | Nullable                                                                               |
+| `default_shipping_address` | jsonb       | `{name, street, city, zip, country}`                                                   |
+| `default_billing_address`  | jsonb       | `{name, street, city, zip, country, company_name?, tax_number?}`                       |
+| `default_pickup_point`     | jsonb       | `{provider, point_id, point_label}`                                                    |
+| `created_at`               | timestamptz | DEFAULT now()                                                                          |
+| `is_agency_owner`          | boolean     | NOT NULL DEFAULT false — identifies the agency owner user (full access to `/agency/*`) |
 
 RLS: Users read/update own. Admin full CRUD. Agency viewer read-only.
 
@@ -422,7 +426,7 @@ Indexes: `idx_price_history_product_recorded` (product_id, recorded_at DESC), `i
 RLS: Public SELECT. Admin UPDATE/DELETE. No direct INSERT (populated by triggers only).
 Trigger-populated: Rows are created automatically by `record_price_change` (on products) and `record_variant_price_change` (on product_variants) triggers when base_price/compare_at_price/price_override changes. A daily cleanup deletes records older than 90 days.
 
-#### 15. `shop_plans` **(PLANNED)**
+#### 15. `shop_plans`
 
 Defines available subscription plan tiers. Each row is a plan template that can be customized per client at project setup.
 
@@ -447,7 +451,7 @@ Notes:
 
 RLS: Admin read. Agency admin full CRUD. Agency viewer read.
 
-#### 16. `shop_subscriptions` **(PLANNED)**
+#### 16. `shop_subscriptions`
 
 One active subscription per shop (client). Tracks the client's current plan, billing cycle, and custom pricing.
 
@@ -478,7 +482,7 @@ Notes:
 
 RLS: Admin read (own shop only, via shop_identifier match). Agency admin full CRUD.
 
-#### 17. `subscription_invoices` **(PLANNED)**
+#### 17. `subscription_invoices`
 
 Billing records for plan subscriptions. Reuses the existing Billingo/Szamlazz invoicing adapters for invoice generation.
 
@@ -519,15 +523,16 @@ RLS: Admin read (own shop's invoices only, via subscription join). Agency admin 
 | `record_variant_price_change()` | Trigger, SECURITY DEFINER | Records variant-level price changes to `price_history` when price_override changes on product_variants.         |
 | `cleanup_old_price_history()`   | Scheduled (daily)         | Deletes `price_history` records older than 90 days.                                                             |
 
-| Trigger                           | Table            | Event         |
-| --------------------------------- | ---------------- | ------------- |
-| `on_auth_user_created`            | auth.users       | AFTER INSERT  |
-| `trg_products_updated_at`         | products         | BEFORE UPDATE |
-| `trg_product_variants_updated_at` | product_variants | BEFORE UPDATE |
-| `trg_orders_updated_at`           | orders           | BEFORE UPDATE |
-| `trg_shop_pages_updated_at`       | shop_pages       | BEFORE UPDATE |
-| `trg_record_price_change`         | products         | AFTER UPDATE  |
-| `trg_record_variant_price_change` | product_variants | AFTER UPDATE  |
+| Trigger                             | Table              | Event         |
+| ----------------------------------- | ------------------ | ------------- |
+| `on_auth_user_created`              | auth.users         | AFTER INSERT  |
+| `trg_products_updated_at`           | products           | BEFORE UPDATE |
+| `trg_product_variants_updated_at`   | product_variants   | BEFORE UPDATE |
+| `trg_orders_updated_at`             | orders             | BEFORE UPDATE |
+| `trg_shop_pages_updated_at`         | shop_pages         | BEFORE UPDATE |
+| `trg_record_price_change`           | products           | AFTER UPDATE  |
+| `trg_record_variant_price_change`   | product_variants   | AFTER UPDATE  |
+| `trg_shop_subscriptions_updated_at` | shop_subscriptions | BEFORE UPDATE |
 
 ### Storage
 
@@ -544,21 +549,20 @@ RLS: Admin read (own shop's invoices only, via subscription join). Agency admin 
 
 **Status: COMPLETE** — Full role-based auth with middleware, Supabase Auth, and app-level guards.
 
-### Planned: `agency_admin` Super-Role
+### Implemented: Agency Owner Flag
 
-**Status: NOT YET IMPLEMENTED**
+**Status: COMPLETE** — Implemented as `is_agency_owner boolean` on the `profiles` table (migration `013_plan_subscription_system.sql`). Agency pages separated into dedicated `/agency/*` route group.
 
-The subscription management system requires an elevated `agency_admin` role (or a boolean `is_agency_admin` flag on the profiles table) to distinguish the agency owner from regular shop admins. This role would:
+The agency owner flag distinguishes the agency operator from regular shop admins:
 
-- See all agency-level pages (`/admin/agency/*`) including client management, subscription management, and cross-shop overview
-- Manage `shop_plans`, `shop_subscriptions`, and `subscription_invoices` (full CRUD)
-- Override per-client feature flags and pricing
-- Generate subscription invoices for clients via the existing invoicing adapters
-- Regular `admin` users would NOT see agency-level pages — they only manage their own shop
+- Can access all agency-level pages (`/agency/*`) including client management and subscription plan CRUD
+- Manages `shop_plans`, `shop_subscriptions`, and `subscription_invoices` (full CRUD via `requireAgencyOwner()` guard)
+- Can override per-client feature flags and pricing
+- Generates subscription invoices for clients via the existing invoicing adapters
+- Regular `admin` users do NOT see agency-level pages — they only manage their own shop
+- All agency-owner-only server actions are additionally gated by `isAgencyModeEnabled()` which checks `siteConfig.admin.enableAgencyMode`
 
-**Implementation options:**
-
-1. **New enum value:** Add `agency_admin` to the `app_role` enum. Cleanest separation, but requires migration.
+**Implementation:** `is_agency_owner boolean NOT NULL DEFAULT false` on `profiles`. Guards: `requireAgencyOwner()` throws if false, `isAgencyOwner(profile)` returns boolean. Middleware reads `is_agency_owner` from session to protect `/agency/*` routes. Seed: `admin@agency.test` has `is_agency_owner = true`. Config: `admin.enableAgencyMode` flag (default `true`) — when `false`, all agency server actions return an error and the agency layout redirects to `/admin`.
 
 ### Middleware (`src/proxy.ts`)
 
@@ -566,12 +570,12 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### Route Protection Rules
 
-| User State                 | Can Access                                                                                          | Cannot Access                                          | Redirects To              |
-| -------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------- |
-| Guest (no session)         | `/`, `/products/**`, `/cart`, `/checkout/**`, `/login`, `/register`, `/reset-password`, legal pages | `/profile/*`, `/admin/*`                               | `/login?redirectTo=[url]` |
-| Customer                   | All public routes, `/profile/*`                                                                     | `/login`, `/register`, `/reset-password`, `/admin/*`   | `/profile`                |
-| Admin / Agency Viewer      | All public routes, `/admin/*` (except `/admin/agency/*`)                                            | `/login`, `/register`, `/reset-password`, `/profile/*` | `/admin`                  |
-| Agency Admin **(PLANNED)** | All public routes, `/admin/*` including `/admin/agency/*`                                           | `/login`, `/register`, `/reset-password`, `/profile/*` | `/admin`                  |
+| User State                       | Can Access                                                                                          | Cannot Access                                                       | Redirects To              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------- |
+| Guest (no session)               | `/`, `/products/**`, `/cart`, `/checkout/**`, `/login`, `/register`, `/reset-password`, legal pages | `/profile/*`, `/admin/*`, `/agency/*`                               | `/login?redirectTo=[url]` |
+| Customer                         | All public routes, `/profile/*`                                                                     | `/login`, `/register`, `/reset-password`, `/admin/*`, `/agency/*`   | `/profile`                |
+| Admin / Agency Viewer            | All public routes, `/admin/*`                                                                       | `/login`, `/register`, `/reset-password`, `/profile/*`, `/agency/*` | `/admin`                  |
+| Agency Owner (`is_agency_owner`) | All public routes, `/admin/*`, `/agency/*`                                                          | `/login`, `/register`, `/reset-password`, `/profile/*`              | `/admin`                  |
 
 ### Supabase Clients
 
@@ -583,17 +587,21 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### Security Helpers (`src/lib/security/`)
 
-| Function                   | File                 | Purpose                                                                         |
-| -------------------------- | -------------------- | ------------------------------------------------------------------------------- |
-| `requireAuth()`            | roles.ts             | Returns authenticated user or throws (redirects to login)                       |
-| `requireAdmin()`           | roles.ts             | Returns admin user or throws (blocks agency_viewer)                             |
-| `requireAdminOrViewer()`   | roles.ts             | Returns admin or agency_viewer user                                             |
-| `getCurrentProfile()`      | roles.ts             | Returns profile or null (non-throwing, for layouts)                             |
-| `isAgencyViewer()`         | roles.ts             | Boolean check                                                                   |
-| `RateLimiter` class        | rate-limit.ts        | In-memory rate limiter (subscribe: 5/60s, auth: 10/60s, orderTracking: 5/3600s) |
-| `logAudit()`               | logger.ts            | Writes to audit_logs via admin client                                           |
-| `signUnsubscribeToken()`   | unsubscribe-token.ts | HMAC-SHA256 signed token generation                                             |
-| `verifyUnsubscribeToken()` | unsubscribe-token.ts | Token verification, returns email or null                                       |
+| Function                   | File                 | Purpose                                                                                              |
+| -------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------- |
+| `requireAuth()`            | roles.ts             | Returns authenticated user or throws (redirects to login)                                            |
+| `requireAdmin()`           | roles.ts             | Returns admin user or throws (blocks agency_viewer)                                                  |
+| `requireAdminOrViewer()`   | roles.ts             | Returns admin or agency_viewer user                                                                  |
+| `getCurrentProfile()`      | roles.ts             | Returns profile or null (non-throwing, for layouts)                                                  |
+| `isAgencyViewer()`         | roles.ts             | Boolean check                                                                                        |
+| `RateLimiter` class        | rate-limit.ts        | In-memory rate limiter (subscribe: 5/60s, auth: 10/60s, orderTracking: 5/3600s)                      |
+| `logAudit()`               | logger.ts            | Writes to audit_logs via admin client                                                                |
+| `signUnsubscribeToken()`   | unsubscribe-token.ts | HMAC-SHA256 signed token generation                                                                  |
+| `verifyUnsubscribeToken()` | unsubscribe-token.ts | Token verification, returns email or null                                                            |
+| `requireAgencyOwner()`     | roles.ts             | Returns profile or throws if `is_agency_owner` is false                                              |
+| `isAgencyOwner()`          | roles.ts             | Boolean check for `is_agency_owner` flag on profile                                                  |
+| `isAgencyModeEnabled()`    | subscriptions.ts     | Boolean check for `siteConfig.admin.enableAgencyMode` — gates all agency-owner server actions        |
+| `getPlanGate()`            | plan-gate.ts         | Returns `PlanGate` with `check()` and `checkLimit()`. No subscription → unlimited (dev/open access). |
 
 ### Auth Pages
 
@@ -708,7 +716,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Admin Panel
 
-**Status: COMPLETE** — All 13 admin pages fully implemented with agency_viewer read-only enforcement. **3 additional pages planned** (subscription, agency/clients, subscription/plans).
+**Status: COMPLETE** — All 15 admin pages fully implemented with agency_viewer read-only enforcement. Agency management pages moved to separate `/agency/*` route group (see [Agency Panel](#agency-panel)).
 
 ### `/admin` (Dashboard)
 
@@ -810,96 +818,128 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 - **Features:** Structured editor for the About Us page content. 5 collapsible sections (hero, story, team, values, contact). Team member add/remove (max 20). Values add/remove (max 12). Image upload via `SingleImageUpload` component for hero image and team member photos (drag-and-drop, click-to-browse, manual URL fallback, storage deletion). Character counters. Dirty state tracking with unsaved changes warning. Save button (calls `adminUpdatePageContent`). Publish/unpublish toggle (calls `adminTogglePagePublished`). External preview link to `/about`. Loading state with spinner. Error/success toast feedback via Sonner.
 - **Nav:** "Oldalak" link in admin sidebar (`BookOpen` icon)
 
-### `/admin/subscription` (Shop Owner Subscription View) **(PLANNED)**
+### `/admin/subscription` (Shop Owner Subscription View)
 
-**Purpose:** Shop owners (the agency's clients) can view their own plan details, understand what's included, and see billing history. This is NOT an agency management tool — it's the client-facing subscription dashboard within their admin panel.
+**Purpose:** Shop owners (the agency's clients) can view their own plan details, understand what's included, and see billing history. This is a **read-only** page — no invoice creation or subscription management. All mutations are performed by the agency via `/agency/clients`.
 
+- **Data fetching:** Uses `getMySubscription()` (looks up by `siteConfig.subscription.defaultShopIdentifier`) and `getMyInvoices()` server actions. Both use `requireAdminOrViewer()` guard.
 - **Plan overview card:** Current plan name + badge (e.g., "Basic" / "Premium"), billing cycle (monthly/annual), next renewal date, current price
 - **Feature usage summary:** Visual indicators for plan-limited features:
-  - Product count: "142 / 500 termek" (with progress bar if limited)
-  - Admin users: "1 / 1 admin felhasznalo"
+  - Product count: "142 / 500 termék" (with progress bar if limited)
+  - Admin users: "1 / 1 admin felhasználó"
   - Email sends this month: "340 / 1,000 email" (if marketing module is in plan)
-  - Delivery options: "2 / 2 szallitasi mod"
+  - Delivery options: "2 / 2 szállítási mód"
 - **Feature list:** All features with checkmarks (included) or lock icons + "Premium" badge (not in current plan). Locked features link to the comparison page (`/admin/subscription/plans`).
-- **Billing history table:** Past invoices from `subscription_invoices` table. Columns: billing period, amount (HUF), status, invoice number, download link. Paginated.
+- **Billing history table:** Past invoices from `subscription_invoices` table (read-only). Columns: billing period, amount (HUF), status, invoice number, download link. Paginated.
 - **Upgrade CTA:** Prominent button linking to `/admin/subscription/plans` if not on the highest plan.
+- **No subscription state:** Graceful handling when no active subscription found — shows informational message.
 - **Access:** All admin roles can view. No mutation actions — upgrades/downgrades are handled by the agency.
 
-### `/admin/subscription/plans` (Plan Comparison Page) **(PLANNED)**
+### `/admin/subscription/plans` (Read-Only Plan Comparison Page)
 
-**Purpose:** A comprehensive, detailed plan comparison page inside the admin panel for existing shop owners to evaluate what their current plan includes vs. what they'd get by upgrading. NOT a public marketing page.
+**Purpose:** A read-only side-by-side plan comparison page for shop owners to understand their current plan vs available alternatives. Plan CRUD has been moved to `/agency/plans` (agency-owner-only). This is NOT a public marketing page — it's inside the admin panel.
 
-- **Layout:** Full-width comparison table with plans as columns. Current plan column highlighted with distinct border/background color and "Jelenlegi csomag" (Current Plan) badge.
-- **Section categories** (rows grouped by domain):
-  - **Termekek & Katalogus** (Products & Catalog): max products, CSV import/export, scheduled publishing, product bundles, flash sales, gift cards, related products / cross-sell
-  - **Rendelesek & Fizetes** (Orders & Payments): guest checkout, guest order tracking, packing slips, refund management (manual vs Barion API + partial), bulk order actions
-  - **Szallitas** (Shipping): delivery option count, weight tiers, all carriers vs limited
-  - **Marketing & Kommunikacio** (Marketing & Communication): subscriber management, email marketing (send limits), abandoned cart automation, customer segmentation, review request emails, Meta Pixel, newsletter campaigns
-  - **SEO & Megjelenes** (SEO & Appearance): basic SEO, advanced SEO (AI metadata), blog, about page builder
-  - **Analitika & Riportok** (Analytics & Reports): basic dashboard, profit tracking (requires cost_price data), advanced analytics (conversion funnels, CLV, product performance), wishlist analytics, search analytics
-  - **Integraciok** (Integrations): Barion, invoicing (Billingo/Szamlazz), GA4, Meta Pixel, webhooks
-  - **Felhasznalokezeles** (User Management): admin count, customer accounts, B2B wholesale mode, loyalty points
-  - **Jogi Megfelelosseg** (Compliance): cookie consent, 30-day price history, legal page templates
-- **Cell content:** Checkmark (included), X (not included), or specific value/limit (e.g., "500 termek", "1,000 email/ho")
-- **Sticky header** with plan names and prices that stays visible while scrolling the feature rows
-- **Mobile:** Tabs or accordion per plan (table is too wide for mobile; switch to stacked card view)
-- **Annual discount callout:** If annual billing is available, show the monthly-equivalent price with "X% kedvezmeny" (X% discount) badge
-- **CTA per plan:** "Kérd ajánlatunkat" (Request a quote) button for each plan that is not the current one. Links to a contact form or sends a request to the agency.
-- **Access:** All admin roles can view.
-
-### `/admin/agency/clients` (Agency Client Management) **(PLANNED)**
-
-**Purpose:** Super-admin view for the agency to manage all client shops, their subscriptions, billing, and feature overrides. Only visible to users with the `agency_admin` flag. NOT visible to regular shop admins or agency viewers. Should never be included in the agency's webshop. It should only be added to the template itself.
-
-- **Client list table:** All shops managed by the agency.
-  - Columns: shop name/identifier, current plan, billing cycle, status (active/past_due/cancelled/trialing), monthly revenue (from subscription_invoices), next renewal date, actions
-  - Search by shop name/identifier
-  - Filter by plan, status, billing cycle
-  - Sort by revenue, renewal date, name
-- **Click row => Client detail panel** (or side drawer):
-  - **Subscription management56:** Change plan, switch billing cycle (monthly/annual), set custom pricing (override base plan price for this specific client), toggle annual discount
-  - **Feature overrides:** Per-client feature flag toggles that extend or restrict the base plan. E.g., give a Basic client access to marketing for an extra fee. Stored in `shop_subscriptions.feature_overrides` jsonb.
-  - **Pricing controls:** Custom monthly price, custom annual price. Clearly shows: "Csomag alapar: 9,900 Ft | Egyedi ar: 7,900 Ft" (Plan base price vs Custom price).
-  - **Billing history:** All `subscription_invoices` for this client. Status, amounts, invoice links.
-  - **Invoice actions:** "Számla Készítése" (Generate invoice) button — creates an invoice for the current billing period using the existing Billingo/Szamlazz adapter. Same UX pattern as order invoicing on `/admin/orders/[id]`.
-  - **Subscription actions:** Pause, cancel, resume, extend trial.
-  - **Internal notes:** Free-text notes about the client's deal, special arrangements, etc.
-- **New client setup:** Button to onboard a new client shop — create subscription record, assign plan, set custom pricing if applicable.
-- **Aggregate KPIs at the top:** Total active clients, total MRR (Monthly Recurring Revenue), average revenue per client, clients by plan breakdown.
-- **Access:** `agency_admin` only. Regular admins and agency viewers cannot see this page. Middleware and server action guards enforce this.
-- **Audit:** All subscription changes (plan change, price override, status change) are logged to `audit_logs`.
+- **Layout:** Side-by-side pricing cards (responsive grid). Each plan rendered as a card with name, price, description, and feature checklist.
+- **Monthly/annual toggle:** Switch to view prices for monthly or annual billing. Annual cards show monthly-equivalent price with savings badge.
+- **Current plan highlight:** The shop owner's current plan (from `getMySubscription()`) is visually highlighted with a "Jelenlegi csomagod" (Current Plan) badge and distinct border.
+- **Feature checklists:** Each plan card lists included features with checkmarks and excluded features with X marks, based on the plan's `features` jsonb.
+- **CTA:** "Kérd ajánlatunkat" (Request a quote) note directing shop owners to contact their agency for plan changes.
+- **Data:** Fetches all active plans via `listPlans()` and current subscription via `getMySubscription()`.
+- **Access:** All admin roles can view. No mutation actions.
 
 ### Admin Layout & Sidebar
 
 - **Desktop:** Fixed 260px collapsible sidebar + top bar with toggle
 - **Mobile:** Sheet-based slide-out sidebar
 - **Navigation items:** Feature-flag-driven (marketing only shows if `enableMarketingModule` is true, coupons only if `enableCoupons` is true). "Oldalak" link to `/admin/pages/about` (always visible).
-- **Planned nav items:** "Előfizetés" (Subscription) link to `/admin/subscription` for all admin roles. "Ügyfelek" (Clients) link to `/admin/agency/clients` visible only to `agency_admin` users.
-- **Agency viewer:** Yellow "Csak olvasas" (Read-only) badge in sidebar
-- **Footer links:** "Vissza a boltba" (Back to shop) + "Kijelentkezes" (Sign out)
+- **Nav items:** "Előfizetés" (Subscription) link to `/admin/subscription` (all admin roles).
+- **Agency link:** Conditional "Ügynökségi kezelő" link with `Building2` icon, shown only when `enableAgencyMode` is `true` AND user has `is_agency_owner = true`. Links to `/agency`. Separated from other nav items with a visual `Separator`.
+- **Agency viewer:** Yellow "Csak olvasás" (Read-only) badge in sidebar
+- **Footer links:** "Vissza a boltba" (Back to shop) + "Kijelentkezés" (Sign out)
+- **Props chain:** Admin layout passes `enableAgencyMode` through `AdminShell` → `DesktopSidebar`/`TopBar` → `MobileSidebar` → `NavLinks`
+
+---
+
+## Agency Panel
+
+**Status: COMPLETE** — 4 pages in a dedicated `(agency)` route group with own layout and sidebar. Gated by `enableAgencyMode` config flag. Only accessible to users with `is_agency_owner = true`.
+
+### Agency Layout (`src/app/(agency)/layout.tsx`)
+
+- **Type:** Server Component with auth guards
+- **Guards:** Checks `siteConfig.admin.enableAgencyMode` (redirects to `/admin` if `false`), then `getCurrentProfile()` + `isAgencyOwner()` (redirects to `/login` or `/unauthorized`)
+- **Renders:** `<AgencyShell>` component wrapping child pages
+
+### `/agency` (Agency Dashboard)
+
+- **File:** `src/app/(agency)/agency/page.tsx`
+- **KPI Cards:** Total active clients, MRR (Monthly Recurring Revenue) calculation, plan distribution breakdown
+- **Quick links:** Navigate to clients list and plans management
+- **Data:** Fetched server-side via `listSubscriptions()` and `listPlans()`
+
+### `/agency/clients` (Agency Client List)
+
+- **File:** `src/app/(agency)/agency/clients/page.tsx`
+- **Client list table:** All shops managed by the agency
+  - Columns: shop name/identifier, current plan, billing cycle, status (active/past_due/cancelled/trialing), monthly revenue, next renewal date, actions
+  - Search by shop name/identifier
+  - Filter by plan, status, billing cycle
+  - Sort by revenue, renewal date, name
+- **Click row => Client detail page** (`/agency/clients/[id]`)
+- **New client setup:** Button to onboard a new client shop
+- **Access:** `is_agency_owner` users only
+
+### `/agency/clients/[id]` (Agency Client Detail)
+
+- **File:** `src/app/(agency)/agency/clients/[id]/page.tsx`
+- **Subscription management:** Change plan, switch billing cycle (monthly/annual), set custom pricing (override base plan price), toggle annual discount
+- **Feature overrides:** Per-client feature flag toggles. Stored in `shop_subscriptions.feature_overrides` jsonb.
+- **Pricing controls:** Custom monthly price, custom annual price. Shows plan base price vs custom price.
+- **Billing history:** All `subscription_invoices` for this client. Status, amounts, invoice links.
+- **Invoice actions:** "Számla készítése" (Generate invoice) button
+- **Subscription actions:** Pause, cancel, resume, extend trial
+- **Internal notes:** Free-text notes about the client's deal
+- **Audit:** All subscription changes logged to `audit_logs`
+
+### `/agency/plans` (Agency Plan Management)
+
+- **File:** `src/app/(agency)/agency/plans/page.tsx`
+- **Plan CRUD:** Full create/read/update for subscription plan tiers
+- **Fields:** Name, slug, description, monthly price, annual price, features jsonb, sort order, active toggle
+- **Data:** Uses `listPlans()`, `adminCreatePlan()`, `adminUpdatePlan()` server actions
+- **Access:** `is_agency_owner` users only. All agency-owner actions additionally gated by `isAgencyModeEnabled()`
+
+### Agency Layout & Sidebar
+
+- **Component:** `AgencyShell` in `src/components/shared/agency-sidebar.tsx` (246 lines)
+- **Desktop:** Fixed 260px collapsible sidebar (same pattern as admin sidebar)
+- **Mobile:** Sheet-based slide-out sidebar
+- **Navigation items:** Áttekintés (`/agency`), Ügyfelek (`/agency/clients`), Csomagok (`/agency/plans`)
+- **Header:** "Ügynökségi kezelő" title with `Badge` variant
+- **Footer links:** "Vissza az adminhoz" (Back to admin) + "Kijelentkezés" (Sign out)
 
 ---
 
 ## Server Actions
 
-**Status: COMPLETE** — 12 action files, 61 exported functions, all with Zod validation.
+**Status: COMPLETE** — 13 action files, 75 exported functions, all with Zod validation.
 
 ### `src/lib/actions/products.ts` (1150 lines)
 
-| Function                            | Guard                | What it does                                                                                                                                                                                                                    |
-| ----------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `listProducts(filters)`             | Public               | Server-side filtered/sorted/paginated product listing. Filters: category, price range, stock, sort. Joins variants and categories. Filters by `published_at IS NULL OR published_at <= now()` (defense-in-depth on top of RLS). |
-| `getProductBySlug(slug)`            | Public               | Fetches single product with all variants, categories, and extras. Active products only. Filters by `published_at` (defense-in-depth). Enriches extras with live product data.                                                   |
-| `adminListProducts(filters)`        | requireAdminOrViewer | Lists ALL products (including inactive and scheduled). Search, filter, paginate.                                                                                                                                                |
-| `adminGetProduct(id)`               | requireAdminOrViewer | Single product with variants, categories, and extras (any status). Enriches extras with live product data.                                                                                                                      |
-| `adminCreateProduct(formData)`      | requireAdmin         | Creates product + variants + category associations + extras. FormData-based. Parses `vatRate` (default 27) and `publishedAt` (nullable datetime). Auto-generates slug. Validates with Zod. Audit logged.                        |
-| `adminUpdateProduct(formData)`      | requireAdmin         | Updates product fields (including `vat_rate`, `published_at`), syncs variants (upsert/delete), syncs categories, syncs extras (delete-and-recreate). Audit logged.                                                              |
-| `adminDeleteProduct(id)`            | requireAdmin         | Soft delete (is_active = false). Audit logged.                                                                                                                                                                                  |
-| `adminToggleProductActive(id)`      | requireAdmin         | Toggle active state. Audit logged.                                                                                                                                                                                              |
-| `adminHardDeleteProduct(id)`        | requireAdmin         | Permanent delete with cascade. Audit logged.                                                                                                                                                                                    |
-| `getProductExtras(productId)`       | Public               | Fetches extras for a product with enriched product/variant data (title, slug, price, image, stock, active status). Uses `enrichExtras()` helper.                                                                                |
-| `adminSetProductExtras(id, extras)` | requireAdmin         | Standalone extras save: validates with Zod, blocks self-reference, delete-and-recreate pattern. Audit logged with extras count.                                                                                                 |
-| `getProductPriceHistory(productId)` | requireAdminOrViewer | Fetches 30-day price history for admin sparkline chart. Returns array of `{price, compareAtPrice, date}` sorted chronologically. Uses `getPriceHistory()` utility.                                                              |
+| Function                            | Guard                | What it does                                                                                                                                                                                                                                                                                         |
+| ----------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `listProducts(filters)`             | Public               | Server-side filtered/sorted/paginated product listing. Filters: category, price range, stock, sort. Joins variants and categories. Filters by `published_at IS NULL OR published_at <= now()` (defense-in-depth on top of RLS).                                                                      |
+| `getProductBySlug(slug)`            | Public               | Fetches single product with all variants, categories, and extras. Active products only. Filters by `published_at` (defense-in-depth). Enriches extras with live product data.                                                                                                                        |
+| `adminListProducts(filters)`        | requireAdminOrViewer | Lists ALL products (including inactive and scheduled). Search, filter, paginate.                                                                                                                                                                                                                     |
+| `adminGetProduct(id)`               | requireAdminOrViewer | Single product with variants, categories, and extras (any status). Enriches extras with live product data.                                                                                                                                                                                           |
+| `adminCreateProduct(formData)`      | requireAdmin         | Creates product + variants + category associations + extras. FormData-based. Parses `vatRate` (default 27) and `publishedAt` (nullable datetime). Auto-generates slug. Validates with Zod. **Checks plan product limit** via `getPlanGate().checkLimit('max_products')` before insert. Audit logged. |
+| `adminUpdateProduct(formData)`      | requireAdmin         | Updates product fields (including `vat_rate`, `published_at`), syncs variants (upsert/delete), syncs categories, syncs extras (delete-and-recreate). Audit logged.                                                                                                                                   |
+| `adminDeleteProduct(id)`            | requireAdmin         | Soft delete (is_active = false). Audit logged.                                                                                                                                                                                                                                                       |
+| `adminToggleProductActive(id)`      | requireAdmin         | Toggle active state. Audit logged.                                                                                                                                                                                                                                                                   |
+| `adminHardDeleteProduct(id)`        | requireAdmin         | Permanent delete with cascade. Audit logged.                                                                                                                                                                                                                                                         |
+| `getProductExtras(productId)`       | Public               | Fetches extras for a product with enriched product/variant data (title, slug, price, image, stock, active status). Uses `enrichExtras()` helper.                                                                                                                                                     |
+| `adminSetProductExtras(id, extras)` | requireAdmin         | Standalone extras save: validates with Zod, blocks self-reference, delete-and-recreate pattern. Audit logged with extras count.                                                                                                                                                                      |
+| `getProductPriceHistory(productId)` | requireAdminOrViewer | Fetches 30-day price history for admin sparkline chart. Returns array of `{price, compareAtPrice, date}` sorted chronologically. Uses `getPriceHistory()` utility.                                                                                                                                   |
 
 ### `src/lib/actions/orders.ts` (1268 lines)
 
@@ -941,16 +981,16 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### `src/lib/actions/categories.ts` (446 lines)
 
-| Function                         | Guard                | What it does                             |
-| -------------------------------- | -------------------- | ---------------------------------------- |
-| `listCategories()`               | Public               | Active categories with parent hierarchy. |
-| `adminListCategories()`          | requireAdminOrViewer | All categories (including inactive).     |
-| `adminCreateCategory(input)`     | requireAdmin         | Create with slug auto-gen. Audit logged. |
-| `adminUpdateCategory(id, input)` | requireAdmin         | Update fields. Audit logged.             |
-| `adminDeleteCategory(id)`        | requireAdmin         | Soft delete. Audit logged.               |
-| `adminToggleCategory(id)`        | requireAdmin         | Toggle active. Audit logged.             |
-| `adminHardDeleteCategory(id)`    | requireAdmin         | Permanent delete. Audit logged.          |
-| `adminRestoreCategory(id)`       | requireAdmin         | Restore soft-deleted. Audit logged.      |
+| Function                         | Guard                | What it does                                                                                 |
+| -------------------------------- | -------------------- | -------------------------------------------------------------------------------------------- |
+| `listCategories()`               | Public               | Active categories with parent hierarchy.                                                     |
+| `adminListCategories()`          | requireAdminOrViewer | All categories (including inactive).                                                         |
+| `adminCreateCategory(input)`     | requireAdmin         | Create with slug auto-gen. **Checks plan category limit** via `getPlanGate()`. Audit logged. |
+| `adminUpdateCategory(id, input)` | requireAdmin         | Update fields. Audit logged.                                                                 |
+| `adminDeleteCategory(id)`        | requireAdmin         | Soft delete. Audit logged.                                                                   |
+| `adminToggleCategory(id)`        | requireAdmin         | Toggle active. Audit logged.                                                                 |
+| `adminHardDeleteCategory(id)`    | requireAdmin         | Permanent delete. Audit logged.                                                              |
+| `adminRestoreCategory(id)`       | requireAdmin         | Restore soft-deleted. Audit logged.                                                          |
 
 ### `src/lib/actions/profile.ts` (343 lines)
 
@@ -1003,6 +1043,27 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | `uploadProductImage(formData)` | requireAdmin | Uploads a single image to Supabase Storage `product-images` bucket. Validates file type (JPEG/PNG/WebP/AVIF) and size (5 MB). Returns public URL.                                                 |
 | `deleteProductImage(url)`      | requireAdmin | Deletes an image from the `product-images` bucket. Extracts file path from Supabase Storage URL pattern. No-op for external URLs (returns success). Called automatically on image remove/replace. |
 
+### `src/lib/actions/subscriptions.ts` (~743 lines)
+
+| Function                             | Guard                                    | What it does                                                                                                                                                             |
+| ------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `listPlans()`                        | requireAdminOrViewer                     | Fetches all active `shop_plans` ordered by `sort_order`. Returns `ShopPlanRow[]`.                                                                                        |
+| `getPlan(id)`                        | requireAdminOrViewer                     | Fetches single plan by ID. Returns `ShopPlanRow`.                                                                                                                        |
+| `adminCreatePlan(input)`             | requireAgencyOwner + isAgencyModeEnabled | Creates a new plan tier. Validates with `planCreateSchema`. Audit logged. Returns error if agency mode is disabled.                                                      |
+| `adminUpdatePlan(id, input)`         | requireAgencyOwner + isAgencyModeEnabled | Updates plan fields. Validates with `planUpdateSchema`. Audit logged. Returns error if agency mode is disabled.                                                          |
+| `getMySubscription()`                | requireAdminOrViewer                     | Fetches the active/trialing/past_due subscription for the current shop (by `siteConfig.subscription.defaultShopIdentifier`). Returns `ShopSubscriptionWithPlan` or null. |
+| `getMyInvoices()`                    | requireAdminOrViewer                     | Fetches invoices for the current shop's subscription (by shop identifier). Returns `SubscriptionInvoiceRow[]`. Returns empty array if no subscription found.             |
+| `listSubscriptions()`                | requireAgencyOwner + isAgencyModeEnabled | Fetches all `shop_subscriptions` joined with their plan. Returns `ShopSubscriptionWithPlan[]`.                                                                           |
+| `getSubscription(id)`                | requireAdminOrViewer                     | Fetches single subscription by ID with plan. Returns `ShopSubscriptionWithPlan`.                                                                                         |
+| `adminCreateSubscription(input)`     | requireAgencyOwner + isAgencyModeEnabled | Creates a new client subscription. Validates with `subscriptionCreateSchema`. Audit logged.                                                                              |
+| `adminUpdateSubscription(id, input)` | requireAgencyOwner + isAgencyModeEnabled | Updates subscription fields (plan, billing cycle, custom pricing, feature overrides, notes). Validates with `subscriptionUpdateSchema`. Audit logged.                    |
+| `adminCancelSubscription(id)`        | requireAgencyOwner + isAgencyModeEnabled | Sets subscription status to `cancelled` and stamps `cancelled_at`. Audit logged.                                                                                         |
+| `listInvoices(subscriptionId?)`      | requireAdminOrViewer                     | Lists invoices for a given subscription (or all if agency owner and no ID passed). Returns `SubscriptionInvoiceRow[]`.                                                   |
+| `adminCreateInvoice(input)`          | requireAgencyOwner + isAgencyModeEnabled | Creates a billing invoice record for a subscription. Validates with `invoiceCreateSchema`. Audit logged.                                                                 |
+| `adminUpdateInvoice(id, input)`      | requireAgencyOwner + isAgencyModeEnabled | Updates invoice fields (status, paid_at, invoice_provider, invoice_number, invoice_url, notes). Validates with `invoiceUpdateSchema`. Audit logged.                      |
+
+**Agency mode guard:** All 10 agency-owner-only actions (marked with `isAgencyModeEnabled` above) check `siteConfig.admin.enableAgencyMode` before proceeding. If disabled, they return `{ success: false, error: "Az ügynökségi mód nincs engedélyezve." }`. This allows the boilerplate to be used for non-agency businesses by setting `enableAgencyMode: false`.
+
 ---
 
 ## Integrations
@@ -1036,7 +1097,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | ---------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `invoicing/adapter.ts` | 415   | Strategy pattern interface: `InvoicingAdapter` with `createInvoice()`, `getInvoice()`, `cancelInvoice()`. Three implementations: `BillingoAdapter` (REST API calls, per-item VAT rate via `billingoVatString()`, dynamic `payment_method`: "cash_on_delivery" for COD / "online_bankcard" for Barion, COD fee as separate line item), `SzamlazzAdapter` (XML API calls, per-item VAT rate and net price, dynamic `<fizmod>`: "Utánvét" for COD / "Bankkártya (online)" for Barion, COD fee as XML line item), `NullAdapter` (no-op fallback). Helper functions: `billingoVatString()`, `grossToNet()`, `grossToVat()`. Factory: `getInvoicingAdapter()` reads `INVOICING_PROVIDER` env var. Dev mode mock fallbacks. |
 
-**Planned: Subscription invoicing reuse.** The existing `InvoicingAdapter` strategy pattern will be reused for generating subscription/plan invoices for agency clients. When the agency admin clicks "Szamla keszitese" on `/admin/agency/clients`, it calls the same `getInvoicingAdapter().createInvoice()` with subscription billing data instead of order data. This requires a thin wrapper function (e.g., `createSubscriptionInvoice(subscriptionId, billingPeriod)`) that maps `subscription_invoices` data to the adapter's `InvoiceInput` format. No changes to the adapter interface itself — only a new caller.
+**Planned: Subscription invoicing reuse.** The existing `InvoicingAdapter` strategy pattern will be reused for generating subscription/plan invoices for agency clients. When the agency admin clicks "Számla készítése" on `/agency/clients/[id]`, it calls the same `getInvoicingAdapter().createInvoice()` with subscription billing data instead of order data. This requires a thin wrapper function (e.g., `createSubscriptionInvoice(subscriptionId, billingPeriod)`) that maps `subscription_invoices` data to the adapter's `InvoiceInput` format. No changes to the adapter interface itself — only a new caller.
 
 ---
 
@@ -1062,22 +1123,24 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Components Inventory
 
-**Status: COMPLETE** — 53 component files total.
+**Status: COMPLETE** — 57 component files total.
 
-### Shared Components (10)
+### Shared Components (12)
 
-| Component             | File                                    | Type   | Purpose                                                                                                                                      |
-| --------------------- | --------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Header                | `shared/header.tsx`                     | Server | Auth-aware. Shows role-appropriate account link: Login (guest), Fiokom (customer), Admin (admin/viewer). Mobile sheet nav. Cart count badge. |
-| Footer                | `shared/footer.tsx`                     | Server | Site links, legal links, newsletter signup, copyright.                                                                                       |
-| AdminSidebar          | `shared/admin-sidebar.tsx`              | Client | 260px collapsible sidebar. Feature-flag-driven nav items. Agency viewer badge. Back to shop + sign out links. Mobile sheet.                  |
-| Breadcrumbs           | `shared/breadcrumbs.tsx`                | Client | Configurable breadcrumb trail.                                                                                                               |
-| CartCount             | `shared/cart-count.tsx`                 | Client | Cart item count badge in header.                                                                                                             |
-| LoadingSkeleton       | `shared/loading-skeleton.tsx`           | Server | Reusable skeleton placeholders.                                                                                                              |
-| NewsletterForm        | `shared/newsletter-form.tsx`            | Client | Email input + subscribe button. Calls subscribe server action. Toast feedback.                                                               |
-| CookieConsent         | `cookie-consent.tsx`                    | Client | GDPR cookie consent banner with accept all, reject, and settings toggles. Slide-up animation. Persisted to localStorage.                     |
-| CookieSettingsButton  | `shared/cookie-settings-button.tsx`     | Client | Floating button to reopen cookie consent settings. Used on cookie policy page.                                                               |
-| CookieConsentProvider | `providers/cookie-consent-provider.tsx` | Client | Context provider for cookie consent state. Wraps app in root layout.                                                                         |
+| Component             | File                                    | Type   | Purpose                                                                                                                                                                                                       |
+| --------------------- | --------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header                | `shared/header.tsx`                     | Server | Auth-aware. Shows role-appropriate account link: Login (guest), Fiókom (customer), Admin (admin/viewer). CartDrawer trigger. Mobile nav.                                                                      |
+| Footer                | `shared/footer.tsx`                     | Server | Site links, legal links, newsletter signup, copyright.                                                                                                                                                        |
+| MobileNav             | `shared/mobile-nav.tsx`                 | Client | Extracted from header.tsx (FE-009). Mobile sheet nav with hamburger trigger. Cart link opens CartDrawer (closes mobile sheet first).                                                                          |
+| AdminSidebar          | `shared/admin-sidebar.tsx`              | Client | 260px collapsible sidebar. Feature-flag-driven nav items. Agency viewer badge. Conditional "Ügynökségi kezelő" link (when `enableAgencyMode` + `isAgencyOwner`). Back to shop + sign out links. Mobile sheet. |
+| AgencySidebar         | `shared/agency-sidebar.tsx`             | Client | `AgencyShell` component. 260px collapsible sidebar for agency route group. Nav items: Áttekintés, Ügyfelek, Csomagok. Back to admin + sign out links. Mobile sheet.                                           |
+| Breadcrumbs           | `shared/breadcrumbs.tsx`                | Client | Configurable breadcrumb trail.                                                                                                                                                                                |
+| CartCount             | `shared/cart-count.tsx`                 | Client | Cart item count badge in header. Uses `mounted` state guard to prevent Zustand persist hydration mismatch (server renders null, client defers real count to post-mount effect).                               |
+| LoadingSkeleton       | `shared/loading-skeleton.tsx`           | Server | Reusable skeleton placeholders.                                                                                                                                                                               |
+| NewsletterForm        | `shared/newsletter-form.tsx`            | Client | Email input + subscribe button. Calls subscribe server action. Toast feedback.                                                                                                                                |
+| CookieConsent         | `cookie-consent.tsx`                    | Client | GDPR cookie consent banner with accept all, reject, and settings toggles. Slide-up animation. Persisted to localStorage.                                                                                      |
+| CookieSettingsButton  | `shared/cookie-settings-button.tsx`     | Client | Floating button to reopen cookie consent settings. Used on cookie policy page.                                                                                                                                |
+| CookieConsentProvider | `providers/cookie-consent-provider.tsx` | Client | Context provider for cookie consent state. Wraps app in root layout.                                                                                                                                          |
 
 ### Product Components (9)
 
@@ -1089,18 +1152,19 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | ProductFilters      | `product/product-filters.tsx`       | Client | Category select, price range, in-stock toggle, sort select. Updates URL params.                                                                                                                  |
 | VariantSelector     | `product/variant-selector.tsx`      | Client | Button/chip-based variant selection. Updates parent state.                                                                                                                                       |
 | Gallery             | `product/gallery.tsx`               | Client | Main image + thumbnail strip. Click to switch.                                                                                                                                                   |
-| AddToCartButton     | `product/add-to-cart-button.tsx`    | Client | Button with loading state. Calls Zustand addItem + adds checked extras as separate cart items. Toast confirmation with extras count.                                                             |
+| AddToCartButton     | `product/add-to-cart-button.tsx`    | Client | Button with loading state. Calls Zustand addItem + adds checked extras as separate cart items. CartDrawer auto-opens as add-to-cart confirmation (FE-009, replaces toast).                       |
 | PriceDisplay        | `product/price-display.tsx`         | Server | Formats HUF price. Shows strikethrough for compare-at. EU Omnibus Directive: displays "Legalacsonyabb ár az elmúlt 30 napban" text with lowest 30-day price when product is discounted (FE-006). |
 | StockBadge          | `product/stock-badge.tsx`           | Server | Green/yellow/red badge based on stock level.                                                                                                                                                     |
 
-### Cart/Checkout Components (4)
+### Cart/Checkout Components (5)
 
-| Component           | File                             | Type   | Purpose                                                                                                                    |
-| ------------------- | -------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
-| CartLineItem        | `cart/cart-line-item.tsx`        | Client | Thumbnail, title, variant info, unit price, quantity controls, remove button, line total.                                  |
-| CouponInput         | `cart/coupon-input.tsx`          | Client | Input + apply button. Calls applyCoupon server action. Shows discount amount or error.                                     |
-| OrderSummary        | `cart/order-summary.tsx`         | Client | Subtotal, shipping fee, COD fee (optional, shown when > 0 as "Utánvét kezelési díj"), discount, total.                     |
-| PickupPointSelector | `cart/pickup-point-selector.tsx` | Client | Dropdown selector for pickup points. Currently uses hardcoded mock data. Interface ready for real carrier API integration. |
+| Component           | File                             | Type   | Purpose                                                                                                                                                                                                                                                         |
+| ------------------- | -------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CartDrawer          | `cart/cart-drawer.tsx`           | Client | Slide-out cart drawer (FE-009). Sheet trigger = cart icon + CartCount badge. Auto-opens when items added via Zustand subscribe. 3-second auto-close (cancelled on hover). Free shipping progress bar (15,000 Ft threshold). Empty state. Checkout + cart links. |
+| CartLineItem        | `cart/cart-line-item.tsx`        | Client | Thumbnail, title, variant info, unit price, quantity controls, remove button, line total.                                                                                                                                                                       |
+| CouponInput         | `cart/coupon-input.tsx`          | Client | Input + apply button. Calls applyCoupon server action. Shows discount amount or error.                                                                                                                                                                          |
+| OrderSummary        | `cart/order-summary.tsx`         | Client | Subtotal, shipping fee, COD fee (optional, shown when > 0 as "Utánvét kezelési díj"), discount, total.                                                                                                                                                          |
+| PickupPointSelector | `cart/pickup-point-selector.tsx` | Client | Dropdown selector for pickup points. Currently uses hardcoded mock data. Interface ready for real carrier API integration.                                                                                                                                      |
 
 ### Admin Components (5)
 
@@ -1160,38 +1224,42 @@ Fully typed `SiteConfig` with these sections:
 | **shipping.pickupPoint**  | enabled: true, carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox                                                                                                                                                                                               |
 | **shipping.rules**        | baseFee: 1490, freeOver: 15000, defaultProductWeightGrams: 500, weightTiers: [{maxWeightKg:2, fee:1490}, {maxWeightKg:5, fee:1990}, {maxWeightKg:10, fee:2990}, {maxWeightKg:20, fee:4490}]                                                                                  |
 | **invoicing**             | provider from env (default "none"), mode: "manual"                                                                                                                                                                                                                           |
-| **admin**                 | agencyViewerEnabled: true, readonlyByDefaultForAgency: true                                                                                                                                                                                                                  |
+| **admin**                 | agencyViewerEnabled: true, readonlyByDefaultForAgency: true, enableAgencyMode: true (toggles agency route group + agency server actions)                                                                                                                                     |
 | **email**                 | adminNotificationRecipients: [ADMIN_EMAIL env], sendSignupConfirmation: true, sendWelcomeEmail: true, sendAdminOrderNotification: true                                                                                                                                       |
 | **branding**              | logoText: "AGENCY", neutral black/white theme tokens                                                                                                                                                                                                                         |
 | **tax**                   | defaultVatRate: 27, availableRates: [5, 18, 27]. Used by product validators and invoicing adapters.                                                                                                                                                                          |
+| **subscription**          | `defaultShopIdentifier` (from `SHOP_IDENTIFIER` env, default `"default"`), `enforceGating` (from `SUBSCRIPTION_ENFORCE_GATING` env, default `false`). Used by `getPlanGate()` to look up the active subscription. No subscription found → unlimited access (dev-friendly).   |
 
-### Planned: Plan-Based Feature Gating
+### Plan-Based Feature Gating
 
-**Status: NOT YET IMPLEMENTED**
+**Status: COMPLETE** — Implemented in `src/lib/security/plan-gate.ts` as part of FE-003.
 
-Currently, all feature flags in `site.config.ts` are static booleans set at deploy time. The subscription management system introduces a dynamic layer on top:
+`site.config.ts` remains the static base config. At runtime, `getPlanGate()` fetches the active `shop_subscriptions` record for the current shop (identified by `SHOP_IDENTIFIER` env var), merges the plan's `features` jsonb with `feature_overrides`, and returns a `PlanGate` object.
+
+**API:**
+
+- `gate.check(featureKey)` — returns `{ allowed: boolean, reason?: string }`. No subscription → `{ allowed: true }` (unlimited, dev-friendly).
+- `gate.checkLimit(limitKey, currentCount)` — returns `{ allowed: boolean, limit?: number, current: number }`. No subscription → always allowed.
 
 **Architecture:**
 
-1. `site.config.ts` remains the base config — it defines what the boilerplate supports.
-2. At runtime, a `getPlanFeatures()` helper fetches the active `shop_subscriptions` record and merges the plan's `features` jsonb with any `feature_overrides` jsonb.
-3. The effective feature flags are: `siteConfig.features` AND `planFeatures` — a feature must be enabled in BOTH the static config and the active plan to be available.
-4. This allows the agency to deploy a single codebase with all features enabled in `site.config.ts`, and let the plan tier control what each client can actually use.
+1. `site.config.ts` defines what the boilerplate supports (static booleans, deploy-time).
+2. `getPlanGate()` resolves the dynamic plan layer at runtime per-request.
+3. A feature must be enabled in BOTH static config AND active plan to be available.
+4. A single codebase can be deployed for all clients — plan tier controls what each client can use.
 
 **Per-client pricing model:**
 
-- Plan prices are NOT hardcoded in the codebase. They are stored in the `shop_plans` table as `base_monthly_price` and `base_annual_price`.
-- The agency can override pricing per client via `shop_subscriptions.custom_monthly_price` / `custom_annual_price`.
-- Annual billing offers a discount (configurable per plan). The discount percentage is not fixed — the agency sets the annual price directly, so it can be any amount less than 12x the monthly price.
-- Effective price resolution: `subscription.custom_*_price ?? plan.base_*_price`
+- Plan prices are NOT hardcoded. They are stored in `shop_plans.base_monthly_price` / `base_annual_price`.
+- Per-client overrides in `shop_subscriptions.custom_monthly_price` / `custom_annual_price`.
+- Effective price: `subscription.custom_*_price ?? plan.base_*_price`.
+- Annual billing: price set directly (discount is implicit).
 
 **Feature gating UI pattern:**
 
-- Features limited by the current plan show a visual indicator in the admin sidebar and on feature pages:
-  - **Locked features:** Greyed-out nav item with a small lock icon + "Premium" badge. Clicking shows a tasteful upsell modal: "Ez a funkció a Premium csomagban elérhető el" (This feature is available in the Premium plan) with a CTA to `/admin/subscription/plans`.
-  - **Near-limit features:** Warning indicator when approaching limits (e.g., product count at 90% of max). Subtle yellow badge, not blocking.
-  - **Over-limit features:** Hard block on creation actions (e.g., cannot create 501st product on a 500-product plan). Server action validates plan limits before writes.
-- The comparison page (`/admin/subscription/plans`) is the canonical reference for what each plan includes.
+- Locked features show a lock icon + "Premium" badge in sidebar/UI. Server actions validate plan limits before writes.
+- Near-limit: yellow warning badge (e.g., "450/500 termék").
+- Over-limit: hard block on creation — server action returns Hungarian error.
 
 ### `src/lib/config/hooks.ts` (118 lines)
 
@@ -1205,13 +1273,14 @@ API: `getHooks()`, `overrideHooks(partial)`, `resetHooks()`
 
 ### Zod Validators (5 files)
 
-| File                       | Schemas                                                                                                                                   |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `validators/checkout.ts`   | addressSchema, contactSchema, homeDeliverySchema, pickupPointSchema, checkoutSchema (includes `paymentMethod: z.enum(["barion", "cod"])`) |
-| `validators/coupon.ts`     | couponCreateSchema, couponApplySchema                                                                                                     |
-| `validators/product.ts`    | vatRateSchema, variantSchema, productCreateSchema, productUpdateSchema                                                                    |
-| `validators/subscriber.ts` | subscribeSchema, unsubscribeSchema, tagSchema                                                                                             |
-| `validators/uuid.ts`       | uuidSchema                                                                                                                                |
+| File                         | Schemas                                                                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validators/checkout.ts`     | addressSchema, contactSchema, homeDeliverySchema, pickupPointSchema, checkoutSchema (includes `paymentMethod: z.enum(["barion", "cod"])`)            |
+| `validators/coupon.ts`       | couponCreateSchema, couponApplySchema                                                                                                                |
+| `validators/product.ts`      | vatRateSchema, variantSchema, productCreateSchema, productUpdateSchema                                                                               |
+| `validators/subscriber.ts`   | subscribeSchema, unsubscribeSchema, tagSchema                                                                                                        |
+| `validators/subscription.ts` | planFeaturesSchema, planCreateSchema, planUpdateSchema, subscriptionCreateSchema, subscriptionUpdateSchema, invoiceCreateSchema, invoiceUpdateSchema |
+| `validators/uuid.ts`         | uuidSchema                                                                                                                                           |
 
 Plus 15+ inline Zod schemas in individual action files.
 
@@ -1224,7 +1293,7 @@ Plus 15+ inline Zod schemas in individual action files.
 | Feature           | Status | Details                                                                                                                                                                                                                                 |
 | ----------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dynamic sitemap   | DONE   | `src/app/sitemap.ts` — includes all active products (limit 5000, filtered by published_at), categories (limit 500), and 5 static pages. Priority weighting: home 1.0, products 0.9, individual products 0.8, categories 0.7, legal 0.3. |
-| robots.txt        | DONE   | `src/app/robots.ts` — allows all crawlers on `/`. Disallows `/admin/`, `/api/`, `/checkout/`, `/account/`. Points to sitemap.                                                                                                           |
+| robots.txt        | DONE   | `src/app/robots.ts` — allows all crawlers on `/`. Disallows `/admin/`, `/agency/`, `/api/`, `/checkout/`, `/profile/`. Points to sitemap.                                                                                               |
 | Per-page metadata | DONE   | Custom title/description on every route. Product pages have dynamic metadata from DB.                                                                                                                                                   |
 | JSON-LD           | DONE   | Product structured data on `/products/[slug]` (Product schema with name, description, price, availability, image).                                                                                                                      |
 | OpenGraph         | DONE   | Product pages include og:title, og:description, og:image.                                                                                                                                                                               |
@@ -1237,25 +1306,27 @@ Plus 15+ inline Zod schemas in individual action files.
 
 **Status: COMPLETE** — Unit, integration, and E2E tests.
 
-### Unit Tests (Vitest) — 15 test files
+### Unit Tests (Vitest) — 17 test files
 
-| Test File                      | Location           | What it tests                                                                                                                                                                                                                  |
-| ------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cart-math.test.ts`            | tests/unit/        | Cart subtotal calculation, quantity updates, item removal                                                                                                                                                                      |
-| `coupon-validation.test.ts`    | tests/unit/        | Coupon validity checks (dates, usage limits, min order, active status)                                                                                                                                                         |
-| `order-totals.test.ts`         | tests/unit/        | Order total calculation with discounts and shipping                                                                                                                                                                            |
-| `shipping.test.ts`             | tests/unit/        | Shipping fee calculation, free shipping threshold, weight tier lookup (getWeightTierFee), weight-based carrier fees, tier boundaries                                                                                           |
-| `cart-store.test.ts`           | src/\_\_tests\_\_/ | Zustand cart store integration (add, remove, update, clear, persistence)                                                                                                                                                       |
-| `coupon-schemas.test.ts`       | src/\_\_tests\_\_/ | Zod coupon schema validation                                                                                                                                                                                                   |
-| `order-shipping-utils.test.ts` | src/\_\_tests\_\_/ | Order and shipping utility functions                                                                                                                                                                                           |
-| `checkout-validation.test.ts`  | src/\_\_tests\_\_/ | Checkout form Zod schema validation                                                                                                                                                                                            |
-| `email-actions.test.ts`        | src/\_\_tests\_\_/ | Email action functions: signup confirmation, welcome, admin notification (15 tests)                                                                                                                                            |
-| `order-notes.test.ts`          | src/\_\_tests\_\_/ | Order note CRUD actions: getOrderNotes, addOrderNote, deleteOrderNote (13 tests)                                                                                                                                               |
-| `product-extras.test.ts`       | src/\_\_tests\_\_/ | Product extras CRUD: getProductExtras (6 tests), adminSetProductExtras (9 tests)                                                                                                                                               |
-| `order-export.test.ts`         | src/\_\_tests\_\_/ | Order CSV export: filters, BOM, escaping, line items, empty results (16 tests)                                                                                                                                                 |
-| `vat-rate.test.ts`             | src/\_\_tests\_\_/ | VAT rate management: Zod validation, product create/update, invoicing helpers, TaxConfig, CSV export (21 tests)                                                                                                                |
-| `scheduled-publishing.test.ts` | src/\_\_tests\_\_/ | Scheduled publishing: publishedAt parsing, create/update actions, public query filters, sitemap filter (15 tests)                                                                                                              |
-| `price-history.test.ts`        | src/\_\_tests\_\_/ | 30-day price history (FE-006): resolveLowest30DayPrice pure function (6 tests), getLowest30DayPrice server query (6 tests), getLowest30DayPriceMap batch grouping (3 tests), getPriceHistory chronological retrieval (5 tests) |
+| Test File                      | Location           | What it tests                                                                                                                                                                                                                                                                                                            |
+| ------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cart-math.test.ts`            | tests/unit/        | Cart subtotal calculation, quantity updates, item removal                                                                                                                                                                                                                                                                |
+| `coupon-validation.test.ts`    | tests/unit/        | Coupon validity checks (dates, usage limits, min order, active status)                                                                                                                                                                                                                                                   |
+| `order-totals.test.ts`         | tests/unit/        | Order total calculation with discounts and shipping                                                                                                                                                                                                                                                                      |
+| `shipping.test.ts`             | tests/unit/        | Shipping fee calculation, free shipping threshold, weight tier lookup (getWeightTierFee), weight-based carrier fees, tier boundaries                                                                                                                                                                                     |
+| `cart-store.test.ts`           | src/\_\_tests\_\_/ | Zustand cart store integration (add, remove, update, clear, persistence)                                                                                                                                                                                                                                                 |
+| `coupon-schemas.test.ts`       | src/\_\_tests\_\_/ | Zod coupon schema validation                                                                                                                                                                                                                                                                                             |
+| `order-shipping-utils.test.ts` | src/\_\_tests\_\_/ | Order and shipping utility functions                                                                                                                                                                                                                                                                                     |
+| `checkout-validation.test.ts`  | src/\_\_tests\_\_/ | Checkout form Zod schema validation                                                                                                                                                                                                                                                                                      |
+| `email-actions.test.ts`        | src/\_\_tests\_\_/ | Email action functions: signup confirmation, welcome, admin notification (15 tests)                                                                                                                                                                                                                                      |
+| `order-notes.test.ts`          | src/\_\_tests\_\_/ | Order note CRUD actions: getOrderNotes, addOrderNote, deleteOrderNote (13 tests)                                                                                                                                                                                                                                         |
+| `product-extras.test.ts`       | src/\_\_tests\_\_/ | Product extras CRUD: getProductExtras (6 tests), adminSetProductExtras (9 tests)                                                                                                                                                                                                                                         |
+| `order-export.test.ts`         | src/\_\_tests\_\_/ | Order CSV export: filters, BOM, escaping, line items, empty results (16 tests)                                                                                                                                                                                                                                           |
+| `vat-rate.test.ts`             | src/\_\_tests\_\_/ | VAT rate management: Zod validation, product create/update, invoicing helpers, TaxConfig, CSV export (21 tests)                                                                                                                                                                                                          |
+| `scheduled-publishing.test.ts` | src/\_\_tests\_\_/ | Scheduled publishing: publishedAt parsing, create/update actions, public query filters, sitemap filter (15 tests)                                                                                                                                                                                                        |
+| `price-history.test.ts`        | src/\_\_tests\_\_/ | 30-day price history (FE-006): resolveLowest30DayPrice pure function (6 tests), getLowest30DayPrice server query (6 tests), getLowest30DayPriceMap batch grouping (3 tests), getPriceHistory chronological retrieval (5 tests)                                                                                           |
+| `plan-gate.test.ts`            | src/\_\_tests\_\_/ | Plan gate logic: unlimited gate when no subscription, check() per feature key, checkLimit() with count comparisons, feature_overrides merging, enforceGating flag behavior (15 tests)                                                                                                                                    |
+| `subscriptions.test.ts`        | src/\_\_tests\_\_/ | Subscription CRUD actions: listPlans, getPlan, adminCreatePlan, adminUpdatePlan, listSubscriptions, getSubscription, adminCreateSubscription, adminUpdateSubscription, adminCancelSubscription, listInvoices, adminCreateInvoice, adminUpdateInvoice. Zod validation, requireAgencyOwner guard, audit logging (45 tests) |
 
 ### Integration Tests (Vitest) — 1 test file
 
@@ -1296,26 +1367,28 @@ Plus 15+ inline Zod schemas in individual action files.
 
 ### Environment Variables (18 total)
 
-| Variable                        | Scope  | Purpose                                       |
-| ------------------------------- | ------ | --------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Public | Supabase project URL                          |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Supabase anonymous key                        |
-| `NEXT_PUBLIC_SITE_URL`          | Public | Site URL for client-side                      |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Server | Supabase service role (bypasses RLS)          |
-| `BARION_POS_KEY`                | Server | Barion payment POS key                        |
-| `BARION_ENVIRONMENT`            | Server | `test` or `prod`                              |
-| `RESEND_API_KEY`                | Server | Resend email API key                          |
-| `RESEND_FROM_EMAIL`             | Server | Transactional sender address                  |
-| `RESEND_MARKETING_FROM_EMAIL`   | Server | Marketing sender address                      |
-| `RESEND_TEST_RECIPIENT`         | Server | Dev-only: redirect all emails to this address |
-| `RESEND_WEBHOOK_SECRET`         | Server | Resend webhook HMAC signing secret            |
-| `INVOICING_PROVIDER`            | Server | `billingo`, `szamlazz`, or `none`             |
-| `BILLINGO_API_KEY`              | Server | Billingo API key                              |
-| `SZAMLAZZ_AGENT_KEY`            | Server | Szamlazz.hu agent key                         |
-| `CRON_SECRET`                   | Server | Shared secret for cron-triggered API calls    |
-| `UNSUBSCRIBE_SECRET`            | Server | HMAC key for newsletter unsubscribe tokens    |
-| `ENABLE_ABANDONED_CART`         | Server | Edge Function toggle                          |
-| `SITE_URL`                      | Server | Edge Function callback URL                    |
+| Variable                        | Scope  | Purpose                                                                                |
+| ------------------------------- | ------ | -------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Public | Supabase project URL                                                                   |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Supabase anonymous key                                                                 |
+| `NEXT_PUBLIC_SITE_URL`          | Public | Site URL for client-side                                                               |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server | Supabase service role (bypasses RLS)                                                   |
+| `BARION_POS_KEY`                | Server | Barion payment POS key                                                                 |
+| `BARION_ENVIRONMENT`            | Server | `test` or `prod`                                                                       |
+| `RESEND_API_KEY`                | Server | Resend email API key                                                                   |
+| `RESEND_FROM_EMAIL`             | Server | Transactional sender address                                                           |
+| `RESEND_MARKETING_FROM_EMAIL`   | Server | Marketing sender address                                                               |
+| `RESEND_TEST_RECIPIENT`         | Server | Dev-only: redirect all emails to this address                                          |
+| `RESEND_WEBHOOK_SECRET`         | Server | Resend webhook HMAC signing secret                                                     |
+| `INVOICING_PROVIDER`            | Server | `billingo`, `szamlazz`, or `none`                                                      |
+| `BILLINGO_API_KEY`              | Server | Billingo API key                                                                       |
+| `SZAMLAZZ_AGENT_KEY`            | Server | Szamlazz.hu agent key                                                                  |
+| `CRON_SECRET`                   | Server | Shared secret for cron-triggered API calls                                             |
+| `UNSUBSCRIBE_SECRET`            | Server | HMAC key for newsletter unsubscribe tokens                                             |
+| `ENABLE_ABANDONED_CART`         | Server | Edge Function toggle                                                                   |
+| `SITE_URL`                      | Server | Edge Function callback URL                                                             |
+| `SHOP_IDENTIFIER`               | Server | Identifies which shop's subscription to load in `getPlanGate()` (default: `"default"`) |
+| `SUBSCRIPTION_ENFORCE_GATING`   | Server | Set to `"true"` to block when no subscription found; default is open access            |
 
 ---
 
@@ -1369,7 +1442,7 @@ These are small issues or architectural notes. All former "spec gaps" and "plann
 
 ### Documentation Inaccuracies
 
-4. **Test file count mismatch:** ~~PROJECT_STATUS.md claims 8 unit test files, but only 5 unique test files exist.~~ → Fixed in **FE-000** (missing tests written) and **FE-007** (email-actions.test.ts added). Now 15 unit test files, 369 total tests passing across 19 test files.
+4. **Test file count mismatch:** ~~PROJECT_STATUS.md claims 8 unit test files, but only 5 unique test files exist.~~ → Fixed in **FE-000** (missing tests written) and **FE-007** (email-actions.test.ts added). Now 17 unit test files + 1 integration + 1 E2E = 19 Vitest/Playwright test suites, 429 total tests, 4 pre-existing failures in `checkout-validation.test.ts` (fixtures lack `paymentMethod` field, unrelated to any FE-003 work).
 
 ### Completed Feature Fixes
 
@@ -1387,6 +1460,18 @@ These are small issues or architectural notes. All former "spec gaps" and "plann
 16. **Order Status Management Overhaul:** Comprehensive refactor of order status system. **New file:** `lib/constants/order-status.ts` — single source of truth for all status labels, badge variants, transition maps, timeline definitions, and confirmation dialog metadata. **Server-side enforcement:** `adminUpdateOrderStatus` now validates transitions server-side via `isTransitionAllowed()` (was UI-only before — security gap). **COD flow fixes:** corrected transition maps (COD: processing → shipped → paid; removed nonsensical transitions like paid → processing). **Shared component:** `OrderStatusBadge` (`admin/order-status-badge.tsx`) replaces 8 inline duplications across admin and shop pages. **Admin order detail redesign:** prominent "Következő lépés" status action card at top of page (was buried below line items), AlertDialog confirmation before every status change with Hungarian descriptions, visual status stepper/progress indicator (COD-aware), error feedback for rejected transitions. **Hungarian consistency:** standardized "Feldolgozás alatt" (was "Feldolgozás"), "Lemondva" (was "Törölve"). **Bug fix:** tracking code stored in `tracking_code` field (was overwriting `notes`). **UI component:** added `alert-dialog` shadcn component.
 17. **FE-006 (30-Day Price History Tracking):** EU Omnibus Directive compliance. `price_history` table with database triggers (`record_price_change` on products, `record_variant_price_change` on product_variants) that automatically record price/compare_at_price changes — no application-level inserts. RLS: public SELECT, admin UPDATE/DELETE, no direct INSERT. 2 indexes for fast lookups. 90-day cleanup function. Migration: `012_price_history.sql`. TypeScript types: `PriceHistoryRow`, `PriceHistoryInsert` in `database.ts`. Utility functions split into server-only (`price-history.ts`: `getLowest30DayPrice`, `getLowest30DayPriceMap`, `getPriceHistory`) and client-safe (`price-history-shared.ts`: `resolveLowest30DayPrice`, types `LowestPriceMap`, `LowestPriceResult`, `PriceHistoryPoint`). Storefront: product detail page fetches `lowestPriceMap` when discounted, `ProductDetailClient` resolves per-variant lowest price, `PriceDisplay` shows "Legalacsonyabb ár az elmúlt 30 napban: X Ft" below price when `compare_at_price > base_price` (hidden for free products). Variant fallback: if variant has no price history, uses product-level history. Admin: `PriceSparkline` component (lightweight SVG ~120px × 32px, color-coded trend, hover tooltip) rendered next to base price input on product edit page. `getProductPriceHistory` server action. 20 unit tests.
 18. **FE-005 (Component Extraction Refactor):** Extracted 8+ inline components into standalone reusable files. **New component files:** `src/lib/utils/slug.ts` (`toSlug()` utility); `src/components/admin/pagination.tsx` (`AdminPagination` with `onPageChange` callback, `suffix` prop); `src/components/admin/status-badge.tsx` (generic `StatusBadge<T>` + `SUBSCRIBER_STATUS_CONFIG`); `src/components/checkout/checkout-stepper.tsx` (`CheckoutStepper`); `src/components/checkout/address-form.tsx` (`FormField`, `AddressFields`, `ReviewSection`); `src/components/admin/order-detail-components.tsx` (`StatusStepper`, `StatusTransitionButton`, `AddressDisplay`). **Pages updated:** checkout/page.tsx, admin/orders/[id]/page.tsx, orders-client.tsx, products-client.tsx, coupons/page.tsx, marketing/page.tsx, audit/page.tsx, products/new/page.tsx, categories/page.tsx. **ProductForm extraction deferred** (two 800–1000 line files with significant differences). `npm run build` passes with zero errors.
+19. **FE-009 (CartDrawer — Slide-out Cart):** Replaces full-page `/cart` navigation from header with a slide-out Sheet drawer (Base UI Dialog). **New files:** `src/lib/store/ui.ts` (Zustand store, no persist: `cartDrawerOpen`, `openCartDrawer`, `closeCartDrawer`, `toggleCartDrawer`); `src/components/cart/cart-drawer.tsx` (controlled Sheet, `w-full sm:w-[420px]`, auto-opens via `useCartStore.subscribe` when item count increases, 3-second auto-close cancelled on hover, free shipping progress bar at 15,000 Ft, empty state, checkout + cart links, reuses `CartLineItem`); `src/components/shared/mobile-nav.tsx` (extracted from `header.tsx` to support `useUIStore` — cart link now closes mobile sheet then opens CartDrawer). **Modified files:** `header.tsx` (cart `<Link>` replaced with `<CartDrawer />`, inline `MobileNav` replaced with import); `add-to-cart-button.tsx` (toast removed — drawer opening IS the confirmation). Full `/cart` page remains intact as secondary path.
+20. **FE-003 (Plan Subscription Management System):** Full agency SaaS billing backbone. **Database:** 3 new tables (`shop_plans`, `shop_subscriptions`, `subscription_invoices`), 1 new enum (`subscription_status`), `is_agency_owner boolean` column on `profiles`, migration `013_plan_subscription_system.sql`. **Security:** `src/lib/security/plan-gate.ts` — `getPlanGate()` factory with `check()` and `checkLimit()`; no subscription → unlimited (dev-friendly). `requireAgencyOwner()` and `isAgencyOwner()` added to `roles.ts`. **Middleware:** `/agency/*` routes protected by `is_agency_owner` flag in session (`src/proxy.ts`). **Validators:** `src/lib/validators/subscription.ts` — 7 Zod schemas (planFeatures, planCreate/Update, subscriptionCreate/Update, invoiceCreate/Update). **Server actions:** `src/lib/actions/subscriptions.ts` — 14 exported functions (full CRUD for plans, subscriptions, invoices + `getMySubscription()` and `getMyInvoices()` for shop owners). **Agency mode guard:** `isAgencyModeEnabled()` checks `siteConfig.admin.enableAgencyMode`; all 10 agency-owner actions return error when disabled. **Existing actions updated:** `adminCreateProduct` and `adminCreateCategory` now check plan limits via `getPlanGate().checkLimit()`. **Config:** `subscription` key + `admin.enableAgencyMode` added to `site.config.ts`. **Agency route group:** Dedicated `(agency)` route group with own layout + `AgencyShell` sidebar component. 4 agency pages: dashboard (`/agency`), clients list (`/agency/clients`), client detail (`/agency/clients/[id]`), plans CRUD (`/agency/plans`). **Admin changes:** `/admin/subscription` rewritten as read-only (uses `getMySubscription()` + `getMyInvoices()`); `/admin/subscription/plans` rewritten as read-only comparison cards with monthly/annual toggle; admin sidebar updated with conditional "Ügynökségi kezelő" link (visible when `enableAgencyMode && isAgencyOwner`). Old `/admin/agency/` directory deleted. **Seed:** `admin@agency.test` marked `is_agency_owner = true`, demo subscription for `demo-bolt`, 2 demo invoices. **Tests:** 60 new unit tests — `plan-gate.test.ts` (15) + `subscriptions.test.ts` (45), all passing. 425/429 total (4 pre-existing failures unrelated).
+
+---
+
+### Bug Fixes
+
+21. **CartCount hydration mismatch fix:** `CartCount` (`src/components/shared/cart-count.tsx`) had a React hydration error caused by Zustand's `persist` middleware. Server rendered `null` (cart count 0), but client immediately rendered the visible badge after localStorage rehydration. Fixed by adding a `mounted` state guard (`useState(false)` + `useEffect`) that defers rendering the persisted count until after the first client render, ensuring server/client output matches exactly.
+
+### Tooling
+
+22. **Prettier configuration:** Complete Prettier setup with `prettier-plugin-tailwindcss` for automatic Tailwind class sorting. Config: `semi: false`, `singleQuote: false`, `trailingComma: "all"`, `tabWidth: 2`, `printWidth: 100`, `endOfLine: "lf"`. Scripts: `pnpm format` (write) and `pnpm format:check` (CI check). `.prettierignore` excludes `.next/`, `node_modules/`, `pnpm-lock.yaml`, and build artifacts. ESLint integration via `eslint-config-prettier` (already installed).
 
 ---
 
@@ -1396,16 +1481,16 @@ These are small issues or architectural notes. All former "spec gaps" and "plann
 
 ### Pricing Model
 
-| Aspect                   | How it works                                                                                                                                                                 |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Base prices**          | Stored in `shop_plans.base_monthly_price` and `shop_plans.base_annual_price`. Set by agency admin.                                                                           |
-| **Per-client overrides** | `shop_subscriptions.custom_monthly_price` / `custom_annual_price` override the base plan price for a specific client.                                                        |
-| **Annual discount**      | Annual price is set directly (not a percentage). Discount is implicit: savings = (12 \* monthly) - annual. Typical range: 10-20% off.                                        |
-| **Billing cycle**        | Monthly or annual. Stored on `shop_subscriptions.billing_cycle`. Can be switched by agency admin.                                                                            |
-| **Effective price**      | `subscription.custom_*_price ?? plan.base_*_price` depending on billing cycle.                                                                                               |
-| **Invoicing**            | Agency generates invoices for clients via the existing Billingo/Szamlazz adapter. Recorded in `subscription_invoices`.                                                       |
-| **Feature gating**       | Plan features are defined in `shop_plans.features` jsonb. Per-client overrides in `shop_subscriptions.feature_overrides`. Runtime resolution via `getPlanFeatures()` helper. |
-| **UI enforcement**       | Locked features show a lock icon + "Premium" badge in sidebar/UI. Server actions validate plan limits before writes.                                                         |
+| Aspect                   | How it works                                                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Base prices**          | Stored in `shop_plans.base_monthly_price` and `shop_plans.base_annual_price`. Set by agency admin.                                                                                                                              |
+| **Per-client overrides** | `shop_subscriptions.custom_monthly_price` / `custom_annual_price` override the base plan price for a specific client.                                                                                                           |
+| **Annual discount**      | Annual price is set directly (not a percentage). Discount is implicit: savings = (12 \* monthly) - annual. Typical range: 10-20% off.                                                                                           |
+| **Billing cycle**        | Monthly or annual. Stored on `shop_subscriptions.billing_cycle`. Can be switched by agency admin.                                                                                                                               |
+| **Effective price**      | `subscription.custom_*_price ?? plan.base_*_price` depending on billing cycle.                                                                                                                                                  |
+| **Invoicing**            | Agency generates invoices for clients via the existing Billingo/Szamlazz adapter. Recorded in `subscription_invoices`.                                                                                                          |
+| **Feature gating**       | Plan features are defined in `shop_plans.features` jsonb. Per-client overrides in `shop_subscriptions.feature_overrides`. Runtime resolution via `getPlanGate()` helper (returns `PlanGate` with `check()` and `checkLimit()`). |
+| **UI enforcement**       | Locked features show a lock icon + "Premium" badge in sidebar/UI. Server actions validate plan limits before writes.                                                                                                            |
 
 ### Basic Plan — Recommended default: ~9,900 HUF/month (~99,900 HUF/year)
 

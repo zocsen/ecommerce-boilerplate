@@ -341,7 +341,7 @@ cookieConsent: {
 | Field            | Value                                           |
 | ---------------- | ----------------------------------------------- |
 | **Priority**     | P0                                              |
-| **Status**       | NOT STARTED                                     |
+| **Status**       | DONE                                            |
 | **Plan Tier**    | Infrastructure (the billing system itself)      |
 | **Complexity**   | XL (2+ weeks)                                   |
 | **Dependencies** | None (builds on existing invoicing integration) |
@@ -869,7 +869,7 @@ Eight components are built inline within their respective page files rather than
 | Field            | Value                                 |
 | ---------------- | ------------------------------------- |
 | **Priority**     | P0                                    |
-| **Status**       | NOT STARTED                           |
+| **Status**       | Done                                  |
 | **Plan Tier**    | All plans (legal compliance)          |
 | **Complexity**   | M (3-5 days)                          |
 | **Dependencies** | None                                  |

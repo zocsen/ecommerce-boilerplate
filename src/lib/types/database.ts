@@ -8,7 +8,7 @@
 /* ------------------------------------------------------------------ */
 
 // ── Enums ──────────────────────────────────────────────────────────
-export type AppRole = "customer" | "admin" | "agency_viewer";
+export type AppRole = "customer" | "admin" | "agency_viewer"
 export type OrderStatus =
   | "draft"
   | "awaiting_payment"
@@ -16,635 +16,813 @@ export type OrderStatus =
   | "processing"
   | "shipped"
   | "cancelled"
-  | "refunded";
-export type SubscriberStatus = "subscribed" | "unsubscribed" | "bounced" | "complained";
-export type PaymentMethod = "barion" | "cod";
+  | "refunded"
+export type SubscriberStatus = "subscribed" | "unsubscribed" | "bounced" | "complained"
+export type PaymentMethod = "barion" | "cod"
+export type SubscriptionStatus = "active" | "past_due" | "cancelled" | "trialing"
+export type InvoiceStatus = "pending" | "paid" | "failed" | "refunded"
+export type BillingCycle = "monthly" | "annual"
 
 // ── Helper aliases ─────────────────────────────────────────────────
-type Uuid = string;
-type Timestamptz = string; // ISO-8601
+type Uuid = string
+type Timestamptz = string // ISO-8601
 
 // ── Address JSON shape (stored in orders.shipping_address / billing_address) ─
 export type AddressJson = {
-  name: string;
-  street: string;
-  city: string;
-  zip: string;
-  country: string;
-};
+  name: string
+  street: string
+  city: string
+  zip: string
+  country: string
+}
 
 // ── Billing address JSON (extends AddressJson with optional B2B fields) ─
 export type BillingAddressJson = AddressJson & {
-  company_name?: string;
-  tax_number?: string;
-};
+  company_name?: string
+  tax_number?: string
+}
 
 // ── Pickup point JSON (stored in profiles.default_pickup_point) ─
 export type PickupPointJson = {
-  provider?: string;
-  point_id?: string;
-  point_label?: string;
-};
+  provider?: string
+  point_id?: string
+  point_label?: string
+}
 
 // ── Variant snapshot shape (stored in order_items.variant_snapshot) ─
 export type VariantSnapshotJson = {
-  option1Name?: string;
-  option1Value?: string;
-  option2Name?: string;
-  option2Value?: string;
-  sku?: string;
-};
+  option1Name?: string
+  option1Value?: string
+  option2Name?: string
+  option2Value?: string
+  sku?: string
+}
 
 // ── Table row / insert / update types ──────────────────────────────
 
 /* ---------- profiles ---------- */
 export type ProfileRow = {
-  id: Uuid;
-  role: AppRole;
-  full_name: string | null;
-  phone: string | null;
-  default_shipping_address: AddressJson | Record<string, never>;
-  default_billing_address: BillingAddressJson | Record<string, never>;
-  default_pickup_point: PickupPointJson | Record<string, never>;
-  created_at: Timestamptz;
-};
+  id: Uuid
+  role: AppRole
+  is_agency_owner: boolean
+  full_name: string | null
+  phone: string | null
+  default_shipping_address: AddressJson | Record<string, never>
+  default_billing_address: BillingAddressJson | Record<string, never>
+  default_pickup_point: PickupPointJson | Record<string, never>
+  created_at: Timestamptz
+}
 
 export type ProfileInsert = {
-  id: Uuid;
-  role?: AppRole;
-  full_name?: string | null;
-  phone?: string | null;
-  default_shipping_address?: AddressJson | Record<string, never>;
-  default_billing_address?: BillingAddressJson | Record<string, never>;
-  default_pickup_point?: PickupPointJson | Record<string, never>;
-  created_at?: Timestamptz;
-};
+  id: Uuid
+  role?: AppRole
+  is_agency_owner?: boolean
+  full_name?: string | null
+  phone?: string | null
+  default_shipping_address?: AddressJson | Record<string, never>
+  default_billing_address?: BillingAddressJson | Record<string, never>
+  default_pickup_point?: PickupPointJson | Record<string, never>
+  created_at?: Timestamptz
+}
 
 export type ProfileUpdate = {
-  id?: Uuid;
-  role?: AppRole;
-  full_name?: string | null;
-  phone?: string | null;
-  default_shipping_address?: AddressJson | Record<string, never>;
-  default_billing_address?: BillingAddressJson | Record<string, never>;
-  default_pickup_point?: PickupPointJson | Record<string, never>;
-  created_at?: Timestamptz;
-};
+  id?: Uuid
+  role?: AppRole
+  is_agency_owner?: boolean
+  full_name?: string | null
+  phone?: string | null
+  default_shipping_address?: AddressJson | Record<string, never>
+  default_billing_address?: BillingAddressJson | Record<string, never>
+  default_pickup_point?: PickupPointJson | Record<string, never>
+  created_at?: Timestamptz
+}
 
 /* ---------- categories ---------- */
 export type CategoryRow = {
-  id: Uuid;
-  slug: string;
-  name: string;
-  parent_id: Uuid | null;
-  sort_order: number;
-  is_active: boolean;
-};
+  id: Uuid
+  slug: string
+  name: string
+  parent_id: Uuid | null
+  sort_order: number
+  is_active: boolean
+}
 
 export type CategoryInsert = {
-  id?: Uuid;
-  slug: string;
-  name: string;
-  parent_id?: Uuid | null;
-  sort_order?: number;
-  is_active?: boolean;
-};
+  id?: Uuid
+  slug: string
+  name: string
+  parent_id?: Uuid | null
+  sort_order?: number
+  is_active?: boolean
+}
 
 export type CategoryUpdate = {
-  id?: Uuid;
-  slug?: string;
-  name?: string;
-  parent_id?: Uuid | null;
-  sort_order?: number;
-  is_active?: boolean;
-};
+  id?: Uuid
+  slug?: string
+  name?: string
+  parent_id?: Uuid | null
+  sort_order?: number
+  is_active?: boolean
+}
 
 /* ---------- products ---------- */
 export type ProductRow = {
-  id: Uuid;
-  slug: string;
-  title: string;
-  description: string | null;
-  base_price: number;
-  compare_at_price: number | null;
-  vat_rate: number;
-  main_image_url: string | null;
-  image_urls: string[];
-  is_active: boolean;
-  published_at: Timestamptz | null;
-  weight_grams: number | null;
-  created_at: Timestamptz;
-  updated_at: Timestamptz;
-};
+  id: Uuid
+  slug: string
+  title: string
+  description: string | null
+  base_price: number
+  compare_at_price: number | null
+  vat_rate: number
+  main_image_url: string | null
+  image_urls: string[]
+  is_active: boolean
+  published_at: Timestamptz | null
+  weight_grams: number | null
+  created_at: Timestamptz
+  updated_at: Timestamptz
+}
 
 export type ProductInsert = {
-  id?: Uuid;
-  slug: string;
-  title: string;
-  description?: string | null;
-  base_price: number;
-  compare_at_price?: number | null;
-  vat_rate?: number;
-  main_image_url?: string | null;
-  image_urls?: string[];
-  is_active?: boolean;
-  published_at?: Timestamptz | null;
-  weight_grams?: number | null;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-};
+  id?: Uuid
+  slug: string
+  title: string
+  description?: string | null
+  base_price: number
+  compare_at_price?: number | null
+  vat_rate?: number
+  main_image_url?: string | null
+  image_urls?: string[]
+  is_active?: boolean
+  published_at?: Timestamptz | null
+  weight_grams?: number | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
 
 export type ProductUpdate = {
-  id?: Uuid;
-  slug?: string;
-  title?: string;
-  description?: string | null;
-  base_price?: number;
-  compare_at_price?: number | null;
-  vat_rate?: number;
-  main_image_url?: string | null;
-  image_urls?: string[];
-  is_active?: boolean;
-  published_at?: Timestamptz | null;
-  weight_grams?: number | null;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-};
+  id?: Uuid
+  slug?: string
+  title?: string
+  description?: string | null
+  base_price?: number
+  compare_at_price?: number | null
+  vat_rate?: number
+  main_image_url?: string | null
+  image_urls?: string[]
+  is_active?: boolean
+  published_at?: Timestamptz | null
+  weight_grams?: number | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
 
 /* ---------- product_variants ---------- */
 export type ProductVariantRow = {
-  id: Uuid;
-  product_id: Uuid;
-  sku: string | null;
-  option1_name: string;
-  option1_value: string | null;
-  option2_name: string | null;
-  option2_value: string | null;
-  price_override: number | null;
-  stock_quantity: number;
-  is_active: boolean;
-  weight_grams: number | null;
-  created_at: Timestamptz;
-  updated_at: Timestamptz;
-};
+  id: Uuid
+  product_id: Uuid
+  sku: string | null
+  option1_name: string
+  option1_value: string | null
+  option2_name: string | null
+  option2_value: string | null
+  price_override: number | null
+  stock_quantity: number
+  is_active: boolean
+  weight_grams: number | null
+  created_at: Timestamptz
+  updated_at: Timestamptz
+}
 
 export type ProductVariantInsert = {
-  id?: Uuid;
-  product_id: Uuid;
-  sku?: string | null;
-  option1_name?: string;
-  option1_value?: string | null;
-  option2_name?: string | null;
-  option2_value?: string | null;
-  price_override?: number | null;
-  stock_quantity?: number;
-  is_active?: boolean;
-  weight_grams?: number | null;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-};
+  id?: Uuid
+  product_id: Uuid
+  sku?: string | null
+  option1_name?: string
+  option1_value?: string | null
+  option2_name?: string | null
+  option2_value?: string | null
+  price_override?: number | null
+  stock_quantity?: number
+  is_active?: boolean
+  weight_grams?: number | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
 
 export type ProductVariantUpdate = {
-  id?: Uuid;
-  product_id?: Uuid;
-  sku?: string | null;
-  option1_name?: string;
-  option1_value?: string | null;
-  option2_name?: string | null;
-  option2_value?: string | null;
-  price_override?: number | null;
-  stock_quantity?: number;
-  is_active?: boolean;
-  weight_grams?: number | null;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-};
+  id?: Uuid
+  product_id?: Uuid
+  sku?: string | null
+  option1_name?: string
+  option1_value?: string | null
+  option2_name?: string | null
+  option2_value?: string | null
+  price_override?: number | null
+  stock_quantity?: number
+  is_active?: boolean
+  weight_grams?: number | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
 
 /* ---------- product_categories (join table) ---------- */
 export type ProductCategoryRow = {
-  product_id: Uuid;
-  category_id: Uuid;
-};
+  product_id: Uuid
+  category_id: Uuid
+}
 
 export type ProductCategoryInsert = {
-  product_id: Uuid;
-  category_id: Uuid;
-};
+  product_id: Uuid
+  category_id: Uuid
+}
 
 export type ProductCategoryUpdate = {
-  product_id?: Uuid;
-  category_id?: Uuid;
-};
+  product_id?: Uuid
+  category_id?: Uuid
+}
 
 /* ---------- coupons ---------- */
 export type CouponRow = {
-  id: Uuid;
-  code: string;
-  discount_type: "percentage" | "fixed";
-  value: number;
-  min_order_amount: number | null;
-  max_uses: number | null;
-  used_count: number;
-  valid_from: Timestamptz | null;
-  valid_until: Timestamptz | null;
-  is_active: boolean;
-};
+  id: Uuid
+  code: string
+  discount_type: "percentage" | "fixed"
+  value: number
+  min_order_amount: number | null
+  max_uses: number | null
+  used_count: number
+  valid_from: Timestamptz | null
+  valid_until: Timestamptz | null
+  is_active: boolean
+}
 
 export type CouponInsert = {
-  id?: Uuid;
-  code: string;
-  discount_type: "percentage" | "fixed";
-  value: number;
-  min_order_amount?: number | null;
-  max_uses?: number | null;
-  used_count?: number;
-  valid_from?: Timestamptz | null;
-  valid_until?: Timestamptz | null;
-  is_active?: boolean;
-};
+  id?: Uuid
+  code: string
+  discount_type: "percentage" | "fixed"
+  value: number
+  min_order_amount?: number | null
+  max_uses?: number | null
+  used_count?: number
+  valid_from?: Timestamptz | null
+  valid_until?: Timestamptz | null
+  is_active?: boolean
+}
 
 export type CouponUpdate = {
-  id?: Uuid;
-  code?: string;
-  discount_type?: "percentage" | "fixed";
-  value?: number;
-  min_order_amount?: number | null;
-  max_uses?: number | null;
-  used_count?: number;
-  valid_from?: Timestamptz | null;
-  valid_until?: Timestamptz | null;
-  is_active?: boolean;
-};
+  id?: Uuid
+  code?: string
+  discount_type?: "percentage" | "fixed"
+  value?: number
+  min_order_amount?: number | null
+  max_uses?: number | null
+  used_count?: number
+  valid_from?: Timestamptz | null
+  valid_until?: Timestamptz | null
+  is_active?: boolean
+}
 
 /* ---------- orders ---------- */
 export type OrderRow = {
-  id: Uuid;
-  user_id: Uuid | null;
-  email: string;
-  status: OrderStatus;
-  currency: string;
-  subtotal_amount: number;
-  shipping_fee: number;
-  discount_total: number;
-  total_amount: number;
-  coupon_code: string | null;
-  shipping_method: string;
-  shipping_address: AddressJson;
-  shipping_phone: string | null;
-  pickup_point_provider: string | null;
-  pickup_point_id: string | null;
-  pickup_point_label: string | null;
-  billing_address: AddressJson;
-  notes: string | null;
-  barion_payment_id: string | null;
-  barion_payment_request_id: string | null;
-  barion_status: string | null;
-  invoice_provider: string | null;
-  invoice_number: string | null;
-  invoice_url: string | null;
-  created_at: Timestamptz;
-  updated_at: Timestamptz;
-  paid_at: Timestamptz | null;
-  shipped_at: Timestamptz | null;
-  idempotency_key: string | null;
-  payment_method: PaymentMethod;
-  cod_fee: number;
-};
+  id: Uuid
+  user_id: Uuid | null
+  email: string
+  status: OrderStatus
+  currency: string
+  subtotal_amount: number
+  shipping_fee: number
+  discount_total: number
+  total_amount: number
+  coupon_code: string | null
+  shipping_method: string
+  shipping_address: AddressJson
+  shipping_phone: string | null
+  pickup_point_provider: string | null
+  pickup_point_id: string | null
+  pickup_point_label: string | null
+  billing_address: AddressJson
+  notes: string | null
+  barion_payment_id: string | null
+  barion_payment_request_id: string | null
+  barion_status: string | null
+  invoice_provider: string | null
+  invoice_number: string | null
+  invoice_url: string | null
+  created_at: Timestamptz
+  updated_at: Timestamptz
+  paid_at: Timestamptz | null
+  shipped_at: Timestamptz | null
+  idempotency_key: string | null
+  payment_method: PaymentMethod
+  cod_fee: number
+}
 
 export type OrderInsert = {
-  id?: Uuid;
-  user_id?: Uuid | null;
-  email: string;
-  status?: OrderStatus;
-  currency?: string;
-  subtotal_amount: number;
-  shipping_fee: number;
-  discount_total?: number;
-  total_amount: number;
-  coupon_code?: string | null;
-  shipping_method?: string;
-  shipping_address: AddressJson;
-  shipping_phone?: string | null;
-  pickup_point_provider?: string | null;
-  pickup_point_id?: string | null;
-  pickup_point_label?: string | null;
-  billing_address: AddressJson;
-  notes?: string | null;
-  barion_payment_id?: string | null;
-  barion_payment_request_id?: string | null;
-  barion_status?: string | null;
-  invoice_provider?: string | null;
-  invoice_number?: string | null;
-  invoice_url?: string | null;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-  paid_at?: Timestamptz | null;
-  shipped_at?: Timestamptz | null;
-  idempotency_key?: string | null;
-  payment_method?: PaymentMethod;
-  cod_fee?: number;
-};
+  id?: Uuid
+  user_id?: Uuid | null
+  email: string
+  status?: OrderStatus
+  currency?: string
+  subtotal_amount: number
+  shipping_fee: number
+  discount_total?: number
+  total_amount: number
+  coupon_code?: string | null
+  shipping_method?: string
+  shipping_address: AddressJson
+  shipping_phone?: string | null
+  pickup_point_provider?: string | null
+  pickup_point_id?: string | null
+  pickup_point_label?: string | null
+  billing_address: AddressJson
+  notes?: string | null
+  barion_payment_id?: string | null
+  barion_payment_request_id?: string | null
+  barion_status?: string | null
+  invoice_provider?: string | null
+  invoice_number?: string | null
+  invoice_url?: string | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+  paid_at?: Timestamptz | null
+  shipped_at?: Timestamptz | null
+  idempotency_key?: string | null
+  payment_method?: PaymentMethod
+  cod_fee?: number
+}
 
 export type OrderUpdate = {
-  id?: Uuid;
-  user_id?: Uuid | null;
-  email?: string;
-  status?: OrderStatus;
-  currency?: string;
-  subtotal_amount?: number;
-  shipping_fee?: number;
-  discount_total?: number;
-  total_amount?: number;
-  coupon_code?: string | null;
-  shipping_method?: string;
-  shipping_address?: AddressJson;
-  shipping_phone?: string | null;
-  pickup_point_provider?: string | null;
-  pickup_point_id?: string | null;
-  pickup_point_label?: string | null;
-  billing_address?: AddressJson;
-  notes?: string | null;
-  barion_payment_id?: string | null;
-  barion_payment_request_id?: string | null;
-  barion_status?: string | null;
-  invoice_provider?: string | null;
-  invoice_number?: string | null;
-  invoice_url?: string | null;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-  paid_at?: Timestamptz | null;
-  shipped_at?: Timestamptz | null;
-  idempotency_key?: string | null;
-  payment_method?: PaymentMethod;
-  cod_fee?: number;
-};
+  id?: Uuid
+  user_id?: Uuid | null
+  email?: string
+  status?: OrderStatus
+  currency?: string
+  subtotal_amount?: number
+  shipping_fee?: number
+  discount_total?: number
+  total_amount?: number
+  coupon_code?: string | null
+  shipping_method?: string
+  shipping_address?: AddressJson
+  shipping_phone?: string | null
+  pickup_point_provider?: string | null
+  pickup_point_id?: string | null
+  pickup_point_label?: string | null
+  billing_address?: AddressJson
+  notes?: string | null
+  barion_payment_id?: string | null
+  barion_payment_request_id?: string | null
+  barion_status?: string | null
+  invoice_provider?: string | null
+  invoice_number?: string | null
+  invoice_url?: string | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+  paid_at?: Timestamptz | null
+  shipped_at?: Timestamptz | null
+  idempotency_key?: string | null
+  payment_method?: PaymentMethod
+  cod_fee?: number
+}
 
 /* ---------- order_items ---------- */
 export type OrderItemRow = {
-  id: Uuid;
-  order_id: Uuid;
-  product_id: Uuid;
-  variant_id: Uuid | null;
-  title_snapshot: string;
-  variant_snapshot: VariantSnapshotJson;
-  unit_price_snapshot: number;
-  quantity: number;
-  line_total: number;
-  vat_rate: number;
-};
+  id: Uuid
+  order_id: Uuid
+  product_id: Uuid
+  variant_id: Uuid | null
+  title_snapshot: string
+  variant_snapshot: VariantSnapshotJson
+  unit_price_snapshot: number
+  quantity: number
+  line_total: number
+  vat_rate: number
+}
 
 export type OrderItemInsert = {
-  id?: Uuid;
-  order_id: Uuid;
-  product_id: Uuid;
-  variant_id?: Uuid | null;
-  title_snapshot: string;
-  variant_snapshot?: VariantSnapshotJson;
-  unit_price_snapshot: number;
-  quantity: number;
-  line_total: number;
-  vat_rate?: number;
-};
+  id?: Uuid
+  order_id: Uuid
+  product_id: Uuid
+  variant_id?: Uuid | null
+  title_snapshot: string
+  variant_snapshot?: VariantSnapshotJson
+  unit_price_snapshot: number
+  quantity: number
+  line_total: number
+  vat_rate?: number
+}
 
 export type OrderItemUpdate = {
-  id?: Uuid;
-  order_id?: Uuid;
-  product_id?: Uuid;
-  variant_id?: Uuid | null;
-  title_snapshot?: string;
-  variant_snapshot?: VariantSnapshotJson;
-  unit_price_snapshot?: number;
-  quantity?: number;
-  line_total?: number;
-  vat_rate?: number;
-};
+  id?: Uuid
+  order_id?: Uuid
+  product_id?: Uuid
+  variant_id?: Uuid | null
+  title_snapshot?: string
+  variant_snapshot?: VariantSnapshotJson
+  unit_price_snapshot?: number
+  quantity?: number
+  line_total?: number
+  vat_rate?: number
+}
 
 /* ---------- order_notes ---------- */
 export type OrderNoteRow = {
-  id: Uuid;
-  order_id: Uuid;
-  author_id: Uuid;
-  content: string;
-  created_at: Timestamptz;
-};
+  id: Uuid
+  order_id: Uuid
+  author_id: Uuid
+  content: string
+  created_at: Timestamptz
+}
 
 export type OrderNoteInsert = {
-  id?: Uuid;
-  order_id: Uuid;
-  author_id: Uuid;
-  content: string;
-  created_at?: Timestamptz;
-};
+  id?: Uuid
+  order_id: Uuid
+  author_id: Uuid
+  content: string
+  created_at?: Timestamptz
+}
 
 /** OrderNote with resolved author name for display */
 export type OrderNoteWithAuthor = OrderNoteRow & {
-  author_name: string | null;
-};
+  author_name: string | null
+}
 
 /* ---------- subscribers ---------- */
 export type SubscriberRow = {
-  id: Uuid;
-  email: string;
-  status: SubscriberStatus;
-  tags: string[];
-  source: string | null;
-  created_at: Timestamptz;
-  unsubscribed_at: Timestamptz | null;
-  last_opened_at: Timestamptz | null;
-  last_clicked_at: Timestamptz | null;
-  open_count: number;
-  click_count: number;
-  bounce_count: number;
-};
+  id: Uuid
+  email: string
+  status: SubscriberStatus
+  tags: string[]
+  source: string | null
+  created_at: Timestamptz
+  unsubscribed_at: Timestamptz | null
+  last_opened_at: Timestamptz | null
+  last_clicked_at: Timestamptz | null
+  open_count: number
+  click_count: number
+  bounce_count: number
+}
 
 export type SubscriberInsert = {
-  id?: Uuid;
-  email: string;
-  status?: SubscriberStatus;
-  tags?: string[];
-  source?: string | null;
-  created_at?: Timestamptz;
-  unsubscribed_at?: Timestamptz | null;
-  last_opened_at?: Timestamptz | null;
-  last_clicked_at?: Timestamptz | null;
-  open_count?: number;
-  click_count?: number;
-  bounce_count?: number;
-};
+  id?: Uuid
+  email: string
+  status?: SubscriberStatus
+  tags?: string[]
+  source?: string | null
+  created_at?: Timestamptz
+  unsubscribed_at?: Timestamptz | null
+  last_opened_at?: Timestamptz | null
+  last_clicked_at?: Timestamptz | null
+  open_count?: number
+  click_count?: number
+  bounce_count?: number
+}
 
 export type SubscriberUpdate = {
-  id?: Uuid;
-  email?: string;
-  status?: SubscriberStatus;
-  tags?: string[];
-  source?: string | null;
-  created_at?: Timestamptz;
-  unsubscribed_at?: Timestamptz | null;
-  last_opened_at?: Timestamptz | null;
-  last_clicked_at?: Timestamptz | null;
-  open_count?: number;
-  click_count?: number;
-  bounce_count?: number;
-};
+  id?: Uuid
+  email?: string
+  status?: SubscriberStatus
+  tags?: string[]
+  source?: string | null
+  created_at?: Timestamptz
+  unsubscribed_at?: Timestamptz | null
+  last_opened_at?: Timestamptz | null
+  last_clicked_at?: Timestamptz | null
+  open_count?: number
+  click_count?: number
+  bounce_count?: number
+}
 
 /* ---------- audit_logs ---------- */
 export type AuditLogRow = {
-  id: Uuid;
-  actor_id: Uuid | null;
-  actor_role: AppRole | null;
-  action: string;
-  entity_type: string;
-  entity_id: Uuid | null;
-  metadata: Record<string, unknown>;
-  created_at: Timestamptz;
-};
+  id: Uuid
+  actor_id: Uuid | null
+  actor_role: AppRole | null
+  action: string
+  entity_type: string
+  entity_id: Uuid | null
+  metadata: Record<string, unknown>
+  created_at: Timestamptz
+}
 
 export type AuditLogInsert = {
-  id?: Uuid;
-  actor_id?: Uuid | null;
-  actor_role?: AppRole | null;
-  action: string;
-  entity_type: string;
-  entity_id?: Uuid | null;
-  metadata?: Record<string, unknown>;
-  created_at?: Timestamptz;
-};
+  id?: Uuid
+  actor_id?: Uuid | null
+  actor_role?: AppRole | null
+  action: string
+  entity_type: string
+  entity_id?: Uuid | null
+  metadata?: Record<string, unknown>
+  created_at?: Timestamptz
+}
 
 export type AuditLogUpdate = {
-  id?: Uuid;
-  actor_id?: Uuid | null;
-  actor_role?: AppRole | null;
-  action?: string;
-  entity_type?: string;
-  entity_id?: Uuid | null;
-  metadata?: Record<string, unknown>;
-  created_at?: Timestamptz;
-};
+  id?: Uuid
+  actor_id?: Uuid | null
+  actor_role?: AppRole | null
+  action?: string
+  entity_type?: string
+  entity_id?: Uuid | null
+  metadata?: Record<string, unknown>
+  created_at?: Timestamptz
+}
 
 // ── Shop Pages (FE-023) ────────────────────────────────────────────
 
 export type ShopPageRow = {
-  id: Uuid;
-  page_key: string;
-  content: Record<string, unknown>;
-  is_published: boolean;
-  created_at: Timestamptz;
-  updated_at: Timestamptz;
-};
+  id: Uuid
+  page_key: string
+  content: Record<string, unknown>
+  is_published: boolean
+  created_at: Timestamptz
+  updated_at: Timestamptz
+}
 
 export type ShopPageInsert = {
-  id?: Uuid;
-  page_key: string;
-  content?: Record<string, unknown>;
-  is_published?: boolean;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-};
+  id?: Uuid
+  page_key: string
+  content?: Record<string, unknown>
+  is_published?: boolean
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
 
 export type ShopPageUpdate = {
-  id?: Uuid;
-  page_key?: string;
-  content?: Record<string, unknown>;
-  is_published?: boolean;
-  created_at?: Timestamptz;
-  updated_at?: Timestamptz;
-};
+  id?: Uuid
+  page_key?: string
+  content?: Record<string, unknown>
+  is_published?: boolean
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
 
 /** Structured content for the About Us page */
 export type AboutUsHeroSection = {
-  title: string;
-  subtitle: string;
-  imageUrl: string | null;
-};
+  title: string
+  subtitle: string
+  imageUrl: string | null
+}
 
 export type AboutUsStorySection = {
-  title: string;
-  body: string;
-};
+  title: string
+  body: string
+}
 
 export type AboutUsTeamMember = {
-  name: string;
-  role: string;
-  imageUrl: string | null;
-  bio: string;
-};
+  name: string
+  role: string
+  imageUrl: string | null
+  bio: string
+}
 
 export type AboutUsValue = {
-  title: string;
-  description: string;
-  icon: string;
-};
+  title: string
+  description: string
+  icon: string
+}
 
 export type AboutUsContactSection = {
-  address: string;
-  phone: string;
-  email: string;
-  mapEmbedUrl: string | null;
-};
+  address: string
+  phone: string
+  email: string
+  mapEmbedUrl: string | null
+}
 
 export type AboutUsContent = {
-  hero: AboutUsHeroSection;
-  story: AboutUsStorySection;
-  team: AboutUsTeamMember[];
-  values: AboutUsValue[];
-  contact: AboutUsContactSection;
-};
+  hero: AboutUsHeroSection
+  story: AboutUsStorySection
+  team: AboutUsTeamMember[]
+  values: AboutUsValue[]
+  contact: AboutUsContactSection
+}
 
 // ── Product Extras (FE-025) ────────────────────────────────────────
 
 export type ProductExtraRow = {
-  id: Uuid;
-  product_id: Uuid;
-  extra_product_id: Uuid;
-  extra_variant_id: Uuid | null;
-  label: string;
-  is_default_checked: boolean;
-  sort_order: number;
-  created_at: Timestamptz;
-};
+  id: Uuid
+  product_id: Uuid
+  extra_product_id: Uuid
+  extra_variant_id: Uuid | null
+  label: string
+  is_default_checked: boolean
+  sort_order: number
+  created_at: Timestamptz
+}
 
 export type ProductExtraInsert = {
-  id?: Uuid;
-  product_id: Uuid;
-  extra_product_id: Uuid;
-  extra_variant_id?: Uuid | null;
-  label: string;
-  is_default_checked?: boolean;
-  sort_order?: number;
-  created_at?: Timestamptz;
-};
+  id?: Uuid
+  product_id: Uuid
+  extra_product_id: Uuid
+  extra_variant_id?: Uuid | null
+  label: string
+  is_default_checked?: boolean
+  sort_order?: number
+  created_at?: Timestamptz
+}
 
 /** Extra row enriched with the extra product's live price and stock info */
 export type ProductExtraWithProduct = ProductExtraRow & {
-  extra_product_title: string;
-  extra_product_slug: string;
-  extra_product_price: number;
-  extra_product_image: string | null;
-  extra_product_is_active: boolean;
-  extra_variant_price: number | null;
-  extra_variant_stock: number | null;
-  extra_variant_is_active: boolean | null;
-};
+  extra_product_title: string
+  extra_product_slug: string
+  extra_product_price: number
+  extra_product_image: string | null
+  extra_product_is_active: boolean
+  extra_variant_price: number | null
+  extra_variant_stock: number | null
+  extra_variant_is_active: boolean | null
+}
 
 // ── Price History (FE-006) ──────────────────────────────────────────
 
 export type PriceHistoryRow = {
-  id: Uuid;
-  product_id: Uuid;
-  variant_id: Uuid | null;
-  price: number;
-  compare_at_price: number | null;
-  recorded_at: Timestamptz;
-};
+  id: Uuid
+  product_id: Uuid
+  variant_id: Uuid | null
+  price: number
+  compare_at_price: number | null
+  recorded_at: Timestamptz
+}
 
 export type PriceHistoryInsert = {
-  id?: Uuid;
-  product_id: Uuid;
-  variant_id?: Uuid | null;
-  price: number;
-  compare_at_price?: number | null;
-  recorded_at?: Timestamptz;
-};
+  id?: Uuid
+  product_id: Uuid
+  variant_id?: Uuid | null
+  price: number
+  compare_at_price?: number | null
+  recorded_at?: Timestamptz
+}
+
+// ── Plan Subscription System (FE-003) ──────────────────────────────
+
+/** Shape of the features JSONB column stored in shop_plans and feature_overrides in shop_subscriptions */
+export type PlanFeaturesJson = {
+  max_products: number // 0 = unlimited
+  max_admins: number // 0 = unlimited
+  max_categories: number // 0 = unlimited
+  delivery_options: number // 0 = unlimited
+  enable_coupons: boolean
+  enable_marketing_module: boolean
+  enable_abandoned_cart: boolean
+  enable_b2b_wholesale: boolean
+  enable_reviews: boolean
+  enable_price_history: boolean
+  enable_product_extras: boolean
+  enable_scheduled_publishing: boolean
+  enable_agency_viewer: boolean
+  enable_custom_pages: boolean
+}
+
+export type ShopPlanRow = {
+  id: Uuid
+  name: string
+  slug: string
+  description: string | null
+  base_monthly_price: number
+  base_annual_price: number
+  features: PlanFeaturesJson
+  sort_order: number
+  is_active: boolean
+  created_at: Timestamptz
+  updated_at: Timestamptz
+}
+
+export type ShopPlanInsert = {
+  id?: Uuid
+  name: string
+  slug: string
+  description?: string | null
+  base_monthly_price?: number
+  base_annual_price?: number
+  features?: PlanFeaturesJson
+  sort_order?: number
+  is_active?: boolean
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
+
+export type ShopPlanUpdate = {
+  id?: Uuid
+  name?: string
+  slug?: string
+  description?: string | null
+  base_monthly_price?: number
+  base_annual_price?: number
+  features?: Partial<PlanFeaturesJson>
+  sort_order?: number
+  is_active?: boolean
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
+
+export type ShopSubscriptionRow = {
+  id: Uuid
+  plan_id: Uuid
+  shop_identifier: string
+  status: SubscriptionStatus
+  billing_cycle: BillingCycle
+  custom_monthly_price: number | null
+  custom_annual_price: number | null
+  current_period_start: Timestamptz
+  current_period_end: Timestamptz
+  trial_ends_at: Timestamptz | null
+  cancelled_at: Timestamptz | null
+  feature_overrides: Partial<PlanFeaturesJson>
+  notes: string | null
+  created_at: Timestamptz
+  updated_at: Timestamptz
+}
+
+export type ShopSubscriptionInsert = {
+  id?: Uuid
+  plan_id: Uuid
+  shop_identifier: string
+  status?: SubscriptionStatus
+  billing_cycle?: BillingCycle
+  custom_monthly_price?: number | null
+  custom_annual_price?: number | null
+  current_period_start?: Timestamptz
+  current_period_end?: Timestamptz
+  trial_ends_at?: Timestamptz | null
+  cancelled_at?: Timestamptz | null
+  feature_overrides?: Partial<PlanFeaturesJson>
+  notes?: string | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
+
+export type ShopSubscriptionUpdate = {
+  id?: Uuid
+  plan_id?: Uuid
+  shop_identifier?: string
+  status?: SubscriptionStatus
+  billing_cycle?: BillingCycle
+  custom_monthly_price?: number | null
+  custom_annual_price?: number | null
+  current_period_start?: Timestamptz
+  current_period_end?: Timestamptz
+  trial_ends_at?: Timestamptz | null
+  cancelled_at?: Timestamptz | null
+  feature_overrides?: Partial<PlanFeaturesJson>
+  notes?: string | null
+  created_at?: Timestamptz
+  updated_at?: Timestamptz
+}
+
+/** Subscription enriched with its associated plan for display */
+export type ShopSubscriptionWithPlan = ShopSubscriptionRow & {
+  plan: ShopPlanRow
+}
+
+export type SubscriptionInvoiceRow = {
+  id: Uuid
+  subscription_id: Uuid
+  amount: number
+  currency: string
+  billing_period_start: Timestamptz
+  billing_period_end: Timestamptz
+  status: InvoiceStatus
+  paid_at: Timestamptz | null
+  invoice_provider: string | null
+  invoice_number: string | null
+  invoice_url: string | null
+  payment_method: string | null
+  notes: string | null
+  created_at: Timestamptz
+}
+
+export type SubscriptionInvoiceInsert = {
+  id?: Uuid
+  subscription_id: Uuid
+  amount: number
+  currency?: string
+  billing_period_start: Timestamptz
+  billing_period_end: Timestamptz
+  status?: InvoiceStatus
+  paid_at?: Timestamptz | null
+  invoice_provider?: string | null
+  invoice_number?: string | null
+  invoice_url?: string | null
+  payment_method?: string | null
+  notes?: string | null
+  created_at?: Timestamptz
+}
+
+export type SubscriptionInvoiceUpdate = {
+  id?: Uuid
+  subscription_id?: Uuid
+  amount?: number
+  currency?: string
+  billing_period_start?: Timestamptz
+  billing_period_end?: Timestamptz
+  status?: InvoiceStatus
+  paid_at?: Timestamptz | null
+  invoice_provider?: string | null
+  invoice_number?: string | null
+  invoice_url?: string | null
+  payment_method?: string | null
+  notes?: string | null
+  created_at?: Timestamptz
+}
 
 // ── Database type (Supabase client generic) ────────────────────────
 
@@ -652,232 +830,267 @@ export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: ProfileRow;
-        Insert: ProfileInsert;
-        Update: ProfileUpdate;
+        Row: ProfileRow
+        Insert: ProfileInsert
+        Update: ProfileUpdate
         Relationships: [
           {
-            foreignKeyName: "profiles_id_fkey";
-            columns: ["id"];
-            isOneToOne: true;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       categories: {
-        Row: CategoryRow;
-        Insert: CategoryInsert;
-        Update: CategoryUpdate;
+        Row: CategoryRow
+        Insert: CategoryInsert
+        Update: CategoryUpdate
         Relationships: [
           {
-            foreignKeyName: "categories_parent_id_fkey";
-            columns: ["parent_id"];
-            isOneToOne: false;
-            referencedRelation: "categories";
-            referencedColumns: ["id"];
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       products: {
-        Row: ProductRow;
-        Insert: ProductInsert;
-        Update: ProductUpdate;
-        Relationships: [];
-      };
+        Row: ProductRow
+        Insert: ProductInsert
+        Update: ProductUpdate
+        Relationships: []
+      }
       product_variants: {
-        Row: ProductVariantRow;
-        Insert: ProductVariantInsert;
-        Update: ProductVariantUpdate;
+        Row: ProductVariantRow
+        Insert: ProductVariantInsert
+        Update: ProductVariantUpdate
         Relationships: [
           {
-            foreignKeyName: "product_variants_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       product_categories: {
-        Row: ProductCategoryRow;
-        Insert: ProductCategoryInsert;
-        Update: ProductCategoryUpdate;
+        Row: ProductCategoryRow
+        Insert: ProductCategoryInsert
+        Update: ProductCategoryUpdate
         Relationships: [
           {
-            foreignKeyName: "product_categories_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "product_categories_category_id_fkey";
-            columns: ["category_id"];
-            isOneToOne: false;
-            referencedRelation: "categories";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       coupons: {
-        Row: CouponRow;
-        Insert: CouponInsert;
-        Update: CouponUpdate;
-        Relationships: [];
-      };
+        Row: CouponRow
+        Insert: CouponInsert
+        Update: CouponUpdate
+        Relationships: []
+      }
       orders: {
-        Row: OrderRow;
-        Insert: OrderInsert;
-        Update: OrderUpdate;
+        Row: OrderRow
+        Insert: OrderInsert
+        Update: OrderUpdate
         Relationships: [
           {
-            foreignKeyName: "orders_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       order_items: {
-        Row: OrderItemRow;
-        Insert: OrderItemInsert;
-        Update: OrderItemUpdate;
+        Row: OrderItemRow
+        Insert: OrderItemInsert
+        Update: OrderItemUpdate
         Relationships: [
           {
-            foreignKeyName: "order_items_order_id_fkey";
-            columns: ["order_id"];
-            isOneToOne: false;
-            referencedRelation: "orders";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_items_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_items_variant_id_fkey";
-            columns: ["variant_id"];
-            isOneToOne: false;
-            referencedRelation: "product_variants";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       order_notes: {
-        Row: OrderNoteRow;
-        Insert: OrderNoteInsert;
-        Update: never;
+        Row: OrderNoteRow
+        Insert: OrderNoteInsert
+        Update: never
         Relationships: [
           {
-            foreignKeyName: "order_notes_order_id_fkey";
-            columns: ["order_id"];
-            isOneToOne: false;
-            referencedRelation: "orders";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_notes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_notes_author_id_fkey";
-            columns: ["author_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       subscribers: {
-        Row: SubscriberRow;
-        Insert: SubscriberInsert;
-        Update: SubscriberUpdate;
-        Relationships: [];
-      };
+        Row: SubscriberRow
+        Insert: SubscriberInsert
+        Update: SubscriberUpdate
+        Relationships: []
+      }
       audit_logs: {
-        Row: AuditLogRow;
-        Insert: AuditLogInsert;
-        Update: AuditLogUpdate;
+        Row: AuditLogRow
+        Insert: AuditLogInsert
+        Update: AuditLogUpdate
         Relationships: [
           {
-            foreignKeyName: "audit_logs_actor_id_fkey";
-            columns: ["actor_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       shop_pages: {
-        Row: ShopPageRow;
-        Insert: ShopPageInsert;
-        Update: ShopPageUpdate;
-        Relationships: [];
-      };
+        Row: ShopPageRow
+        Insert: ShopPageInsert
+        Update: ShopPageUpdate
+        Relationships: []
+      }
       product_extras: {
-        Row: ProductExtraRow;
-        Insert: ProductExtraInsert;
-        Update: never;
+        Row: ProductExtraRow
+        Insert: ProductExtraInsert
+        Update: never
         Relationships: [
           {
-            foreignKeyName: "product_extras_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_extras_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "product_extras_extra_product_id_fkey";
-            columns: ["extra_product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_extras_extra_product_id_fkey"
+            columns: ["extra_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "product_extras_extra_variant_id_fkey";
-            columns: ["extra_variant_id"];
-            isOneToOne: false;
-            referencedRelation: "product_variants";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_extras_extra_variant_id_fkey"
+            columns: ["extra_variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       price_history: {
-        Row: PriceHistoryRow;
-        Insert: PriceHistoryInsert;
-        Update: never;
+        Row: PriceHistoryRow
+        Insert: PriceHistoryInsert
+        Update: never
         Relationships: [
           {
-            foreignKeyName: "price_history_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "price_history_variant_id_fkey";
-            columns: ["variant_id"];
-            isOneToOne: false;
-            referencedRelation: "product_variants";
-            referencedColumns: ["id"];
+            foreignKeyName: "price_history_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
           },
-        ];
-      };
-    };
+        ]
+      }
+      shop_plans: {
+        Row: ShopPlanRow
+        Insert: ShopPlanInsert
+        Update: ShopPlanUpdate
+        Relationships: []
+      }
+      shop_subscriptions: {
+        Row: ShopSubscriptionRow
+        Insert: ShopSubscriptionInsert
+        Update: ShopSubscriptionUpdate
+        Relationships: [
+          {
+            foreignKeyName: "shop_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "shop_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_invoices: {
+        Row: SubscriptionInvoiceRow
+        Insert: SubscriptionInvoiceInsert
+        Update: SubscriptionInvoiceUpdate
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "shop_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Enums: {
-      app_role: AppRole;
-      order_status: OrderStatus;
-      subscriber_status: SubscriberStatus;
-    };
+      app_role: AppRole
+      order_status: OrderStatus
+      subscriber_status: SubscriberStatus
+      subscription_status: SubscriptionStatus
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}

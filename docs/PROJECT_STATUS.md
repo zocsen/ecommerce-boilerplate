@@ -1,8 +1,8 @@
 ﻿# Agency E-Commerce Boilerplate — Project Status & Roadmap
 
-> **Last updated:** 2026-04-01
-> **Codebase:** 11 commits, ~210 files, ~46,000 lines of code
-> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **46 features** planned across 4 priority tiers (P0-P3) — 15 completed (FE-000, FE-002, FE-003, FE-006, FE-007, FE-010, FE-013, FE-018, FE-023, FE-025, FE-026, FE-029, FE-037, FE-044, FE-045). Agency/Admin separation complete — agency pages moved to `/agency/*` route group with `enableAgencyMode` config flag. Type system overhauled: all types auto-generated from DB schema via `supabase gen types`. See Feature Roadmap.
+> **Last updated:** 2026-04-02
+> **Codebase:** 11 commits, ~220 files, ~49,000 lines of code
+> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **46 features** planned across 4 priority tiers (P0-P3) — 16 completed (FE-000, FE-002, FE-003, FE-006, FE-007, FE-010, FE-013, FE-016, FE-018, FE-023, FE-025, FE-026, FE-029, FE-037, FE-044, FE-045). Agency/Admin separation complete — agency pages moved to `/agency/*` route group with `enableAgencyMode` config flag. Type system overhauled: all types auto-generated from DB schema via `supabase gen types`. **Self-service subscription payment system** fully implemented: Barion recurring payments, automatic renewals, self-service cancellation, auto-invoicing. See Feature Roadmap.
 
 ---
 
@@ -127,7 +127,7 @@ src/
     auth/            # DevProfileSelector
     ui/              # 23 shadcn/ui primitives
   lib/
-    actions/         # 14 server action files (86 exported functions)
+    actions/         # 15 server action files (~101 exported functions)
     config/          # site.config.ts, hooks.ts
     integrations/    # barion/, email/, invoicing/
     security/        # roles.ts, rate-limit.ts, logger.ts, unsubscribe-token.ts
@@ -135,10 +135,10 @@ src/
     store/           # Zustand stores: cart.ts (persist), ui.ts (no persist — cartDrawerOpen)
     types/           # database.generated.ts (auto-generated), database.ts (aliases + JSONB shapes), index.ts
     utils/           # format.ts, shipping.ts, price-history.ts, price-history-shared.ts
-    validators/      # checkout.ts, coupon.ts, product.ts, review.ts, subscriber.ts, uuid.ts
+    validators/      # checkout.ts, coupon.ts, product.ts, review.ts, subscriber.ts, subscription.ts, uuid.ts
   proxy.ts           # Middleware (role-based route protection)
   supabase/
-  migrations/        # 17 SQL migration files
+  migrations/        # 18 SQL migration files
   functions/         # Edge function (abandoned-cart)
   seed.sql           # 960 lines of test data
   config.toml        # Local dev configuration
@@ -156,7 +156,7 @@ src/
 
 ## Database Schema
 
-**Status: COMPLETE** — 17 migrations applied, 18 tables + 1 view, 10 enums, 27+ indexes, 45+ RLS policies, 4 storage policies.
+**Status: COMPLETE** — 18 migrations applied, 19 tables + 1 view, 10 enums, 29+ indexes, 49+ RLS policies, 4 storage policies.
 
 ### Enums
 
@@ -165,7 +165,7 @@ src/
 | `app_role`            | `customer`, `admin`, `agency_viewer`                                                  |
 | `order_status`        | `draft`, `awaiting_payment`, `paid`, `processing`, `shipped`, `cancelled`, `refunded` |
 | `subscriber_status`   | `subscribed`, `unsubscribed`, `bounced`, `complained`                                 |
-| `subscription_status` | `active`, `past_due`, `cancelled`, `trialing`                                         |
+| `subscription_status` | `active`, `past_due`, `cancelled`, `trialing`, `suspended`                            |
 | `review_status`       | `pending`, `approved`, `rejected`                                                     |
 | `payment_method`      | `barion`, `cod`                                                                       |
 | `discount_type`       | `percentage`, `fixed`                                                                 |
@@ -461,23 +461,29 @@ RLS: Admin read. Agency admin full CRUD. Agency viewer read.
 
 One active subscription per shop (client). Tracks the client's current plan, billing cycle, and custom pricing.
 
-| Column                 | Type                | Constraints                                                                                          |
-| ---------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
-| `id`                   | uuid PK             | DEFAULT gen_random_uuid()                                                                            |
-| `plan_id`              | uuid                | FK to shop_plans(id), NOT NULL                                                                       |
-| `shop_identifier`      | text                | UNIQUE, NOT NULL — identifies which client shop this subscription belongs to (e.g., domain or slug)  |
-| `status`               | subscription_status | NOT NULL DEFAULT 'active'                                                                            |
-| `billing_cycle`        | billing_cycle       | NOT NULL, enum: 'monthly', 'annual' — determines which price applies                                 |
-| `custom_monthly_price` | int                 | Nullable (HUF) — if set, overrides plan's `base_monthly_price` for this client                       |
-| `custom_annual_price`  | int                 | Nullable (HUF) — if set, overrides plan's `base_annual_price` for this client                        |
-| `current_period_start` | timestamptz         | NOT NULL — start of current billing period                                                           |
-| `current_period_end`   | timestamptz         | NOT NULL — end of current billing period (auto-renew date)                                           |
-| `trial_ends_at`        | timestamptz         | Nullable — if trialing, when the trial expires                                                       |
-| `cancelled_at`         | timestamptz         | Nullable — when the subscription was cancelled (may still be active until period end)                |
-| `feature_overrides`    | jsonb               | DEFAULT '{}' — per-client feature overrides that extend or restrict the base plan's `features` jsonb |
-| `notes`                | text                | Nullable — internal agency notes about this client's deal                                            |
-| `created_at`           | timestamptz         | DEFAULT now()                                                                                        |
-| `updated_at`           | timestamptz         | DEFAULT now() (auto-trigger)                                                                         |
+| Column                    | Type                | Constraints                                                                                          |
+| ------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `id`                      | uuid PK             | DEFAULT gen_random_uuid()                                                                            |
+| `plan_id`                 | uuid                | FK to shop_plans(id), NOT NULL                                                                       |
+| `shop_identifier`         | text                | UNIQUE, NOT NULL — identifies which client shop this subscription belongs to (e.g., domain or slug)  |
+| `status`                  | subscription_status | NOT NULL DEFAULT 'active'                                                                            |
+| `billing_cycle`           | billing_cycle       | NOT NULL, enum: 'monthly', 'annual' — determines which price applies                                 |
+| `custom_monthly_price`    | int                 | Nullable (HUF) — if set, overrides plan's `base_monthly_price` for this client                       |
+| `custom_annual_price`     | int                 | Nullable (HUF) — if set, overrides plan's `base_annual_price` for this client                        |
+| `current_period_start`    | timestamptz         | NOT NULL — start of current billing period                                                           |
+| `current_period_end`      | timestamptz         | NOT NULL — end of current billing period (auto-renew date)                                           |
+| `trial_ends_at`           | timestamptz         | Nullable — if trialing, when the trial expires                                                       |
+| `cancelled_at`            | timestamptz         | Nullable — when the subscription was cancelled (may still be active until period end)                |
+| `feature_overrides`       | jsonb               | DEFAULT '{}' — per-client feature overrides that extend or restrict the base plan's `features` jsonb |
+| `notes`                   | text                | Nullable — internal agency notes about this client's deal                                            |
+| `barion_recurrence_token` | text                | Nullable — Barion RecurrenceId for automatic recurring charges                                       |
+| `barion_funding_source`   | text                | Nullable — funding source from last successful Barion payment (e.g., "BankCard")                     |
+| `last_payment_id`         | text                | Nullable — Barion PaymentId of the most recent subscription payment                                  |
+| `grace_period_end`        | timestamptz         | Nullable — deadline for failed renewal retries before suspension                                     |
+| `renewal_attempts`        | int                 | DEFAULT 0 — count of consecutive failed renewal attempts                                             |
+| `payment_method`          | text                | Nullable — payment method type (e.g., "barion")                                                      |
+| `created_at`              | timestamptz         | DEFAULT now()                                                                                        |
+| `updated_at`              | timestamptz         | DEFAULT now() (auto-trigger)                                                                         |
 
 Notes:
 
@@ -486,7 +492,7 @@ Notes:
 - Effective price resolution: `custom_*_price ?? plan.base_*_price` depending on `billing_cycle`.
 - Only one active subscription per `shop_identifier` at a time.
 
-RLS: Admin read (own shop only, via shop_identifier match). Agency admin full CRUD.
+RLS: Admin read and update (own shop only, via shop_identifier match). Agency admin full CRUD.
 
 #### 17. `subscription_invoices`
 
@@ -507,14 +513,19 @@ Billing records for plan subscriptions. Reuses the existing Billingo/Szamlazz in
 | `invoice_url`          | text           | Nullable — downloadable invoice PDF link                                   |
 | `payment_method`       | text           | Nullable — 'bank_transfer', 'card', 'barion', etc.                         |
 | `notes`                | text           | Nullable — internal notes (e.g., "first month free", "custom deal")        |
+| `barion_payment_id`    | text           | Nullable — Barion PaymentId associated with this invoice                   |
+| `barion_trace_id`      | text           | Nullable — Barion trace ID for tracking                                    |
+| `is_renewal`           | boolean        | DEFAULT false — whether this invoice was generated by automatic renewal    |
 | `created_at`           | timestamptz    | DEFAULT now()                                                              |
 
 Notes:
 
 - Invoice generation reuses the existing `InvoicingAdapter` strategy pattern (Billingo/Szamlazz/Null).
-- Agency admin generates invoices after payment is confirmed, same UX pattern as order invoicing.
+- Auto-generated on successful initial subscription payments and automatic renewals via `generateSubscriptionInvoice()`.
+- Agency admin can also generate invoices manually via `/agency/clients`.
 - `amount` reflects the actual charged price (after any custom pricing or annual discount).
-- Records are created automatically at each billing cycle renewal or manually by agency admin.
+- `is_renewal` distinguishes auto-renewal invoices from initial payment invoices.
+- `barion_payment_id` and `barion_trace_id` link the invoice to the specific Barion transaction.
 
 RLS: Admin read (own shop's invoices only, via subscription join). Agency admin full CRUD. Agency viewer read.
 
@@ -581,6 +592,31 @@ RLS: Not applicable (view inherits from `reviews` RLS). Queried via admin client
 Indexes: `idx_posts_slug` (slug), `idx_posts_published` (is_published, published_at DESC), `idx_posts_author` (author_id), `idx_posts_tags` GIN (tags)
 RLS: Public SELECT (published only). Admin full CRUD. Agency viewer read.
 Trigger: `trg_posts_updated_at` — auto-sets `updated_at` on UPDATE via `set_updated_at()`.
+
+#### 20. `subscription_payment_events`
+
+Detailed payment event log for subscription payments. Tracks every payment attempt, success, failure, and renewal event for audit and debugging.
+
+| Column              | Type        | Constraints                                                                                                                                                                       |
+| ------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | uuid PK     | DEFAULT gen_random_uuid()                                                                                                                                                         |
+| `subscription_id`   | uuid        | FK to shop_subscriptions(id) ON DELETE CASCADE, NOT NULL                                                                                                                          |
+| `event_type`        | text        | NOT NULL — one of: `payment_initiated`, `payment_success`, `payment_failed`, `renewal_attempt`, `renewal_success`, `renewal_failed`, `cancellation`, `suspension`, `reactivation` |
+| `barion_payment_id` | text        | Nullable — Barion PaymentId for this event                                                                                                                                        |
+| `amount`            | int         | Nullable (HUF) — payment amount for this event                                                                                                                                    |
+| `currency`          | text        | DEFAULT 'HUF'                                                                                                                                                                     |
+| `status`            | text        | Nullable — status snapshot at the time of the event                                                                                                                               |
+| `error_message`     | text        | Nullable — error details for failed events                                                                                                                                        |
+| `metadata`          | jsonb       | DEFAULT '{}' — additional event-specific data (funding source, trace ID, etc.)                                                                                                    |
+| `created_at`        | timestamptz | DEFAULT now()                                                                                                                                                                     |
+
+Notes:
+
+- Provides a full audit trail for all subscription payment lifecycle events.
+- Used for debugging payment failures, renewal retries, and suspension flows.
+- `metadata` jsonb stores event-specific details without schema changes per event type.
+
+RLS: Admin read (own shop's events only, via subscription join). Agency admin read.
 
 ### Database Functions & Triggers
 
@@ -927,34 +963,42 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 - **Type:** Client Component
 - **Features:** Same layout as create page. Pre-populates all fields from existing post. Status badge + creation date in header. External "Megtekintés" link for published posts. Delete button with confirmation dialog. Success/error feedback messages. Local state update on save for immediate UI refresh.
 
-### `/admin/subscription` (Shop Owner Subscription View)
+### `/admin/subscription` (Self-Service Subscription Dashboard)
 
-**Purpose:** Shop owners (the agency's clients) can view their own plan details, understand what's included, and see billing history. This is a **read-only** page — no invoice creation or subscription management. All mutations are performed by the agency via `/agency/clients`.
+**Purpose:** Shop owners can view their plan details, manage their subscription (cancel), see payment information, and initiate payments. This is a **self-service** page with full subscription lifecycle management.
 
-- **Data fetching:** Uses `getMySubscription()` (looks up by `siteConfig.subscription.defaultShopIdentifier`) and `getMyInvoices()` server actions. Both use `requireAdminOrViewer()` guard.
-- **Plan overview card:** Current plan name + badge (e.g., "Basic" / "Premium"), billing cycle (monthly/annual), next renewal date, current price
+- **Data fetching:** Uses `getMySubscriptionWithPaymentInfo()` from `subscription-payments.ts` (enhanced subscription read with payment metadata: `barion_recurrence_token`, `barion_funding_source`, `last_payment_id`, `grace_period_end`, `renewal_attempts`, `payment_method`). Also fetches invoices via `getMyInvoices()`.
+- **Payment redirect handling:** Reads `?payment=success` and `?payment=cancel` query params (from Barion redirect), shows toast notifications, strips query params from URL.
+- **Status banners:**
+  - Cancellation pending: "Az előfizetésed le van mondva" with period end date
+  - Past due: "A fizetés sikertelen" warning with grace period info
+  - Suspended: "Az előfizetésed felfüggesztve" alert with resubscribe CTA
+- **Plan overview card:** Current plan name + badge, billing cycle, next renewal date, current price
+- **Payment method card:** Shows Barion funding source (e.g., "Bankkártya") if available, last payment date
 - **Feature usage summary:** Visual indicators for plan-limited features:
   - Product count: "142 / 500 termék" (with progress bar if limited)
   - Admin users: "1 / 1 admin felhasználó"
   - Email sends this month: "340 / 1,000 email" (if marketing module is in plan)
   - Delivery options: "2 / 2 szállítási mód"
 - **Feature list:** All features with checkmarks (included) or lock icons + "Premium" badge (not in current plan). Locked features link to the comparison page (`/admin/subscription/plans`).
-- **Billing history table:** Past invoices from `subscription_invoices` table (read-only). Columns: billing period, amount (HUF), status, invoice number, download link. Paginated.
+- **Cancel subscription:** AlertDialog confirmation flow. Sets subscription to cancel at period end (no immediate cancellation, active until `current_period_end`). Uses `cancelMySubscription()` server action.
+- **Billing history table:** Past invoices from `subscription_invoices` table. Columns: billing period, amount (HUF), status, renewal badge, invoice number, download link. Paginated.
 - **Upgrade CTA:** Prominent button linking to `/admin/subscription/plans` if not on the highest plan.
-- **No subscription state:** Graceful handling when no active subscription found — shows informational message.
-- **Access:** All admin roles can view. No mutation actions — upgrades/downgrades are handled by the agency.
+- **No subscription state:** Graceful handling when no active subscription found — shows informational message with link to plans page.
+- **Access:** All admin roles can view. Cancellation restricted to admin role.
 
-### `/admin/subscription/plans` (Read-Only Plan Comparison Page)
+### `/admin/subscription/plans` (Plan Comparison & Subscribe Page)
 
-**Purpose:** A read-only side-by-side plan comparison page for shop owners to understand their current plan vs available alternatives. Plan CRUD has been moved to `/agency/plans` (agency-owner-only). This is NOT a public marketing page — it's inside the admin panel.
+**Purpose:** A side-by-side plan comparison page for shop owners to understand available plans and subscribe directly. Plan CRUD has been moved to `/agency/plans` (agency-owner-only). This is NOT a public marketing page — it's inside the admin panel.
 
 - **Layout:** Side-by-side pricing cards (responsive grid). Each plan rendered as a card with name, price, description, and feature checklist.
 - **Monthly/annual toggle:** Switch to view prices for monthly or annual billing. Annual cards show monthly-equivalent price with savings badge.
 - **Current plan highlight:** The shop owner's current plan (from `getMySubscription()`) is visually highlighted with a "Jelenlegi csomagod" (Current Plan) badge and distinct border.
 - **Feature checklists:** Each plan card lists included features with checkmarks and excluded features with X marks, based on the plan's `features` jsonb.
-- **CTA:** "Kérd ajánlatunkat" (Request a quote) note directing shop owners to contact their agency for plan changes.
+- **Subscribe CTA:** "Előfizetés" button on each plan triggers `startSubscriptionPayment()` server action, redirecting to Barion for payment. Downgrade prevention: button disabled with "Alacsonyabb csomag" tooltip for plans with lower `sort_order` than current. Loading spinner on subscribing plan.
+- **Cancelled subscription banner:** If subscription is cancelled, shows info banner: "Az előfizetésed le van mondva" with period end date and encouragement to resubscribe.
 - **Data:** Fetches all active plans via `listPlans()` and current subscription via `getMySubscription()`.
-- **Access:** All admin roles can view. No mutation actions.
+- **Access:** All admin roles can view. Subscribe action restricted to admin role.
 
 ### Admin Layout & Sidebar
 
@@ -990,7 +1034,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 - **File:** `src/app/(agency)/agency/clients/page.tsx`
 - **Client list table:** All shops managed by the agency
-  - Columns: shop name/identifier, current plan, billing cycle, status (active/past_due/cancelled/trialing), monthly revenue, next renewal date, actions
+  - Columns: shop name/identifier, current plan, billing cycle, status (active/past_due/cancelled/trialing/suspended), monthly revenue, next renewal date, actions
   - Search by shop name/identifier
   - Filter by plan, status, billing cycle
   - Sort by revenue, renewal date, name
@@ -1031,7 +1075,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Server Actions
 
-**Status: COMPLETE** — 15 action files, 95 exported functions, all with Zod validation.
+**Status: COMPLETE** — 16 action files, ~101 exported functions, all with Zod validation.
 
 ### `src/lib/actions/products.ts` (1150 lines)
 
@@ -1187,6 +1231,17 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | `adminCreateInvoice(input)`          | requireAgencyOwner + isAgencyModeEnabled | Creates a billing invoice record for a subscription. Validates with `invoiceCreateSchema`. Audit logged.                                                                 |
 | `adminUpdateInvoice(id, input)`      | requireAgencyOwner + isAgencyModeEnabled | Updates invoice fields (status, paid_at, invoice_provider, invoice_number, invoice_url, notes). Validates with `invoiceUpdateSchema`. Audit logged.                      |
 
+### `src/lib/actions/subscription-payments.ts` (~1102 lines)
+
+| Function                                     | Guard                | What it does                                                                                                                                                                                                                                                                                      |
+| -------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `startSubscriptionPayment(planId, cycle)`    | requireAdmin         | Initiates a Barion recurring payment for a subscription plan. Validates plan exists, resolves effective price, calls `startSubscriptionCheckout()`, creates/updates subscription record with `awaiting_payment` equivalent state, logs payment event. Returns Barion redirect URL.                |
+| `handleSubscriptionCallback(paymentId)`      | Internal (API route) | Processes Barion server-to-server callback. Verifies payment via `verifySubscriptionPayment()`, captures recurrence token on success, updates subscription status/billing period, creates invoice record, generates invoice via `generateSubscriptionInvoice()`, logs payment events. Idempotent. |
+| `cancelMySubscription()`                     | requireAdmin         | Self-service cancellation. Sets `cancelled_at` timestamp but keeps subscription active until `current_period_end`. Logs cancellation event. Audit logged.                                                                                                                                         |
+| `getMySubscriptionWithPaymentInfo()`         | requireAdminOrViewer | Enhanced subscription read that returns payment metadata (recurrence token presence, funding source, last payment ID, grace period, renewal attempts, payment method) alongside standard subscription + plan data.                                                                                |
+| `processSubscriptionRenewal(subscriptionId)` | Internal (cron)      | Processes a single subscription renewal. Calls `chargeRecurringPayment()` with stored token, handles success (reset period, create invoice, generate invoice doc) and failure (increment attempts, set grace period or suspend). Logs all events.                                                 |
+| `findSubscriptionsDueForRenewal()`           | Internal (cron)      | Queries subscriptions where `current_period_end <= now()` AND status is active/past_due with a valid recurrence token. Returns list of subscription IDs due for automatic renewal.                                                                                                                |
+
 ### `src/lib/actions/blog.ts` (~670 lines)
 
 | Function                        | Guard                | What it does                                                                                                                                             |
@@ -1203,7 +1258,11 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 **Blog feature gate:** All public actions check both `siteConfig.features.enableBlog` (static) and `getPlanGate().check("enable_blog")` (dynamic plan feature) via the `checkBlogEnabled()` helper.
 
-**Agency mode guard:** All 10 agency-owner-only actions (marked with `isAgencyModeEnabled` above) check `siteConfig.admin.enableAgencyMode` before proceeding. If disabled, they return `{ success: false, error: "Az ügynökségi mód nincs engedélyezve." }`. This allows the boilerplate to be used for non-agency businesses by setting `enableAgencyMode: false`.
+- **Agency mode guard:** All 10 agency-owner-only actions (marked with `isAgencyModeEnabled` above) check `siteConfig.admin.enableAgencyMode` before proceeding. If disabled, they return `{ success: false, error: "Az ügynökségi mód nincs engedélyezve." }`. This allows the boilerplate to be used for non-agency businesses by setting `enableAgencyMode: false`.
+
+### Self-Service Subscription Payments (FE-003 Extension)
+
+26. **Self-Service Subscription Payment System:** Full self-service payment lifecycle built on top of FE-003. **Database:** Migration `018_self_service_subscription_payments.sql` — adds `suspended` to `subscription_status` enum, 6 new columns on `shop_subscriptions` (barion_recurrence_token, barion_funding_source, last_payment_id, grace_period_end, renewal_attempts, payment_method), 3 new columns on `subscription_invoices` (barion_payment_id, barion_trace_id, is_renewal), new `subscription_payment_events` table (10 columns, full audit trail). New RLS policies for admin self-service access. **Config:** `SubscriptionConfig` extended with `trialDays` (env-driven), `gracePeriodDays: 7`, `renewalRetryAttempts: 3`, `subscriptionRedirectUrls` (success/cancel paths). **Barion integration:** `barion/client.ts` rewritten (~530 lines) with 3 new functions: `startSubscriptionCheckout()` (customer-initiated, token capture), `chargeRecurringPayment()` (merchant-initiated, stored token), `verifySubscriptionPayment()` (token verification). Extended `PaymentStateResult` type. **Server actions:** `subscription-payments.ts` (~1102 lines, 6 exported functions): `startSubscriptionPayment`, `handleSubscriptionCallback`, `cancelMySubscription`, `getMySubscriptionWithPaymentInfo`, `processSubscriptionRenewal`, `findSubscriptionsDueForRenewal`. **API routes:** `/api/payments/barion/subscription-callback` (Barion S2S), `/api/cron/subscription-renewals` (hourly cron, CRON_SECRET). **Invoicing:** `invoicing/subscription-invoice.ts` — auto-generates invoices via existing Billingo/Számlázz.hu adapters on payment success and renewal. **Scheduler:** `vercel.json` with hourly cron config. **UI:** `PlanColumnHeader` rewritten as client component with "Előfizetés" CTA + downgrade prevention; `/admin/subscription` rewritten with self-service cancel (AlertDialog), status banners (cancelled/past_due/suspended), payment method card, payment redirect handling (?payment=success/cancel query params); `/admin/subscription/plans` updated with subscribe callback. `pnpm build` passes. `pnpm tsc --noEmit` passes.
 
 ---
 
@@ -1213,12 +1272,14 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### Barion (Payments)
 
-| File                 | Lines | Purpose                                                                                                                                                                                                                                                                                                                                                |
-| -------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `barion/client.ts`   | 239   | API client: `startPayment()`, `getPaymentState()`, `verifyPayment()`. Test/prod URL switching. Full type definitions for Barion API request/response.                                                                                                                                                                                                  |
-| `barion/callback.ts` | 298   | Idempotent callback handler: verifies payment with Barion API, finds order by payment ID, skips if already in terminal state, decrements stock on success (with negative-stock guard, clamps to 0), updates order status + timestamps, sends receipt + admin notification emails (with payment method). Race condition protected via status IN clause. |
+| File                 | Lines | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `barion/client.ts`   | ~530  | API client: `startPayment()`, `getPaymentState()`, `verifyPayment()` (order payments). `startSubscriptionCheckout()` (customer-initiated recurring with token capture), `chargeRecurringPayment()` (merchant-initiated token-based charges), `verifySubscriptionPayment()` (checks token capture status). Test/prod URL switching. Full type definitions for Barion API request/response. Extended `PaymentStateResult` with `recurrenceResult`, `fundingSource`, `traceId`. |
+| `barion/callback.ts` | 298   | Idempotent callback handler: verifies payment with Barion API, finds order by payment ID, skips if already in terminal state, decrements stock on success (with negative-stock guard, clamps to 0), updates order status + timestamps, sends receipt + admin notification emails (with payment method). Race condition protected via status IN clause.                                                                                                                       |
 
-**Flow (Barion):** Checkout -> createOrderFromCart (status: `awaiting_payment`) -> startPaymentAction (calls Barion API, gets redirect URL) -> User pays on Barion -> Barion calls `/api/payments/barion/callback` -> handleBarionCallback (idempotent, updates order status, decrements stock, sends receipt + admin emails).
+**Flow (Barion — Orders):** Checkout -> createOrderFromCart (status: `awaiting_payment`) -> startPaymentAction (calls Barion API, gets redirect URL) -> User pays on Barion -> Barion calls `/api/payments/barion/callback` -> handleBarionCallback (idempotent, updates order status, decrements stock, sends receipt + admin emails).
+
+**Flow (Barion — Subscriptions):** Plan page -> startSubscriptionPayment (creates subscription, calls `startSubscriptionCheckout` with `RecurrenceType: "RecurringPayment"`, `InitiateRecurrence: true`) -> User pays on Barion (must have Barion wallet, `GuestCheckout: false`) -> Barion calls `/api/payments/barion/subscription-callback` -> handleSubscriptionCallback (captures recurrence token, activates subscription, creates invoice, generates invoice doc). **Renewals:** Hourly cron -> `findSubscriptionsDueForRenewal()` -> `processSubscriptionRenewal()` (calls `chargeRecurringPayment` with stored token, `RecurrenceType: "MerchantInitiatedPayment"`) -> success: reset billing period, create invoice | failure: increment attempts, grace period, eventual suspension.
 
 **Flow (COD / Utánvét):** Checkout -> createOrderFromCart (status: `processing`, adds `cod_fee`) -> sends receipt + admin notification emails immediately -> redirects to success page with `?method=cod`. Admin ships order -> courier collects payment -> admin marks order as `paid`.
 
@@ -1234,25 +1295,26 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ### Invoicing (Billingo / Szamlazz)
 
-| File                   | Lines | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ---------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `invoicing/adapter.ts` | 415   | Strategy pattern interface: `InvoicingAdapter` with `createInvoice()`, `getInvoice()`, `cancelInvoice()`. Three implementations: `BillingoAdapter` (REST API calls, per-item VAT rate via `billingoVatString()`, dynamic `payment_method`: "cash_on_delivery" for COD / "online_bankcard" for Barion, COD fee as separate line item), `SzamlazzAdapter` (XML API calls, per-item VAT rate and net price, dynamic `<fizmod>`: "Utánvét" for COD / "Bankkártya (online)" for Barion, COD fee as XML line item), `NullAdapter` (no-op fallback). Helper functions: `billingoVatString()`, `grossToNet()`, `grossToVat()`. Factory: `getInvoicingAdapter()` reads `INVOICING_PROVIDER` env var. Dev mode mock fallbacks. |
-
-**Planned: Subscription invoicing reuse.** The existing `InvoicingAdapter` strategy pattern will be reused for generating subscription/plan invoices for agency clients. When the agency admin clicks "Számla készítése" on `/agency/clients/[id]`, it calls the same `getInvoicingAdapter().createInvoice()` with subscription billing data instead of order data. This requires a thin wrapper function (e.g., `createSubscriptionInvoice(subscriptionId, billingPeriod)`) that maps `subscription_invoices` data to the adapter's `InvoiceInput` format. No changes to the adapter interface itself — only a new caller.
+| File                                | Lines | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invoicing/adapter.ts`              | 415   | Strategy pattern interface: `InvoicingAdapter` with `createInvoice()`, `getInvoice()`, `cancelInvoice()`. Three implementations: `BillingoAdapter` (REST API calls, per-item VAT rate via `billingoVatString()`, dynamic `payment_method`: "cash_on_delivery" for COD / "online_bankcard" for Barion, COD fee as separate line item), `SzamlazzAdapter` (XML API calls, per-item VAT rate and net price, dynamic `<fizmod>`: "Utánvét" for COD / "Bankkártya (online)" for Barion, COD fee as XML line item), `NullAdapter` (no-op fallback). Helper functions: `billingoVatString()`, `grossToNet()`, `grossToVat()`. Factory: `getInvoicingAdapter()` reads `INVOICING_PROVIDER` env var. Dev mode mock fallbacks. |
+| `invoicing/subscription-invoice.ts` | ~180  | Subscription invoice generation wrapper. `generateSubscriptionInvoice(subscriptionId, invoiceId)` — maps subscription billing data to the `InvoicingAdapter.createInvoice()` format. Supports both Billingo and Számlázz.hu adapters. Called automatically on successful initial payments and renewals. Updates `subscription_invoices` record with provider name, invoice number, and download URL. Non-blocking (wrapped in try/catch).                                                                                                                                                                                                                                                                            |
 
 ---
 
 ## API Route Handlers
 
-**Status: COMPLETE** — 5 endpoints.
+**Status: COMPLETE** — 7 endpoints.
 
-| Route                           | Method     | Auth               | Purpose                                                                                                           |
-| ------------------------------- | ---------- | ------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `/api/payments/barion/callback` | GET        | None (Barion S2S)  | Barion payment callback. Always returns 200. Idempotent via order status check.                                   |
-| `/api/email/webhook/resend`     | POST + GET | HMAC signature     | Resend webhook receiver. Processes bounce/complaint/delivered/opened/clicked. GET returns debug info in dev only. |
-| `/api/email/abandoned-cart`     | POST       | CRON_SECRET header | Triggered by Edge Function. Sends abandoned cart email for a specific order.                                      |
-| `/api/newsletter/unsubscribe`   | GET        | Signed token       | One-click unsubscribe. Renders Hungarian HTML confirmation page. Idempotent.                                      |
-| `/api/dev/test-emails`          | GET        | Dev only           | Renders all email templates and sends to local Mailpit for visual QA. Returns 404 in production.                  |
+| Route                                        | Method     | Auth               | Purpose                                                                                                           |
+| -------------------------------------------- | ---------- | ------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `/api/payments/barion/callback`              | GET        | None (Barion S2S)  | Barion order payment callback. Always returns 200. Idempotent via order status check.                             |
+| `/api/payments/barion/subscription-callback` | GET        | None (Barion S2S)  | Barion subscription payment callback. Processes initial payments and token capture. Returns 200. Idempotent.      |
+| `/api/cron/subscription-renewals`            | GET        | CRON_SECRET header | Hourly cron job. Finds subscriptions due for renewal, processes each via `processSubscriptionRenewal()`.          |
+| `/api/email/webhook/resend`                  | POST + GET | HMAC signature     | Resend webhook receiver. Processes bounce/complaint/delivered/opened/clicked. GET returns debug info in dev only. |
+| `/api/email/abandoned-cart`                  | POST       | CRON_SECRET header | Triggered by Edge Function. Sends abandoned cart email for a specific order.                                      |
+| `/api/newsletter/unsubscribe`                | GET        | Signed token       | One-click unsubscribe. Renders Hungarian HTML confirmation page. Idempotent.                                      |
+| `/api/dev/test-emails`                       | GET        | Dev only           | Renders all email templates and sends to local Mailpit for visual QA. Returns 404 in production.                  |
 
 ### Edge Function
 
@@ -1260,11 +1322,25 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | ---------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `abandoned-cart` | `supabase/functions/abandoned-cart/index.ts` (132 lines) | Scheduled cron (30 min). Finds draft/awaiting_payment orders older than 2 hours with no abandoned_cart_sent_at. Posts to Next.js API for each (max 50/run). Stamps sent_at after success. |
 
+### Vercel Cron Jobs
+
+| Job                   | Schedule   | Route                             | Purpose                                                                                                                                                                    |
+| --------------------- | ---------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Subscription Renewals | Every hour | `/api/cron/subscription-renewals` | Finds subscriptions due for renewal (`current_period_end <= now()`), processes each via `processSubscriptionRenewal()`. Auth: `CRON_SECRET` header. Config: `vercel.json`. |
+
+Configuration in `vercel.json`:
+
+```json
+{
+  "crons": [{ "path": "/api/cron/subscription-renewals", "schedule": "0 * * * *" }]
+}
+```
+
 ---
 
 ## Components Inventory
 
-**Status: COMPLETE** — 62 component files total.
+**Status: COMPLETE** — 66 component files total.
 
 ### Shared Components (12)
 
@@ -1312,15 +1388,19 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | OrderSummary        | `cart/order-summary.tsx`         | Client | Subtotal, shipping fee, COD fee (optional, shown when > 0 as "Utánvét kezelési díj"), discount, total.                                                                                                                                                          |
 | PickupPointSelector | `cart/pickup-point-selector.tsx` | Client | Dropdown selector for pickup points. Currently uses hardcoded mock data. Interface ready for real carrier API integration.                                                                                                                                      |
 
-### Admin Components (5)
+### Admin Components (9)
 
-| Component        | File                           | Type   | Purpose                                                                                                                                                                                                                                                                                                                                              |
-| ---------------- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DashboardCharts  | `admin/dashboard-charts.tsx`   | Client | Recharts bar charts for daily revenue + daily order count.                                                                                                                                                                                                                                                                                           |
-| OrderStatusBadge | `admin/order-status-badge.tsx` | Shared | Single source of truth for order status badge display. Uses `ORDER_STATUS_LABELS` and `ORDER_STATUS_BADGE_VARIANT` from `@/lib/constants/order-status`. Works in both Server Components and Client Components. Replaces 8+ inline StatusBadge duplications across admin/shop pages.                                                                  |
-| OrderNotes       | `admin/order-notes.tsx`        | Client | Internal notes panel for order detail. Add/delete notes (admin), read-only for agency viewers. 2000-char limit. Author name resolution. useReducer state management.                                                                                                                                                                                 |
-| ImageUpload      | `admin/image-upload.tsx`       | Client | `SingleImageUpload` + `GalleryImageUpload` — drag-and-drop / click-to-browse image upload. Uploads via `uploadProductImage` server action. Storage deletion on remove/replace via `deleteProductImage`. Gallery drag-and-drop reordering (HTML5 native) with position badges and visual drop indicator. Manual URL entry fallback. useReducer state. |
-| PriceSparkline   | `admin/price-sparkline.tsx`    | Client | Lightweight SVG sparkline (~120px × 32px) for 30-day price history. Color-coded trend (green = decreasing, red = increasing, neutral = stable). Hover tooltip with price + date. Rendered next to base price input on admin product edit page. Uses `PriceHistoryPoint` type from `price-history-shared.ts`.                                         |
+| Component            | File                               | Type   | Purpose                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------------- | ---------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DashboardCharts      | `admin/dashboard-charts.tsx`       | Client | Recharts bar charts for daily revenue + daily order count.                                                                                                                                                                                                                                                                                                                                               |
+| OrderStatusBadge     | `admin/order-status-badge.tsx`     | Shared | Single source of truth for order status badge display. Uses `ORDER_STATUS_LABELS` and `ORDER_STATUS_BADGE_VARIANT` from `@/lib/constants/order-status`. Works in both Server Components and Client Components. Replaces 8+ inline StatusBadge duplications across admin/shop pages.                                                                                                                      |
+| OrderNotes           | `admin/order-notes.tsx`            | Client | Internal notes panel for order detail. Add/delete notes (admin), read-only for agency viewers. 2000-char limit. Author name resolution. useReducer state management.                                                                                                                                                                                                                                     |
+| ImageUpload          | `admin/image-upload.tsx`           | Client | `SingleImageUpload` + `GalleryImageUpload` — drag-and-drop / click-to-browse image upload. Uploads via `uploadProductImage` server action. Storage deletion on remove/replace via `deleteProductImage`. Gallery drag-and-drop reordering (HTML5 native) with position badges and visual drop indicator. Manual URL entry fallback. useReducer state.                                                     |
+| PriceSparkline       | `admin/price-sparkline.tsx`        | Client | Lightweight SVG sparkline (~120px × 32px) for 30-day price history. Color-coded trend (green = decreasing, red = increasing, neutral = stable). Hover tooltip with price + date. Rendered next to base price input on admin product edit page. Uses `PriceHistoryPoint` type from `price-history-shared.ts`.                                                                                             |
+| PlanComparisonTable  | `admin/plan-comparison-table.tsx`  | Server | Desktop full comparison table (>=1024px) with sticky header, plan columns, feature rows grouped by 7 categories. Current plan column highlighted. Accepts `currentPlanSortOrder`, `subscribingPlanId`, `onSubscribe` props for self-service subscription flow. FE-016.                                                                                                                                   |
+| PlanComparisonMobile | `admin/plan-comparison-mobile.tsx` | Client | Mobile tabbed card view (<1024px) for plan comparison. One tab per plan, accordion-style collapsible feature categories. Uses shadcn Tabs component. Current plan tab highlighted. Accepts `currentPlanSortOrder`, `subscribingPlanId`, `onSubscribe` props. FE-016.                                                                                                                                     |
+| PlanFeatureRow       | `admin/plan-feature-row.tsx`       | Server | Feature row component for comparison table. Renders feature label + per-plan values (checkmark/X for booleans, formatted number for numeric limits, "Korlátlan" for 0). Exports FEATURE_CATEGORIES, FEATURE_LABELS, and PlanFeatureListItem (mobile variant). FE-016.                                                                                                                                    |
+| PlanColumnHeader     | `admin/plan-column-header.tsx`     | Client | Plan column header with name, description, price (monthly/annual), monthly equivalent, annual savings callout badge, "Jelenlegi csomagod" badge. **Self-service subscribe:** "Előfizetés" button triggers `onSubscribe` callback (replaces old mailto CTA). `subscribing` loading state. `isDowngrade` disables button with "Alacsonyabb csomag" label. Supports table and card layout variants. FE-016. |
 
 ### Auth Components (1)
 
@@ -1354,27 +1434,27 @@ All templates use inline CSS for email client compatibility, are mobile-responsi
 
 ## Configuration System
 
-**Status: COMPLETE** (base config). **Planned: Plan-based feature gating layer.**
+**Status: COMPLETE** (base config + subscription payment config).
 
-### `src/lib/config/site.config.ts` (~260 lines)
+### `src/lib/config/site.config.ts` (~300 lines)
 
 Fully typed `SiteConfig` with these sections:
 
-| Section                   | Key Settings                                                                                                                                                                                                                                                                 |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **store**                 | name: "Agency Store", legalName: "Agency Kft.", currency: HUF, Budapest address, phone, email                                                                                                                                                                                |
-| **urls**                  | siteUrl (from env), supportEmail                                                                                                                                                                                                                                             |
-| **features**              | enableAccounts: true, enableGuestCheckout: true, enableCoupons: true, enableReviews: true, enableMarketingModule: true, enableAbandonedCart: true, enableB2BWholesaleMode: false                                                                                             |
-| **payments**              | provider: "barion", environment from env (test/prod), posKey env var name, redirectUrls. **COD config:** `cod.enabled: true`, `cod.fee: 590` (HUF surcharge), `cod.maxOrderAmount: 100_000` (orders above must pay online), `cod.allowedShippingMethods: ["home", "pickup"]` |
-| **shipping.homeDelivery** | enabled: true, carriers: GLS, MPL, Express One                                                                                                                                                                                                                               |
-| **shipping.pickupPoint**  | enabled: true, carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox                                                                                                                                                                                               |
-| **shipping.rules**        | baseFee: 1490, freeOver: 15000, defaultProductWeightGrams: 500, weightTiers: [{maxWeightKg:2, fee:1490}, {maxWeightKg:5, fee:1990}, {maxWeightKg:10, fee:2990}, {maxWeightKg:20, fee:4490}]                                                                                  |
-| **invoicing**             | provider from env (default "none"), mode: "manual"                                                                                                                                                                                                                           |
-| **admin**                 | agencyViewerEnabled: true, readonlyByDefaultForAgency: true, enableAgencyMode: true (toggles agency route group + agency server actions)                                                                                                                                     |
-| **email**                 | adminNotificationRecipients: [ADMIN_EMAIL env], sendSignupConfirmation: true, sendWelcomeEmail: true, sendAdminOrderNotification: true                                                                                                                                       |
-| **branding**              | logoText: "AGENCY", neutral black/white theme tokens                                                                                                                                                                                                                         |
-| **tax**                   | defaultVatRate: 27, availableRates: [5, 18, 27]. Used by product validators and invoicing adapters.                                                                                                                                                                          |
-| **subscription**          | `defaultShopIdentifier` (from `SHOP_IDENTIFIER` env, default `"default"`), `enforceGating` (from `SUBSCRIPTION_ENFORCE_GATING` env, default `false`). Used by `getPlanGate()` to look up the active subscription. No subscription found → unlimited access (dev-friendly).   |
+| Section                   | Key Settings                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **store**                 | name: "Agency Store", legalName: "Agency Kft.", currency: HUF, Budapest address, phone, email                                                                                                                                                                                                                                                                                                                                                                         |
+| **urls**                  | siteUrl (from env), supportEmail                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **features**              | enableAccounts: true, enableGuestCheckout: true, enableCoupons: true, enableReviews: true, enableMarketingModule: true, enableAbandonedCart: true, enableB2BWholesaleMode: false                                                                                                                                                                                                                                                                                      |
+| **payments**              | provider: "barion", environment from env (test/prod), posKey env var name, redirectUrls. **COD config:** `cod.enabled: true`, `cod.fee: 590` (HUF surcharge), `cod.maxOrderAmount: 100_000` (orders above must pay online), `cod.allowedShippingMethods: ["home", "pickup"]`                                                                                                                                                                                          |
+| **shipping.homeDelivery** | enabled: true, carriers: GLS, MPL, Express One                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **shipping.pickupPoint**  | enabled: true, carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox                                                                                                                                                                                                                                                                                                                                                                                        |
+| **shipping.rules**        | baseFee: 1490, freeOver: 15000, defaultProductWeightGrams: 500, weightTiers: [{maxWeightKg:2, fee:1490}, {maxWeightKg:5, fee:1990}, {maxWeightKg:10, fee:2990}, {maxWeightKg:20, fee:4490}]                                                                                                                                                                                                                                                                           |
+| **invoicing**             | provider from env (default "none"), mode: "manual"                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **admin**                 | agencyViewerEnabled: true, readonlyByDefaultForAgency: true, enableAgencyMode: true (toggles agency route group + agency server actions)                                                                                                                                                                                                                                                                                                                              |
+| **email**                 | adminNotificationRecipients: [ADMIN_EMAIL env], sendSignupConfirmation: true, sendWelcomeEmail: true, sendAdminOrderNotification: true                                                                                                                                                                                                                                                                                                                                |
+| **branding**              | logoText: "AGENCY", neutral black/white theme tokens                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **tax**                   | defaultVatRate: 27, availableRates: [5, 18, 27]. Used by product validators and invoicing adapters.                                                                                                                                                                                                                                                                                                                                                                   |
+| **subscription**          | `defaultShopIdentifier` (from `SHOP_IDENTIFIER` env, default `"default"`), `enforceGating` (from `SUBSCRIPTION_ENFORCE_GATING` env, default `false`). `trialDays` (from `SUBSCRIPTION_TRIAL_DAYS` env, default `0`), `gracePeriodDays: 7`, `renewalRetryAttempts: 3`. `subscriptionRedirectUrls`: success → `/admin/subscription?payment=success`, cancel → `/admin/subscription?payment=cancel`. Used by `getPlanGate()` and self-service subscription payment flow. |
 
 ### Plan-Based Feature Gating
 
@@ -1419,16 +1499,16 @@ API: `getHooks()`, `overrideHooks(partial)`, `resetHooks()`
 
 ### Zod Validators (8 files)
 
-| File                         | Schemas                                                                                                                                              |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `validators/blog.ts`         | slugSchema, postCreateSchema, postUpdateSchema, postListParamsSchema, adminPostListParamsSchema                                                      |
-| `validators/checkout.ts`     | addressSchema, contactSchema, homeDeliverySchema, pickupPointSchema, checkoutSchema (includes `paymentMethod: z.enum(["barion", "cod"])`)            |
-| `validators/coupon.ts`       | couponCreateSchema, couponApplySchema                                                                                                                |
-| `validators/product.ts`      | vatRateSchema, variantSchema, productCreateSchema, productUpdateSchema                                                                               |
-| `validators/review.ts`       | reviewCreateSchema, reviewUpdateSchema (rating 1-5, title max 200, body max 2000)                                                                    |
-| `validators/subscriber.ts`   | subscribeSchema, unsubscribeSchema, tagSchema                                                                                                        |
-| `validators/subscription.ts` | planFeaturesSchema, planCreateSchema, planUpdateSchema, subscriptionCreateSchema, subscriptionUpdateSchema, invoiceCreateSchema, invoiceUpdateSchema |
-| `validators/uuid.ts`         | uuidSchema                                                                                                                                           |
+| File                         | Schemas                                                                                                                                                                                               |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validators/blog.ts`         | slugSchema, postCreateSchema, postUpdateSchema, postListParamsSchema, adminPostListParamsSchema                                                                                                       |
+| `validators/checkout.ts`     | addressSchema, contactSchema, homeDeliverySchema, pickupPointSchema, checkoutSchema (includes `paymentMethod: z.enum(["barion", "cod"])`)                                                             |
+| `validators/coupon.ts`       | couponCreateSchema, couponApplySchema                                                                                                                                                                 |
+| `validators/product.ts`      | vatRateSchema, variantSchema, productCreateSchema, productUpdateSchema                                                                                                                                |
+| `validators/review.ts`       | reviewCreateSchema, reviewUpdateSchema (rating 1-5, title max 200, body max 2000)                                                                                                                     |
+| `validators/subscriber.ts`   | subscribeSchema, unsubscribeSchema, tagSchema                                                                                                                                                         |
+| `validators/subscription.ts` | planFeaturesSchema, planCreateSchema, planUpdateSchema, subscriptionCreateSchema, subscriptionUpdateSchema, subscriptionStatusSchema (includes `suspended`), invoiceCreateSchema, invoiceUpdateSchema |
+| `validators/uuid.ts`         | uuidSchema                                                                                                                                                                                            |
 
 Plus 15+ inline Zod schemas in individual action files.
 
@@ -1513,7 +1593,7 @@ Plus 15+ inline Zod schemas in individual action files.
 | `docs/RESEND_REFERENCE.md`       | Resend API reference                                          |
 | `docs/RESEND_SETUP_CHECKLIST.md` | Resend setup checklist                                        |
 
-### Environment Variables (18 total)
+### Environment Variables (19 total)
 
 | Variable                        | Scope  | Purpose                                                                                |
 | ------------------------------- | ------ | -------------------------------------------------------------------------------------- |
@@ -1537,6 +1617,7 @@ Plus 15+ inline Zod schemas in individual action files.
 | `SITE_URL`                      | Server | Edge Function callback URL                                                             |
 | `SHOP_IDENTIFIER`               | Server | Identifies which shop's subscription to load in `getPlanGate()` (default: `"default"`) |
 | `SUBSCRIPTION_ENFORCE_GATING`   | Server | Set to `"true"` to block when no subscription found; default is open access            |
+| `SUBSCRIPTION_TRIAL_DAYS`       | Server | Number of free trial days for new subscriptions (default: `0` = no trial)              |
 
 ---
 
@@ -1707,8 +1788,8 @@ For shop owners who need a solid, legally compliant webshop with essential featu
 
 **Subscription management:**
 
-- `/admin/subscription` page: view current plan, usage summary, billing history
-- `/admin/subscription/plans` page: full plan comparison table with upgrade CTA
+- `/admin/subscription` page: self-service subscription dashboard — view plan, usage, billing history, payment info, cancel subscription (with AlertDialog confirmation), payment redirect handling (Barion success/cancel)
+- `/admin/subscription/plans` page: full plan comparison table with "Előfizetés" subscribe CTA (Barion recurring payment), downgrade prevention, cancelled subscription resubscribe flow
 
 ### Premium Plan — Recommended default: ~14,990 HUF/month (~149,900 HUF/year)
 
@@ -1766,7 +1847,7 @@ These ship with every instance regardless of plan tier:
 - Invoicing (Billingo/Szamlazz)
 - Basic SEO (sitemap, robots, meta, JSON-LD, OG)
 - Profit tracking on dashboard (when cost data available)
-- Subscription management pages (`/admin/subscription`, `/admin/subscription/plans`)
+- Self-service subscription management pages (`/admin/subscription` with cancel, `/admin/subscription/plans` with subscribe via Barion)
 
 ### Feature Gating UI Behavior
 

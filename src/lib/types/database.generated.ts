@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -796,6 +796,8 @@ export type Database = {
       }
       shop_subscriptions: {
         Row: {
+          barion_funding_source: string | null
+          barion_recurrence_token: string | null
           billing_cycle: Database["public"]["Enums"]["billing_cycle"]
           cancelled_at: string | null
           created_at: string
@@ -804,15 +806,21 @@ export type Database = {
           custom_annual_price: number | null
           custom_monthly_price: number | null
           feature_overrides: Json
+          grace_period_end: string | null
           id: string
+          last_payment_id: string | null
           notes: string | null
+          payment_method: string | null
           plan_id: string
+          renewal_attempts: number
           shop_identifier: string
           status: Database["public"]["Enums"]["subscription_status"]
           trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
+          barion_funding_source?: string | null
+          barion_recurrence_token?: string | null
           billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
           cancelled_at?: string | null
           created_at?: string
@@ -821,15 +829,21 @@ export type Database = {
           custom_annual_price?: number | null
           custom_monthly_price?: number | null
           feature_overrides?: Json
+          grace_period_end?: string | null
           id?: string
+          last_payment_id?: string | null
           notes?: string | null
+          payment_method?: string | null
           plan_id: string
+          renewal_attempts?: number
           shop_identifier: string
           status?: Database["public"]["Enums"]["subscription_status"]
           trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
+          barion_funding_source?: string | null
+          barion_recurrence_token?: string | null
           billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
           cancelled_at?: string | null
           created_at?: string
@@ -838,9 +852,13 @@ export type Database = {
           custom_annual_price?: number | null
           custom_monthly_price?: number | null
           feature_overrides?: Json
+          grace_period_end?: string | null
           id?: string
+          last_payment_id?: string | null
           notes?: string | null
+          payment_method?: string | null
           plan_id?: string
+          renewal_attempts?: number
           shop_identifier?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           trial_ends_at?: string | null
@@ -904,6 +922,8 @@ export type Database = {
       subscription_invoices: {
         Row: {
           amount: number
+          barion_payment_id: string | null
+          barion_trace_id: string | null
           billing_period_end: string
           billing_period_start: string
           created_at: string
@@ -912,6 +932,7 @@ export type Database = {
           invoice_number: string | null
           invoice_provider: string | null
           invoice_url: string | null
+          is_renewal: boolean
           notes: string | null
           paid_at: string | null
           payment_method: string | null
@@ -920,6 +941,8 @@ export type Database = {
         }
         Insert: {
           amount: number
+          barion_payment_id?: string | null
+          barion_trace_id?: string | null
           billing_period_end: string
           billing_period_start: string
           created_at?: string
@@ -928,6 +951,7 @@ export type Database = {
           invoice_number?: string | null
           invoice_provider?: string | null
           invoice_url?: string | null
+          is_renewal?: boolean
           notes?: string | null
           paid_at?: string | null
           payment_method?: string | null
@@ -936,6 +960,8 @@ export type Database = {
         }
         Update: {
           amount?: number
+          barion_payment_id?: string | null
+          barion_trace_id?: string | null
           billing_period_end?: string
           billing_period_start?: string
           created_at?: string
@@ -944,6 +970,7 @@ export type Database = {
           invoice_number?: string | null
           invoice_provider?: string | null
           invoice_url?: string | null
+          is_renewal?: boolean
           notes?: string | null
           paid_at?: string | null
           payment_method?: string | null
@@ -953,6 +980,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "subscription_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "shop_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_payment_events: {
+        Row: {
+          amount: number | null
+          barion_payment_id: string | null
+          barion_status: string | null
+          created_at: string
+          currency: string | null
+          event_type: string
+          id: string
+          invoice_id: string | null
+          metadata: Json
+          subscription_id: string
+        }
+        Insert: {
+          amount?: number | null
+          barion_payment_id?: string | null
+          barion_status?: string | null
+          created_at?: string
+          currency?: string | null
+          event_type: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json
+          subscription_id: string
+        }
+        Update: {
+          amount?: number | null
+          barion_payment_id?: string | null
+          barion_status?: string | null
+          created_at?: string
+          currency?: string | null
+          event_type?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payment_events_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payment_events_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "shop_subscriptions"
@@ -1011,7 +1092,12 @@ export type Database = {
         | "unsubscribed"
         | "bounced"
         | "complained"
-      subscription_status: "active" | "past_due" | "cancelled" | "trialing"
+      subscription_status:
+        | "active"
+        | "past_due"
+        | "cancelled"
+        | "trialing"
+        | "suspended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1160,7 +1246,13 @@ export const Constants = {
         "bounced",
         "complained",
       ],
-      subscription_status: ["active", "past_due", "cancelled", "trialing"],
+      subscription_status: [
+        "active",
+        "past_due",
+        "cancelled",
+        "trialing",
+        "suspended",
+      ],
     },
   },
 } as const

@@ -39,6 +39,20 @@ export type ReviewStatus = Enums<"review_status">;
 export type InvoiceStatus = Enums<"invoice_status">;
 export type BillingCycle = Enums<"billing_cycle">;
 
+/** Event types for subscription_payment_events (check constraint in DB) */
+export type SubscriptionPaymentEventType =
+  | "checkout_started"
+  | "checkout_succeeded"
+  | "checkout_failed"
+  | "renewal_started"
+  | "renewal_succeeded"
+  | "renewal_failed"
+  | "cancellation_requested"
+  | "subscription_suspended"
+  | "subscription_reactivated"
+  | "plan_changed"
+  | "token_updated";
+
 // ── Table Row aliases ─────────────────────────────────────────────
 
 export type ProfileRow = Tables<"profiles">;
@@ -60,6 +74,7 @@ export type ShopSubscriptionRow = Tables<"shop_subscriptions">;
 export type SubscriptionInvoiceRow = Tables<"subscription_invoices">;
 export type PostRow = Tables<"posts">;
 export type ReviewRow = Tables<"reviews">;
+export type SubscriptionPaymentEventRow = Tables<"subscription_payment_events">;
 
 // ── Table Insert aliases ──────────────────────────────────────────
 
@@ -82,6 +97,7 @@ export type ShopSubscriptionInsert = TablesInsert<"shop_subscriptions">;
 export type SubscriptionInvoiceInsert = TablesInsert<"subscription_invoices">;
 export type PostInsert = TablesInsert<"posts">;
 export type ReviewInsert = TablesInsert<"reviews">;
+export type SubscriptionPaymentEventInsert = TablesInsert<"subscription_payment_events">;
 
 // ── Table Update aliases ──────────────────────────────────────────
 
@@ -101,6 +117,7 @@ export type ShopSubscriptionUpdate = TablesUpdate<"shop_subscriptions">;
 export type SubscriptionInvoiceUpdate = TablesUpdate<"subscription_invoices">;
 export type PostUpdate = TablesUpdate<"posts">;
 export type ReviewUpdate = TablesUpdate<"reviews">;
+export type SubscriptionPaymentEventUpdate = TablesUpdate<"subscription_payment_events">;
 
 // ── View Row aliases ──────────────────────────────────────────────
 

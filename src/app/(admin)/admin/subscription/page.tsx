@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   CreditCard,
@@ -10,10 +11,18 @@ import {
   Clock,
   XCircle,
   FileText,
+  AlertTriangle,
+  Ban,
+  ShieldCheck,
 } from "lucide-react";
-import { getMySubscription, getMyInvoices } from "@/lib/actions/subscriptions";
+import { toast } from "sonner";
+import { getMyInvoices } from "@/lib/actions/subscriptions";
+import {
+  getMySubscriptionWithPaymentInfo,
+  cancelMySubscription,
+} from "@/lib/actions/subscription-payments";
 import { formatHUF, formatDate } from "@/lib/utils/format";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,6 +33,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 import type {
   ShopSubscriptionWithPlan,
   SubscriptionInvoiceRow,
@@ -37,8 +59,9 @@ import type {
 const STATUS_LABELS: Record<string, string> = {
   active: "Aktív",
   trialing: "Próbaidőszak",
-  past_due: "Lejárt",
+  past_due: "Lejárt fizetés",
   cancelled: "Lemondva",
+  suspended: "Felfüggesztve",
 };
 
 const INVOICE_STATUS_LABELS: Record<string, string> = {
@@ -75,6 +98,13 @@ function subscriptionStatusBadge(status: string) {
       return (
         <Badge variant="outline" className="gap-1 text-xs">
           <XCircle className="size-3" />
+          {STATUS_LABELS[status]}
+        </Badge>
+      );
+    case "suspended":
+      return (
+        <Badge variant="destructive" className="gap-1 text-xs">
+          <Ban className="size-3" />
           {STATUS_LABELS[status]}
         </Badge>
       );
@@ -119,19 +149,36 @@ function invoiceStatusBadge(status: string) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Admin Subscription Page (read-only for shop owners)                */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+type SubscriptionWithPaymentInfo = ShopSubscriptionWithPlan & {
+  hasPaymentMethod: boolean;
+  isCancelScheduled: boolean;
+  canResubscribe: boolean;
+};
+
+/* ------------------------------------------------------------------ */
+/*  Admin Subscription Dashboard                                       */
 /* ------------------------------------------------------------------ */
 
 export default function AdminSubscriptionPage() {
-  const [subscription, setSubscription] = useState<ShopSubscriptionWithPlan | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [subscription, setSubscription] = useState<SubscriptionWithPaymentInfo | null>(null);
   const [invoices, setInvoices] = useState<SubscriptionInvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
 
-    const [subRes, invRes] = await Promise.all([getMySubscription(), getMyInvoices()]);
+    const [subRes, invRes] = await Promise.all([
+      getMySubscriptionWithPaymentInfo(),
+      getMyInvoices(),
+    ]);
 
     if (subRes.success && subRes.data) {
       setSubscription(subRes.data);
@@ -145,6 +192,37 @@ export default function AdminSubscriptionPage() {
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // ── Handle payment redirect query params ───────────────────────
+  useEffect(() => {
+    const payment = searchParams.get("payment");
+    if (payment === "success") {
+      toast.success("Sikeres fizetés! Az előfizetésed aktiválva lett.");
+      router.replace("/admin/subscription", { scroll: false });
+    } else if (payment === "cancel") {
+      toast.info("A fizetés megszakítva. Az előfizetésed nem változott.");
+      router.replace("/admin/subscription", { scroll: false });
+    }
+  }, [searchParams, router]);
+
+  // ── Cancel handler ─────────────────────────────────────────────
+  const handleCancel = useCallback(async () => {
+    setCancelling(true);
+    try {
+      const result = await cancelMySubscription();
+      if (result.success) {
+        toast.success("Előfizetés lemondva. Az aktuális időszak végéig aktív marad.");
+        setCancelDialogOpen(false);
+        await fetchData();
+      } else {
+        toast.error(result.error ?? "Hiba a lemondás során.");
+      }
+    } catch {
+      toast.error("Váratlan hiba történt.");
+    } finally {
+      setCancelling(false);
+    }
   }, [fetchData]);
 
   // ── Effective price ─────────────────────────────────────────────
@@ -173,10 +251,11 @@ export default function AdminSubscriptionPage() {
             Az aktuális előfizetési csomag és számlák áttekintése
           </p>
         </div>
-        <Link href="/admin/subscription/plans">
-          <Button variant="outline" size="sm">
-            Csomagok megtekintése
-          </Button>
+        <Link
+          href="/admin/subscription/plans"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "no-underline")}
+        >
+          Csomagok megtekintése
         </Link>
       </div>
 
@@ -186,12 +265,111 @@ export default function AdminSubscriptionPage() {
           <CreditCard className="text-muted-foreground/40 size-10" />
           <p className="text-base font-medium">Nincs aktív előfizetés</p>
           <p className="max-w-xs text-center text-xs">
-            Lépj kapcsolatba az ügynökségeddel az előfizetés beállításához.
+            Válassz egy csomagot és aktiváld az előfizetésedet az elérhető csomagok oldalon.
           </p>
+          <Link
+            href="/admin/subscription/plans"
+            className={cn(buttonVariants({ variant: "default", size: "sm" }), "mt-2 no-underline")}
+          >
+            Csomagok megtekintése
+          </Link>
         </div>
       ) : (
         <>
-          {/* Subscription overview */}
+          {/* ── Status banners ──────────────────────────────────── */}
+
+          {/* Scheduled for cancellation */}
+          {subscription.isCancelScheduled && (
+            <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+              <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Előfizetés lemondva
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Az előfizetésed {formatDate(subscription.current_period_end)}-ig aktív marad,
+                  ezután a funkciók zárolásra kerülnek. Ha meggondolod magad, válassz új csomagot!
+                </p>
+              </div>
+              <Link
+                href="/admin/subscription/plans"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "shrink-0 no-underline",
+                )}
+              >
+                Újra előfizetés
+              </Link>
+            </div>
+          )}
+
+          {/* Past due */}
+          {subscription.status === "past_due" && (
+            <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
+              <AlertCircle className="size-4 shrink-0 text-red-600 dark:text-red-400" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Fizetési probléma
+                </p>
+                <p className="text-xs text-red-700 dark:text-red-300">
+                  Az automatikus megújítás sikertelen volt. Kérjük, frissítsd a fizetési adataidat.
+                  {subscription.grace_period_end && (
+                    <> A türelmi időszak {formatDate(subscription.grace_period_end)}-ig tart.</>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Suspended */}
+          {subscription.status === "suspended" && (
+            <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
+              <Ban className="size-4 shrink-0 text-red-600 dark:text-red-400" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Előfizetés felfüggesztve
+                </p>
+                <p className="text-xs text-red-700 dark:text-red-300">
+                  Az előfizetésed felfüggesztésre került a sikertelen fizetés miatt. Az újbóli
+                  aktiváláshoz válassz egy új csomagot.
+                </p>
+              </div>
+              <Link
+                href="/admin/subscription/plans"
+                className={cn(
+                  buttonVariants({ variant: "default", size: "sm" }),
+                  "shrink-0 no-underline",
+                )}
+              >
+                Újra előfizetés
+              </Link>
+            </div>
+          )}
+
+          {/* Cancelled (final) */}
+          {subscription.status === "cancelled" && (
+            <div className="border-border bg-muted/30 flex items-center gap-3 rounded-lg border px-4 py-3">
+              <XCircle className="text-muted-foreground size-4 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Előfizetés lejárt</p>
+                <p className="text-muted-foreground text-xs">
+                  Az előfizetésed lejárt. Válassz egy új csomagot az újraaktiváláshoz.
+                </p>
+              </div>
+              <Link
+                href="/admin/subscription/plans"
+                className={cn(
+                  buttonVariants({ variant: "default", size: "sm" }),
+                  "shrink-0 no-underline",
+                )}
+              >
+                Újra előfizetés
+              </Link>
+            </div>
+          )}
+
+          {/* ── Subscription overview cards ─────────────────────── */}
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
@@ -258,7 +436,48 @@ export default function AdminSubscriptionPage() {
             </Card>
           </div>
 
-          {/* Plan features */}
+          {/* ── Payment method card ─────────────────────────────── */}
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Fizetési mód</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {subscription.hasPaymentMethod ? (
+                <div className="flex items-center gap-3">
+                  <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
+                    <ShieldCheck className="text-foreground size-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Bankkártya (Barion)</p>
+                    <p className="text-muted-foreground text-xs">
+                      Automatikus megújítás aktív
+                      {subscription.barion_funding_source && (
+                        <span className="text-muted-foreground/70 ml-1">
+                          ({subscription.barion_funding_source})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
+                    <CreditCard className="text-muted-foreground size-5" />
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-sm">Nincs tárolt fizetési mód</p>
+                    <p className="text-muted-foreground/70 text-xs">
+                      Az első sikeres fizetés után automatikusan mentjük a kártyaadatokat
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── Plan features ───────────────────────────────────── */}
+
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-semibold">Csomag funkciók</CardTitle>
@@ -309,7 +528,8 @@ export default function AdminSubscriptionPage() {
             </CardContent>
           </Card>
 
-          {/* Invoices (read-only) */}
+          {/* ── Invoices ────────────────────────────────────────── */}
+
           <div className="space-y-4">
             <h2 className="text-base font-semibold tracking-tight">Számlák</h2>
 
@@ -327,6 +547,7 @@ export default function AdminSubscriptionPage() {
                     <TableHead className="text-right">Összeg</TableHead>
                     <TableHead>Státusz</TableHead>
                     <TableHead>Fizetve</TableHead>
+                    <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -351,12 +572,81 @@ export default function AdminSubscriptionPage() {
                       <TableCell className="text-muted-foreground text-xs">
                         {inv.paid_at ? formatDate(inv.paid_at) : "—"}
                       </TableCell>
+                      <TableCell>
+                        {inv.invoice_url && (
+                          <a
+                            href={inv.invoice_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              buttonVariants({ variant: "ghost", size: "icon-xs" }),
+                              "no-underline",
+                            )}
+                            title="Számla megtekintése"
+                          >
+                            <FileText className="size-3" />
+                          </a>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             )}
           </div>
+
+          {/* ── Cancel subscription ─────────────────────────────── */}
+
+          {!subscription.isCancelScheduled &&
+            !subscription.canResubscribe &&
+            ["active", "trialing"].includes(subscription.status) && (
+              <div className="border-border flex items-center justify-between rounded-lg border px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">Előfizetés lemondása</p>
+                  <p className="text-muted-foreground text-xs">
+                    Az előfizetés az aktuális időszak végéig aktív marad, visszatérítés nem jár.
+                  </p>
+                </div>
+                <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                  <AlertDialogTrigger render={<Button variant="destructive" size="sm" />}>
+                    Lemondás
+                  </AlertDialogTrigger>
+                  <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                      <AlertDialogMedia className="bg-destructive/10">
+                        <AlertTriangle className="text-destructive size-5" />
+                      </AlertDialogMedia>
+                      <AlertDialogTitle>Előfizetés lemondása</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Biztosan le szeretnéd mondani az előfizetésedet? Az előfizetésed{" "}
+                        {formatDate(subscription.current_period_end)}-ig aktív marad, ezután a
+                        funkciók zárolásra kerülnek. Visszatérítés nem jár.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        disabled={cancelling}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleCancel();
+                        }}
+                      >
+                        {cancelling ? (
+                          <>
+                            <Loader2 className="size-3.5 animate-spin" />
+                            Feldolgozás…
+                          </>
+                        ) : (
+                          "Lemondás megerősítése"
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
         </>
       )}
     </div>

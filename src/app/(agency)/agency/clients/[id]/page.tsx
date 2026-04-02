@@ -150,9 +150,9 @@ export default function ClientSubscriptionDetailPage() {
   // Edit subscription fields
   const [editPlanId, setEditPlanId] = useState("");
   const [editBillingCycle, setEditBillingCycle] = useState<"monthly" | "annual">("monthly");
-  const [editStatus, setEditStatus] = useState<"active" | "trialing" | "past_due" | "cancelled">(
-    "active",
-  );
+  const [editStatus, setEditStatus] = useState<
+    "active" | "trialing" | "past_due" | "cancelled" | "suspended"
+  >("active");
   const [editCustomMonthly, setEditCustomMonthly] = useState("");
   const [editCustomAnnual, setEditCustomAnnual] = useState("");
   const [editPeriodEnd, setEditPeriodEnd] = useState("");
@@ -408,7 +408,14 @@ export default function ClientSubscriptionDetailPage() {
               <select
                 value={editStatus}
                 onChange={(e) =>
-                  setEditStatus(e.target.value as "active" | "trialing" | "past_due" | "cancelled")
+                  setEditStatus(
+                    e.target.value as
+                      | "active"
+                      | "trialing"
+                      | "past_due"
+                      | "cancelled"
+                      | "suspended",
+                  )
                 }
                 className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
@@ -416,6 +423,7 @@ export default function ClientSubscriptionDetailPage() {
                 <option value="trialing">Próbaidőszak</option>
                 <option value="past_due">Lejárt</option>
                 <option value="cancelled">Lemondva</option>
+                <option value="suspended">Felfüggesztve</option>
               </select>
             </div>
             <div className="space-y-2">

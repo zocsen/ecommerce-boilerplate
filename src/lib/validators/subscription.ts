@@ -8,7 +8,13 @@ import { uuidSchema } from "@/lib/validators/uuid";
 // ── Shared helpers ─────────────────────────────────────────────────
 
 const billingCycleSchema = z.literal(["monthly", "annual"]);
-const subscriptionStatusSchema = z.literal(["active", "past_due", "cancelled", "trialing"]);
+const subscriptionStatusSchema = z.literal([
+  "active",
+  "past_due",
+  "cancelled",
+  "trialing",
+  "suspended",
+]);
 const invoiceStatusSchema = z.literal(["pending", "paid", "failed", "refunded"]);
 
 // ── Plan features schema ───────────────────────────────────────────

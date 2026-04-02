@@ -644,6 +644,21 @@ subscription: {
 - Feature override conflicts: subscription override always wins over plan default. If override is `null`, fall back to plan default.
 - Invoice generation fails (Billingo/Szamlazz API error): save invoice as `draft` status, show error toast, allow retry.
 
+**Post-Implementation Extension: Self-Service Subscription Payments (DONE)**
+
+The original FE-003 spec described an agency-managed subscription model where the agency handles all billing. A self-service payment layer was subsequently built on top of FE-003, enabling shop owners to subscribe, pay, and cancel directly.
+
+**What was added (beyond the original FE-003 spec):**
+
+- **Database:** Migration `018_self_service_subscription_payments.sql` — `suspended` added to `subscription_status` enum, 6 new columns on `shop_subscriptions` (Barion recurrence token, funding source, last payment ID, grace period end, renewal attempts, payment method), 3 new columns on `subscription_invoices` (Barion payment ID, trace ID, is_renewal flag), new `subscription_payment_events` table for full payment audit trail.
+- **Barion recurring payments:** `barion/client.ts` extended with `startSubscriptionCheckout()` (customer-initiated, captures recurrence token), `chargeRecurringPayment()` (merchant-initiated, uses stored token), `verifySubscriptionPayment()`.
+- **Server actions:** New `subscription-payments.ts` (~1102 lines): `startSubscriptionPayment`, `handleSubscriptionCallback`, `cancelMySubscription`, `getMySubscriptionWithPaymentInfo`, `processSubscriptionRenewal`, `findSubscriptionsDueForRenewal`.
+- **API routes:** `/api/payments/barion/subscription-callback` (Barion S2S callback), `/api/cron/subscription-renewals` (hourly cron for auto-renewals).
+- **Auto-invoicing:** `invoicing/subscription-invoice.ts` generates invoices via existing Billingo/Számlázz.hu adapters on every successful payment.
+- **Renewal scheduler:** `vercel.json` cron runs hourly, retries failed renewals (configurable attempts), grace period before suspension.
+- **Config:** `trialDays` (env), `gracePeriodDays: 7`, `renewalRetryAttempts: 3`, `subscriptionRedirectUrls`.
+- **UI:** "Előfizetés" subscribe button on plan comparison (replaces "Kérd ajánlatunkat" mailto), self-service cancel with AlertDialog, status banners (cancelled/past_due/suspended), payment method card, payment redirect handling.
+
 ---
 
 #### FE-004: Product Cost Price & Profit Tracking
@@ -2101,7 +2116,7 @@ export async function getCartCrossSellProducts(productIds: string[]): Promise<Pr
 | Field            | Value                                      |
 | ---------------- | ------------------------------------------ |
 | **Priority**     | P1                                         |
-| **Status**       | NOT STARTED                                |
+| **Status**       | DONE                                       |
 | **Plan Tier**    | Infrastructure (ships with every instance) |
 | **Complexity**   | M (3-5 days)                               |
 | **Dependencies** | FE-003 (plan data in database)             |
@@ -2191,6 +2206,10 @@ Uses existing actions from FE-003: `getAvailablePlans()`, `getShopSubscription()
 - No active subscription: don't highlight any plan. Show "Nincs aktív csomag" message.
 - Plan features JSON missing a key: treat as `false` / not included.
 - Very long feature list: use accordion per category on mobile.
+
+**Post-Implementation Update: Self-Service Subscribe CTA**
+
+The original FE-016 spec described a "Kérd ajánlatunkat" (Request a quote) CTA for agency-mediated upgrades. This was replaced by a self-service "Előfizetés" (Subscribe) button as part of the self-service subscription payment extension (see FE-003 extension). `PlanColumnHeader` is now a client component with `onSubscribe` callback, `subscribing` loading state, and `isDowngrade` prevention. Downgrade attempts show disabled button with "Alacsonyabb csomag" label. Cancelled subscriptions show a resubscribe banner.
 
 ---
 

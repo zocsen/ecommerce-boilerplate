@@ -151,6 +151,21 @@ export interface SubscriptionConfig {
    * When false (default/dev), missing subscription = unlimited access.
    */
   enforceGating: boolean;
+  /** Number of free trial days for new subscriptions. 0 = no trial. */
+  trialDays: number;
+  /** Number of grace period days after a failed renewal before suspension. */
+  gracePeriodDays: number;
+  /** Maximum number of automated renewal retry attempts before giving up. */
+  renewalRetryAttempts: number;
+  /** Subscription-specific Barion redirect URLs */
+  subscriptionRedirectUrls: {
+    /** Where to redirect after successful subscription payment */
+    success: string;
+    /** Where to redirect if the user cancels during payment */
+    cancel: string;
+    /** Server-to-server callback URL for subscription payments */
+    callback: string;
+  };
 }
 
 export interface SiteConfig {
@@ -314,5 +329,13 @@ export const siteConfig: SiteConfig = {
   subscription: {
     defaultShopIdentifier: env("SHOP_IDENTIFIER", "agency-store"),
     enforceGating: env("SUBSCRIPTION_ENFORCE_GATING", "false") === "true",
+    trialDays: Number(env("SUBSCRIPTION_TRIAL_DAYS", "0")),
+    gracePeriodDays: 7,
+    renewalRetryAttempts: 3,
+    subscriptionRedirectUrls: {
+      success: `${siteUrl}/admin/subscription?payment=success`,
+      cancel: `${siteUrl}/admin/subscription?payment=cancel`,
+      callback: `${siteUrl}/api/payments/barion/subscription-callback`,
+    },
   },
 } as const satisfies SiteConfig;

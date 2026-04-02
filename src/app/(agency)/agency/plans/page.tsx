@@ -39,6 +39,7 @@ const DEFAULT_FEATURES: PlanFeaturesJson = {
   enable_scheduled_publishing: false,
   enable_agency_viewer: false,
   enable_custom_pages: false,
+  enable_blog: false,
 };
 
 const FEATURE_LABELS: Record<keyof PlanFeaturesJson, string> = {
@@ -56,6 +57,7 @@ const FEATURE_LABELS: Record<keyof PlanFeaturesJson, string> = {
   enable_scheduled_publishing: "Ütemezett közzététel",
   enable_agency_viewer: "Agency Viewer",
   enable_custom_pages: "Egyedi oldalak",
+  enable_blog: "Blog",
 };
 
 /* ------------------------------------------------------------------ */
@@ -225,7 +227,7 @@ export default function AgencyPlansPage() {
     setEditAnnualPrice(String(plan.base_annual_price));
     setEditSortOrder(String(plan.sort_order));
     setEditIsActive(plan.is_active);
-    setEditFeatures({ ...DEFAULT_FEATURES, ...plan.features });
+    setEditFeatures({ ...DEFAULT_FEATURES, ...(plan.features as unknown as PlanFeaturesJson) });
     setError(null);
   }
 

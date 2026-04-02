@@ -1299,7 +1299,7 @@ export async function getSearchAnalytics(days: number): Promise<{
 | Field            | Value                                               |
 | ---------------- | --------------------------------------------------- |
 | **Priority**     | P1                                                  |
-| **Status**       | NOT STARTED                                         |
+| **Status**       | DONE                                                |
 | **Plan Tier**    | All plans                                           |
 | **Complexity**   | S (1-2 days)                                        |
 | **Dependencies** | FE-005 (component extraction — cleaner integration) |
@@ -1394,7 +1394,7 @@ New component: `src/components/cart/cart-drawer.tsx` (`"use client"`)
 | Field            | Value                                                    |
 | ---------------- | -------------------------------------------------------- |
 | **Priority**     | P1                                                       |
-| **Status**       | NOT STARTED                                              |
+| **Status**       | DONE                                                     |
 | **Plan Tier**    | Basic (core reviews), Premium (admin analytics)          |
 | **Complexity**   | L (1-2 weeks)                                            |
 | **Dependencies** | FE-003 (plan gating)                                     |
@@ -2761,7 +2761,7 @@ export async function getStockNotificationCount(
 | Field            | Value         |
 | ---------------- | ------------- |
 | **Priority**     | P2            |
-| **Status**       | NOT STARTED   |
+| **Status**       | DONE          |
 | **Plan Tier**    | Basic         |
 | **Complexity**   | L (1-2 weeks) |
 | **Dependencies** | None          |

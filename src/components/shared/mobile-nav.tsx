@@ -22,6 +22,7 @@ import { useUIStore } from "@/lib/store/ui";
 const navLinks = [
   { label: "Termékek", href: "/products" },
   { label: "Kategóriák", href: "/products?category=all" },
+  { label: "Blog", href: "/blog" },
 ] as const;
 
 /* ------------------------------------------------------------------ */

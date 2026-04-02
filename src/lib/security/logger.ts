@@ -6,6 +6,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppRole } from "@/lib/types/database";
+import type { Json } from "@/lib/types/database.generated";
 
 interface AuditLogParams {
   actorId: string | null;
@@ -26,7 +27,7 @@ export async function logAudit(params: AuditLogParams): Promise<void> {
       action: params.action,
       entity_type: params.entityType,
       entity_id: params.entityId,
-      metadata: params.metadata ?? {},
+      metadata: (params.metadata ?? {}) as Json,
     });
 
     if (error) {

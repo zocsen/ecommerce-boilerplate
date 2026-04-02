@@ -24,7 +24,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ShopSubscriptionWithPlan, SubscriptionInvoiceRow } from "@/lib/types/database";
+import type {
+  ShopSubscriptionWithPlan,
+  SubscriptionInvoiceRow,
+  PlanFeaturesJson,
+} from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -261,39 +265,41 @@ export default function AdminSubscriptionPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {(Object.entries(subscription.plan.features) as [string, boolean | number][]).map(
-                  ([key, value]) => {
-                    const override =
-                      subscription.feature_overrides[
-                        key as keyof typeof subscription.feature_overrides
-                      ];
-                    const effective = override !== undefined ? override : value;
-                    const label = key
-                      .replace(/^enable_/, "")
-                      .replace(/^max_/, "max. ")
-                      .replaceAll("_", " ");
+                {(
+                  Object.entries(subscription.plan.features as unknown as PlanFeaturesJson) as [
+                    string,
+                    boolean | number,
+                  ][]
+                ).map(([key, value]) => {
+                  const overrides =
+                    subscription.feature_overrides as unknown as Partial<PlanFeaturesJson> | null;
+                  const override = overrides?.[key as keyof PlanFeaturesJson];
+                  const effective = override !== undefined ? override : value;
+                  const label = key
+                    .replace(/^enable_/, "")
+                    .replace(/^max_/, "max. ")
+                    .replaceAll("_", " ");
 
-                    return (
-                      <div
-                        key={key}
-                        className="border-border flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
-                      >
-                        <span className="text-muted-foreground">{label}</span>
-                        {typeof effective === "boolean" ? (
-                          effective ? (
-                            <CheckCircle className="size-3.5 text-green-600" />
-                          ) : (
-                            <XCircle className="text-muted-foreground/50 size-3.5" />
-                          )
+                  return (
+                    <div
+                      key={key}
+                      className="border-border flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
+                    >
+                      <span className="text-muted-foreground">{label}</span>
+                      {typeof effective === "boolean" ? (
+                        effective ? (
+                          <CheckCircle className="size-3.5 text-green-600" />
                         ) : (
-                          <span className="font-mono font-medium">
-                            {effective === 0 ? "Korlátlan" : effective}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  },
-                )}
+                          <XCircle className="text-muted-foreground/50 size-3.5" />
+                        )
+                      ) : (
+                        <span className="font-mono font-medium">
+                          {effective === 0 ? "Korlátlan" : effective}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {subscription.notes && (
                 <p className="text-muted-foreground mt-4 text-xs">

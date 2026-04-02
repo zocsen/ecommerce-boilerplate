@@ -31,6 +31,7 @@ import { useCartStore } from "@/lib/store/cart";
 import { siteConfig } from "@/lib/config/site.config";
 import { createOrderFromCart } from "@/lib/actions/orders";
 import { startPaymentAction } from "@/lib/actions/payments";
+import { applyCoupon } from "@/lib/actions/cart";
 import { formatHUF } from "@/lib/utils/format";
 import { getAvailableCarriers, getCarrierFee } from "@/lib/utils/shipping";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ import type {
 } from "@/lib/types";
 
 import { OrderSummary } from "@/components/cart/order-summary";
+import { CouponInput } from "@/components/cart/coupon-input";
 import { PickupPointSelector } from "@/components/cart/pickup-point-selector";
 import { CheckoutStepper } from "@/components/checkout/checkout-stepper";
 import { AddressFields, FormField, ReviewSection } from "@/components/checkout/address-form";
@@ -203,6 +205,8 @@ export default function CheckoutPage() {
   const subtotal = useCartStore((s) => s.subtotal());
   const couponCode = useCartStore((s) => s.couponCode);
   const couponDiscount = useCartStore((s) => s.couponDiscount);
+  const setCoupon = useCartStore((s) => s.setCoupon);
+  const removeCoupon = useCartStore((s) => s.removeCoupon);
   const clearCart = useCartStore((s) => s.clearCart);
 
   const homeCarriers = useMemo(() => getAvailableCarriers("home"), []);
@@ -287,6 +291,20 @@ export default function CheckoutPage() {
   const effectiveCodFee = selectedPaymentMethod === "cod" && codAvailable ? codConfig.fee : 0;
 
   const total = Math.max(0, subtotal + shippingFee + effectiveCodFee - couponDiscount);
+
+  // ── Coupon handling ──────────────────────────────────────────────
+
+  const handleApplyCoupon = useCallback(
+    async (code: string) => {
+      const result = await applyCoupon(code, subtotal);
+      if (result.success && result.data) {
+        setCoupon(result.data.code, result.data.discount);
+        return { success: true, discount: result.data.discount };
+      }
+      return { success: false, error: result.error };
+    },
+    [subtotal, setCoupon],
+  );
 
   // ── Step navigation ──────────────────────────────────────────────
 
@@ -941,6 +959,37 @@ export default function CheckoutPage() {
                   />
                 </div>
 
+                {/* ── Coupon (mobile — visible below lg) ── */}
+                {siteConfig.features.enableCoupons && (
+                  <div className="lg:hidden">
+                    <Separator className="mb-4" />
+                    <h3 className="text-foreground mb-3 text-sm font-medium">Kuponkód</h3>
+                    {couponCode ? (
+                      <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/30">
+                        <div className="text-sm">
+                          <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                            {couponCode}
+                          </span>
+                          <span className="text-muted-foreground ml-2">
+                            &mdash; {formatHUF(couponDiscount)} kedvezmény
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={removeCoupon}
+                          className="text-muted-foreground hover:text-foreground -mr-2 h-7 text-xs"
+                        >
+                          Törlés
+                        </Button>
+                      </div>
+                    ) : (
+                      <CouponInput onApply={handleApplyCoupon} />
+                    )}
+                  </div>
+                )}
+
                 <Separator />
 
                 {/* ── Terms acceptance ─────────────────── */}
@@ -1012,7 +1061,7 @@ export default function CheckoutPage() {
 
           {/* ── Right: Order summary (sticky) ──────────── */}
           <div className="hidden lg:block">
-            <div className="sticky top-8">
+            <div className="sticky top-8 space-y-4">
               <OrderSummary
                 subtotal={subtotal}
                 shippingFee={shippingFee}
@@ -1020,6 +1069,38 @@ export default function CheckoutPage() {
                 codFee={effectiveCodFee}
                 total={total}
               />
+
+              {/* ── Coupon ────────────────────────────────── */}
+              {siteConfig.features.enableCoupons && (
+                <div className="border-border bg-background rounded-lg border p-6">
+                  <h3 className="text-foreground mb-3 text-sm font-semibold tracking-widest uppercase">
+                    Kuponkód
+                  </h3>
+                  {couponCode ? (
+                    <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/30">
+                      <div className="text-sm">
+                        <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                          {couponCode}
+                        </span>
+                        <span className="text-muted-foreground ml-2">
+                          &mdash; {formatHUF(couponDiscount)} kedvezmény
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeCoupon}
+                        className="text-muted-foreground hover:text-foreground -mr-2 h-7 text-xs"
+                      >
+                        Törlés
+                      </Button>
+                    </div>
+                  ) : (
+                    <CouponInput onApply={handleApplyCoupon} />
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -109,3 +109,6 @@ export const authRateLimiter = new RateLimiter(10, 60_000);
 
 /** Guest order tracking: 5 lookups per hour */
 export const orderTrackingRateLimiter = new RateLimiter(5, 3_600_000);
+
+/** Product reviews: 5 submissions per hour per user */
+export const reviewRateLimiter = new RateLimiter(5, 3_600_000);

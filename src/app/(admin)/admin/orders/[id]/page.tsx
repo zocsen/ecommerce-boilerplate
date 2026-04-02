@@ -34,7 +34,13 @@ import {
   getStatusTransitions,
   isTerminalStatusForPayment,
 } from "@/lib/constants/order-status";
-import type { OrderRow, OrderItemRow, OrderStatus, PaymentMethod } from "@/lib/types/database";
+import type {
+  OrderRow,
+  OrderItemRow,
+  OrderStatus,
+  PaymentMethod,
+  AddressJson,
+} from "@/lib/types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Admin Order Detail                                                  */
@@ -373,7 +379,10 @@ export default function AdminOrderDetailPage() {
               </Badge>
 
               {order.shipping_method === "home" && (
-                <AddressDisplay address={order.shipping_address} label="Szállítási cím" />
+                <AddressDisplay
+                  address={order.shipping_address as AddressJson}
+                  label="Szállítási cím"
+                />
               )}
 
               {order.shipping_method === "pickup" && (
@@ -395,7 +404,10 @@ export default function AdminOrderDetailPage() {
               <CardTitle>Számlázás</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <AddressDisplay address={order.billing_address} label="Számlázási cím" />
+              <AddressDisplay
+                address={order.billing_address as AddressJson}
+                label="Számlázási cím"
+              />
 
               {order.invoice_number && (
                 <div className="space-y-1 text-sm">

@@ -22,6 +22,8 @@ import {
   CreditCard,
   Lock,
   Building2,
+  Star,
+  Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -61,6 +63,13 @@ const navItems: NavItem[] = [
     featureFlag: "enableCoupons",
     planFeature: "enable_coupons",
   },
+  {
+    label: "Értékelések",
+    href: "/admin/reviews",
+    icon: Star,
+    featureFlag: "enableReviews",
+    planFeature: "enable_reviews",
+  },
   { label: "Szállítás", href: "/admin/shipping", icon: Truck },
   {
     label: "Marketing",
@@ -70,6 +79,13 @@ const navItems: NavItem[] = [
     planFeature: "enable_marketing_module",
   },
   { label: "Oldalak", href: "/admin/pages/about", icon: BookOpen },
+  {
+    label: "Blog",
+    href: "/admin/blog",
+    icon: Newspaper,
+    featureFlag: "enableBlog",
+    planFeature: "enable_blog",
+  },
   { label: "Beállítások", href: "/admin/settings", icon: Settings },
   { label: "Audit log", href: "/admin/audit", icon: FileText },
   { label: "Előfizetés", href: "/admin/subscription", icon: CreditCard },

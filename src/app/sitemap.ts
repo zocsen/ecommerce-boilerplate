@@ -82,5 +82,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...productPages, ...categoryPages];
+  // ── Blog post pages ──────────────────────────────────────────────
+
+  const { data: posts } = await admin
+    .from("posts")
+    .select("slug, updated_at")
+    .eq("is_published", true)
+    .order("published_at", { ascending: false })
+    .limit(5000);
+
+  const blogPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    },
+    ...(posts ?? []).map((post) => ({
+      url: `${siteUrl}/blog/${post.slug}`,
+      lastModified: post.updated_at ? new Date(post.updated_at) : new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
+  ];
+
+  return [...staticPages, ...productPages, ...categoryPages, ...blogPages];
 }

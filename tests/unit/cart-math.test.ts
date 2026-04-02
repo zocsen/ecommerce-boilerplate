@@ -43,6 +43,7 @@ const ITEM_A: CartItem = {
   image: null,
   slug: "teszt-termek-a",
   stock: 10,
+  weightGrams: 500,
 };
 
 const ITEM_B: CartItem = {
@@ -55,6 +56,7 @@ const ITEM_B: CartItem = {
   image: null,
   slug: "teszt-termek-b",
   stock: 5,
+  weightGrams: 300,
 };
 
 const ITEM_C: CartItem = {
@@ -67,6 +69,7 @@ const ITEM_C: CartItem = {
   image: null,
   slug: "teszt-termek-c",
   stock: 3,
+  weightGrams: 200,
 };
 
 // ── Tests ──────────────────────────────────────────────────────────

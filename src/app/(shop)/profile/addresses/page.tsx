@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Save, MapPin, FileText, Package } from "lucide-react";
 import type { AddressJson, BillingAddressJson, PickupPointJson } from "@/lib/types/database";
+import type { Json } from "@/lib/types/database.generated";
 
 /* ------------------------------------------------------------------ */
 /*  Profile Addresses Page                                             */
@@ -33,13 +34,13 @@ const emptyPickup: PickupPointJson = {
   point_label: "",
 };
 
-function isAddressEmpty(addr: AddressJson | Record<string, never> | undefined): boolean {
-  if (!addr) return true;
+function isAddressEmpty(addr: Json | null | undefined): boolean {
+  if (!addr || typeof addr !== "object" || Array.isArray(addr)) return true;
   const a = addr as AddressJson;
   return !a.name && !a.street && !a.city && !a.zip;
 }
 
-function isPickupEmpty(p: PickupPointJson | Record<string, never> | undefined): boolean {
+function isPickupEmpty(p: Json | null | undefined): boolean {
   if (!p) return true;
   const pp = p as PickupPointJson;
   return !pp.provider && !pp.point_id && !pp.point_label;

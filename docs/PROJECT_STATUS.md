@@ -2,7 +2,7 @@
 
 > **Last updated:** 2026-04-01
 > **Codebase:** 11 commits, ~210 files, ~46,000 lines of code
-> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **46 features** planned across 4 priority tiers (P0-P3) — 14 completed (FE-000, FE-002, FE-003, FE-006, FE-007, FE-013, FE-018, FE-023, FE-025, FE-026, FE-029, FE-037, FE-044, FE-045). Agency/Admin separation complete — agency pages moved to `/agency/*` route group with `enableAgencyMode` config flag. See Feature Roadmap.
+> **Status:** Core boilerplate ~95% complete against original spec. All major flows functional end-to-end. **46 features** planned across 4 priority tiers (P0-P3) — 15 completed (FE-000, FE-002, FE-003, FE-006, FE-007, FE-010, FE-013, FE-018, FE-023, FE-025, FE-026, FE-029, FE-037, FE-044, FE-045). Agency/Admin separation complete — agency pages moved to `/agency/*` route group with `enableAgencyMode` config flag. Type system overhauled: all types auto-generated from DB schema via `supabase gen types`. See Feature Roadmap.
 
 ---
 
@@ -127,18 +127,18 @@ src/
     auth/            # DevProfileSelector
     ui/              # 23 shadcn/ui primitives
   lib/
-    actions/         # 10 server action files (51 exported functions)
+    actions/         # 14 server action files (86 exported functions)
     config/          # site.config.ts, hooks.ts
     integrations/    # barion/, email/, invoicing/
     security/        # roles.ts, rate-limit.ts, logger.ts, unsubscribe-token.ts
     supabase/        # server.ts, client.ts, admin.ts, middleware.ts
     store/           # Zustand stores: cart.ts (persist), ui.ts (no persist — cartDrawerOpen)
-    types/           # database.ts (842 lines), index.ts
+    types/           # database.generated.ts (auto-generated), database.ts (aliases + JSONB shapes), index.ts
     utils/           # format.ts, shipping.ts, price-history.ts, price-history-shared.ts
-    validators/      # checkout.ts, coupon.ts, product.ts, subscriber.ts, uuid.ts
+    validators/      # checkout.ts, coupon.ts, product.ts, review.ts, subscriber.ts, uuid.ts
   proxy.ts           # Middleware (role-based route protection)
   supabase/
-  migrations/        # 12 SQL migration files
+  migrations/        # 17 SQL migration files
   functions/         # Edge function (abandoned-cart)
   seed.sql           # 960 lines of test data
   config.toml        # Local dev configuration
@@ -156,7 +156,7 @@ src/
 
 ## Database Schema
 
-**Status: COMPLETE** — 13 migrations applied, 17 tables, 4 enums, 27 indexes, 45 RLS policies, 4 storage policies.
+**Status: COMPLETE** — 17 migrations applied, 18 tables + 1 view, 10 enums, 27+ indexes, 45+ RLS policies, 4 storage policies.
 
 ### Enums
 
@@ -166,6 +166,12 @@ src/
 | `order_status`        | `draft`, `awaiting_payment`, `paid`, `processing`, `shipped`, `cancelled`, `refunded` |
 | `subscriber_status`   | `subscribed`, `unsubscribed`, `bounced`, `complained`                                 |
 | `subscription_status` | `active`, `past_due`, `cancelled`, `trialing`                                         |
+| `review_status`       | `pending`, `approved`, `rejected`                                                     |
+| `payment_method`      | `barion`, `cod`                                                                       |
+| `discount_type`       | `percentage`, `fixed`                                                                 |
+| `invoice_status`      | `pending`, `paid`, `failed`, `refunded`                                               |
+| `billing_cycle`       | `monthly`, `annual`                                                                   |
+| `shipping_method`     | `home`, `pickup`                                                                      |
 
 ### Tables
 
@@ -256,58 +262,58 @@ RLS: Public read (unconditional). Admin full. Agency viewer read.
 
 #### 6. `coupons`
 
-| Column             | Type        | Constraints                      |
-| ------------------ | ----------- | -------------------------------- |
-| `id`               | uuid PK     | DEFAULT gen_random_uuid()        |
-| `code`             | text        | UNIQUE, NOT NULL                 |
-| `discount_type`    | text        | CHECK IN ('percentage', 'fixed') |
-| `value`            | int         | NOT NULL                         |
-| `min_order_amount` | int         | Nullable                         |
-| `max_uses`         | int         | Nullable                         |
-| `used_count`       | int         | DEFAULT 0                        |
-| `valid_from`       | timestamptz | Nullable                         |
-| `valid_until`      | timestamptz | Nullable                         |
-| `is_active`        | boolean     | DEFAULT true                     |
+| Column             | Type          | Constraints                 |
+| ------------------ | ------------- | --------------------------- |
+| `id`               | uuid PK       | DEFAULT gen_random_uuid()   |
+| `code`             | text          | UNIQUE, NOT NULL            |
+| `discount_type`    | discount_type | enum: 'percentage', 'fixed' |
+| `value`            | int           | NOT NULL                    |
+| `min_order_amount` | int           | Nullable                    |
+| `max_uses`         | int           | Nullable                    |
+| `used_count`       | int           | DEFAULT 0                   |
+| `valid_from`       | timestamptz   | Nullable                    |
+| `valid_until`      | timestamptz   | Nullable                    |
+| `is_active`        | boolean       | DEFAULT true                |
 
 Indexes: `idx_coupons_code`
 RLS: NOT publicly readable (validated server-side only). Admin full. Agency viewer read.
 
 #### 7. `orders`
 
-| Column                      | Type         | Constraints                                     |
-| --------------------------- | ------------ | ----------------------------------------------- |
-| `id`                        | uuid PK      | DEFAULT gen_random_uuid()                       |
-| `user_id`                   | uuid         | FK to auth.users(id), nullable (guest checkout) |
-| `email`                     | text         | NOT NULL                                        |
-| `status`                    | order_status | DEFAULT 'draft'                                 |
-| `currency`                  | text         | DEFAULT 'HUF'                                   |
-| `subtotal_amount`           | int          | DEFAULT 0                                       |
-| `shipping_fee`              | int          | DEFAULT 0                                       |
-| `discount_total`            | int          | DEFAULT 0                                       |
-| `total_amount`              | int          | DEFAULT 0                                       |
-| `payment_method`            | text         | DEFAULT 'barion', CHECK IN ('barion', 'cod')    |
-| `cod_fee`                   | int          | DEFAULT 0. Utánvét kezelési díj.                |
-| `coupon_code`               | text         | Nullable                                        |
-| `shipping_method`           | text         | DEFAULT 'home'                                  |
-| `shipping_address`          | jsonb        | DEFAULT '{}'                                    |
-| `shipping_phone`            | text         | Nullable                                        |
-| `pickup_point_provider`     | text         | Nullable                                        |
-| `pickup_point_id`           | text         | Nullable                                        |
-| `pickup_point_label`        | text         | Nullable                                        |
-| `billing_address`           | jsonb        | DEFAULT '{}'                                    |
-| `notes`                     | text         | Nullable                                        |
-| `barion_payment_id`         | text         | Nullable                                        |
-| `barion_payment_request_id` | text         | Nullable                                        |
-| `barion_status`             | text         | Nullable                                        |
-| `invoice_provider`          | text         | Nullable                                        |
-| `invoice_number`            | text         | Nullable                                        |
-| `invoice_url`               | text         | Nullable                                        |
-| `created_at`                | timestamptz  | DEFAULT now()                                   |
-| `updated_at`                | timestamptz  | DEFAULT now() (auto-trigger)                    |
-| `paid_at`                   | timestamptz  | Nullable                                        |
-| `shipped_at`                | timestamptz  | Nullable                                        |
-| `idempotency_key`           | text         | UNIQUE, nullable                                |
-| `abandoned_cart_sent_at`    | timestamptz  | Nullable                                        |
+| Column                      | Type            | Constraints                                     |
+| --------------------------- | --------------- | ----------------------------------------------- |
+| `id`                        | uuid PK         | DEFAULT gen_random_uuid()                       |
+| `user_id`                   | uuid            | FK to auth.users(id), nullable (guest checkout) |
+| `email`                     | text            | NOT NULL                                        |
+| `status`                    | order_status    | DEFAULT 'draft'                                 |
+| `currency`                  | text            | DEFAULT 'HUF'                                   |
+| `subtotal_amount`           | int             | DEFAULT 0                                       |
+| `shipping_fee`              | int             | DEFAULT 0                                       |
+| `discount_total`            | int             | DEFAULT 0                                       |
+| `total_amount`              | int             | DEFAULT 0                                       |
+| `payment_method`            | payment_method  | DEFAULT 'barion', enum: 'barion', 'cod'         |
+| `cod_fee`                   | int             | DEFAULT 0. Utánvét kezelési díj.                |
+| `coupon_code`               | text            | Nullable                                        |
+| `shipping_method`           | shipping_method | DEFAULT 'home', enum: 'home', 'pickup'          |
+| `shipping_address`          | jsonb           | DEFAULT '{}'                                    |
+| `shipping_phone`            | text            | Nullable                                        |
+| `pickup_point_provider`     | text            | Nullable                                        |
+| `pickup_point_id`           | text            | Nullable                                        |
+| `pickup_point_label`        | text            | Nullable                                        |
+| `billing_address`           | jsonb           | DEFAULT '{}'                                    |
+| `notes`                     | text            | Nullable                                        |
+| `barion_payment_id`         | text            | Nullable                                        |
+| `barion_payment_request_id` | text            | Nullable                                        |
+| `barion_status`             | text            | Nullable                                        |
+| `invoice_provider`          | text            | Nullable                                        |
+| `invoice_number`            | text            | Nullable                                        |
+| `invoice_url`               | text            | Nullable                                        |
+| `created_at`                | timestamptz     | DEFAULT now()                                   |
+| `updated_at`                | timestamptz     | DEFAULT now() (auto-trigger)                    |
+| `paid_at`                   | timestamptz     | Nullable                                        |
+| `shipped_at`                | timestamptz     | Nullable                                        |
+| `idempotency_key`           | text            | UNIQUE, nullable                                |
+| `abandoned_cart_sent_at`    | timestamptz     | Nullable                                        |
 
 Indexes: `idx_orders_user`, `idx_orders_email`, `idx_orders_status`, `idx_orders_created` (DESC), `idx_orders_barion` (partial WHERE NOT NULL), `idx_orders_payment_method`
 RLS: Users read own (uid = user_id), insert own. Admin full. Agency viewer read.
@@ -430,18 +436,18 @@ Trigger-populated: Rows are created automatically by `record_price_change` (on p
 
 Defines available subscription plan tiers. Each row is a plan template that can be customized per client at project setup.
 
-| Column               | Type        | Constraints                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| -------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                 | uuid PK     | DEFAULT gen_random_uuid()                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `slug`               | text        | UNIQUE, NOT NULL (e.g., `basic`, `premium`)                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `name`               | text        | NOT NULL (display name, e.g., "Basic", "Premium")                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `description`        | text        | Nullable — short tagline for the plan                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `base_monthly_price` | int         | NOT NULL (HUF) — default monthly price, can be overridden per client in `shop_subscriptions`                                                                                                                                                                                                                                                                                                                                                                        |
-| `base_annual_price`  | int         | Nullable (HUF) — default annual price (discounted). If NULL, annual billing not offered for this plan.                                                                                                                                                                                                                                                                                                                                                              |
-| `features`           | jsonb       | NOT NULL DEFAULT '{}' — structured feature flags: `{max_products, max_admins, enableMarketing, enableFlashSales, enableBundles, enableGiftCards, enableWebhooks, enableB2B, enableAdvancedAnalytics, enableBulkActions, max_emails_per_month, delivery_options_limit, enableCsvImport, csv_import_limit, enableMetaPixel, enableScheduledPublishing, enableLoyalty, enableWishlistAnalytics, enableCustomerSegmentation, enableAutoReviewRequest, enableRefundApi}` |
-| `sort_order`         | int         | DEFAULT 0 — display order on comparison page                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `is_active`          | boolean     | DEFAULT true                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `created_at`         | timestamptz | DEFAULT now()                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Column               | Type        | Constraints                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                 | uuid PK     | DEFAULT gen_random_uuid()                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `slug`               | text        | UNIQUE, NOT NULL (e.g., `basic`, `premium`)                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `name`               | text        | NOT NULL (display name, e.g., "Basic", "Premium")                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `description`        | text        | Nullable — short tagline for the plan                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `base_monthly_price` | int         | NOT NULL (HUF) — default monthly price, can be overridden per client in `shop_subscriptions`                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `base_annual_price`  | int         | Nullable (HUF) — default annual price (discounted). If NULL, annual billing not offered for this plan.                                                                                                                                                                                                                                                                                                                                                                                           |
+| `features`           | jsonb       | NOT NULL DEFAULT '{}' — structured feature flags: `{max_products, max_admins, enableMarketing, enableFlashSales, enableBundles, enableGiftCards, enableWebhooks, enableB2B, enableAdvancedAnalytics, enableBulkActions, max_emails_per_month, delivery_options_limit, enableCsvImport, csv_import_limit, enableMetaPixel, enableScheduledPublishing, enableLoyalty, enableWishlistAnalytics, enableCustomerSegmentation, enableAutoReviewRequest, enableRefundApi, enable_blog, enable_reviews}` |
+| `sort_order`         | int         | DEFAULT 0 — display order on comparison page                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `is_active`          | boolean     | DEFAULT true                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `created_at`         | timestamptz | DEFAULT now()                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 Notes:
 
@@ -461,7 +467,7 @@ One active subscription per shop (client). Tracks the client's current plan, bil
 | `plan_id`              | uuid                | FK to shop_plans(id), NOT NULL                                                                       |
 | `shop_identifier`      | text                | UNIQUE, NOT NULL — identifies which client shop this subscription belongs to (e.g., domain or slug)  |
 | `status`               | subscription_status | NOT NULL DEFAULT 'active'                                                                            |
-| `billing_cycle`        | text                | NOT NULL, CHECK IN ('monthly', 'annual') — determines which price applies                            |
+| `billing_cycle`        | billing_cycle       | NOT NULL, enum: 'monthly', 'annual' — determines which price applies                                 |
 | `custom_monthly_price` | int                 | Nullable (HUF) — if set, overrides plan's `base_monthly_price` for this client                       |
 | `custom_annual_price`  | int                 | Nullable (HUF) — if set, overrides plan's `base_annual_price` for this client                        |
 | `current_period_start` | timestamptz         | NOT NULL — start of current billing period                                                           |
@@ -486,22 +492,22 @@ RLS: Admin read (own shop only, via shop_identifier match). Agency admin full CR
 
 Billing records for plan subscriptions. Reuses the existing Billingo/Szamlazz invoicing adapters for invoice generation.
 
-| Column                 | Type        | Constraints                                                                    |
-| ---------------------- | ----------- | ------------------------------------------------------------------------------ |
-| `id`                   | uuid PK     | DEFAULT gen_random_uuid()                                                      |
-| `subscription_id`      | uuid        | FK to shop_subscriptions(id) ON DELETE CASCADE                                 |
-| `amount`               | int         | NOT NULL (HUF) — the amount charged for this billing period                    |
-| `currency`             | text        | DEFAULT 'HUF'                                                                  |
-| `billing_period_start` | timestamptz | NOT NULL                                                                       |
-| `billing_period_end`   | timestamptz | NOT NULL                                                                       |
-| `status`               | text        | NOT NULL, CHECK IN ('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending' |
-| `paid_at`              | timestamptz | Nullable                                                                       |
-| `invoice_provider`     | text        | Nullable — 'billingo', 'szamlazz', or null if not yet generated                |
-| `invoice_number`       | text        | Nullable — external invoice number from provider                               |
-| `invoice_url`          | text        | Nullable — downloadable invoice PDF link                                       |
-| `payment_method`       | text        | Nullable — 'bank_transfer', 'card', 'barion', etc.                             |
-| `notes`                | text        | Nullable — internal notes (e.g., "first month free", "custom deal")            |
-| `created_at`           | timestamptz | DEFAULT now()                                                                  |
+| Column                 | Type           | Constraints                                                                |
+| ---------------------- | -------------- | -------------------------------------------------------------------------- |
+| `id`                   | uuid PK        | DEFAULT gen_random_uuid()                                                  |
+| `subscription_id`      | uuid           | FK to shop_subscriptions(id) ON DELETE CASCADE                             |
+| `amount`               | int            | NOT NULL (HUF) — the amount charged for this billing period                |
+| `currency`             | text           | DEFAULT 'HUF'                                                              |
+| `billing_period_start` | timestamptz    | NOT NULL                                                                   |
+| `billing_period_end`   | timestamptz    | NOT NULL                                                                   |
+| `status`               | invoice_status | NOT NULL, enum: 'pending', 'paid', 'failed', 'refunded', DEFAULT 'pending' |
+| `paid_at`              | timestamptz    | Nullable                                                                   |
+| `invoice_provider`     | text           | Nullable — 'billingo', 'szamlazz', or null if not yet generated            |
+| `invoice_number`       | text           | Nullable — external invoice number from provider                           |
+| `invoice_url`          | text           | Nullable — downloadable invoice PDF link                                   |
+| `payment_method`       | text           | Nullable — 'bank_transfer', 'card', 'barion', etc.                         |
+| `notes`                | text           | Nullable — internal notes (e.g., "first month free", "custom deal")        |
+| `created_at`           | timestamptz    | DEFAULT now()                                                              |
 
 Notes:
 
@@ -511,6 +517,70 @@ Notes:
 - Records are created automatically at each billing cycle renewal or manually by agency admin.
 
 RLS: Admin read (own shop's invoices only, via subscription join). Agency admin full CRUD. Agency viewer read.
+
+#### 18. `reviews`
+
+Customer product reviews with moderation workflow. Supports ratings (1-5 stars), text reviews, admin replies, and verified-purchase badges.
+
+| Column           | Type          | Constraints                                                                                   |
+| ---------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| `id`             | uuid PK       | DEFAULT gen_random_uuid()                                                                     |
+| `product_id`     | uuid          | FK to products(id) ON DELETE CASCADE, NOT NULL                                                |
+| `user_id`        | uuid          | FK to auth.users(id) ON DELETE SET NULL, nullable                                             |
+| `rating`         | int           | NOT NULL, CHECK (rating >= 1 AND rating <= 5)                                                 |
+| `title`          | text          | Nullable, max 200 chars                                                                       |
+| `body`           | text          | Nullable, max 2000 chars                                                                      |
+| `status`         | review_status | NOT NULL DEFAULT 'pending', enum: 'pending', 'approved', 'rejected'                           |
+| `is_verified`    | boolean       | NOT NULL DEFAULT false — auto-set to true if user has a shipped order containing this product |
+| `admin_reply`    | text          | Nullable, max 1000 chars — admin response to the review                                       |
+| `admin_reply_at` | timestamptz   | Nullable — when admin reply was posted                                                        |
+| `created_at`     | timestamptz   | NOT NULL DEFAULT now()                                                                        |
+| `updated_at`     | timestamptz   | NOT NULL DEFAULT now() (auto-trigger)                                                         |
+
+Constraints: UNIQUE(product_id, user_id) — one review per user per product.
+Indexes: `idx_reviews_product_status` (product_id, status, created_at DESC), `idx_reviews_user` (user_id), `idx_reviews_status` (status)
+RLS: Public SELECT (approved only). Authenticated INSERT (own user_id). Admin full CRUD. Agency viewer read.
+Trigger: `trg_reviews_updated_at` — auto-sets `updated_at` on UPDATE via `set_updated_at()`.
+
+#### View: `product_review_stats`
+
+Regular (non-materialized) view aggregating review statistics per product from approved reviews.
+
+| Column           | Type    | Source                                    |
+| ---------------- | ------- | ----------------------------------------- |
+| `product_id`     | uuid    | reviews.product_id                        |
+| `average_rating` | numeric | ROUND(AVG(rating), 1) — one decimal place |
+| `review_count`   | bigint  | COUNT(\*) of approved reviews             |
+| `rating_1`       | bigint  | COUNT of 1-star approved reviews          |
+| `rating_2`       | bigint  | COUNT of 2-star approved reviews          |
+| `rating_3`       | bigint  | COUNT of 3-star approved reviews          |
+| `rating_4`       | bigint  | COUNT of 4-star approved reviews          |
+| `rating_5`       | bigint  | COUNT of 5-star approved reviews          |
+
+RLS: Not applicable (view inherits from `reviews` RLS). Queried via admin client in server actions.
+
+#### 19. `posts`
+
+| Column             | Type        | Constraints                                          |
+| ------------------ | ----------- | ---------------------------------------------------- |
+| `id`               | uuid        | PK DEFAULT gen_random_uuid()                         |
+| `slug`             | text        | NOT NULL UNIQUE                                      |
+| `title`            | text        | NOT NULL                                             |
+| `excerpt`          | text        | NULL                                                 |
+| `content_html`     | text        | NOT NULL DEFAULT ''                                  |
+| `cover_image_url`  | text        | NULL                                                 |
+| `author_id`        | uuid        | NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE |
+| `is_published`     | boolean     | NOT NULL DEFAULT false                               |
+| `published_at`     | timestamptz | NULL                                                 |
+| `tags`             | text[]      | NULL                                                 |
+| `meta_title`       | text        | NULL                                                 |
+| `meta_description` | text        | NULL                                                 |
+| `created_at`       | timestamptz | NOT NULL DEFAULT now()                               |
+| `updated_at`       | timestamptz | NOT NULL DEFAULT now() (auto-trigger)                |
+
+Indexes: `idx_posts_slug` (slug), `idx_posts_published` (is_published, published_at DESC), `idx_posts_author` (author_id), `idx_posts_tags` GIN (tags)
+RLS: Public SELECT (published only). Admin full CRUD. Agency viewer read.
+Trigger: `trg_posts_updated_at` — auto-sets `updated_at` on UPDATE via `set_updated_at()`.
 
 ### Database Functions & Triggers
 
@@ -533,6 +603,7 @@ RLS: Admin read (own shop's invoices only, via subscription join). Agency admin 
 | `trg_record_price_change`           | products           | AFTER UPDATE  |
 | `trg_record_variant_price_change`   | product_variants   | AFTER UPDATE  |
 | `trg_shop_subscriptions_updated_at` | shop_subscriptions | BEFORE UPDATE |
+| `trg_reviews_updated_at`            | reviews            | BEFORE UPDATE |
 
 ### Storage
 
@@ -617,7 +688,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Storefront Pages
 
-**Status: COMPLETE** — All 12 storefront routes fully implemented.
+**Status: COMPLETE** — All 12 storefront routes fully implemented. Reviews section on product detail pages (FE-010).
 
 ### `/` (Home Page)
 
@@ -637,8 +708,8 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 - **File:** `src/app/(shop)/products/[slug]/page.tsx`
 - **Type:** Server Component with client interactivity
-- **Features:** Server fetch product + variants + categories + extras. Variant selector (buttons/chips, updates price and stock). Extra product checkboxes (FE-025, default-checked, out-of-stock handling). 30-day lowest price display for discounted products (FE-006, EU Omnibus Directive). Add to cart (client, includes checked extras as separate items). Gallery with main image + thumbnails. Breadcrumbs. SEO metadata per product. JSON-LD Product schema. Loading skeleton.
-- **Components used:** ProductDetailClient, VariantSelector, Gallery, AddToCartButton, PriceDisplay, StockBadge, Breadcrumbs
+- **Features:** Server fetch product + variants + categories + extras. Variant selector (buttons/chips, updates price and stock). Extra product checkboxes (FE-025, default-checked, out-of-stock handling). 30-day lowest price display for discounted products (FE-006, EU Omnibus Directive). Add to cart (client, includes checked extras as separate items). Gallery with main image + thumbnails. Breadcrumbs. SEO metadata per product. JSON-LD Product schema (includes AggregateRating when reviews exist). Loading skeleton. **Reviews section (FE-010):** review summary with star distribution chart, paginated review list with verified badges, review form for authenticated users with one-review-per-product enforcement.
+- **Components used:** ProductDetailClient, VariantSelector, Gallery, AddToCartButton, PriceDisplay, StockBadge, Breadcrumbs, ReviewSection
 
 ### `/cart` (Shopping Cart)
 
@@ -695,6 +766,18 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 - **Files:** `src/app/(shop)/terms/page.tsx`, `privacy/page.tsx`, `shipping-and-returns/page.tsx`
 - **Features:** Static Hungarian-language legal content. Terms references Ptk. and 45/2014 Korm. rendelet. Privacy is GDPR/NAIH compliant. Shipping page dynamically references carriers from siteConfig. Narrower max-width (`max-w-3xl`) for reading comfort.
 
+### `/blog` (Blog Listing)
+
+- **File:** `src/app/(shop)/blog/page.tsx`
+- **Type:** Server Component
+- **Features:** Paginated blog post card grid (6 per page). Tag-based filtering via `?tag=` query param. Cover images with fallback initial letter. Post cards show title, excerpt (line-clamped), tags (clickable, link to filtered view), published date, author name. Breadcrumbs. `loading.tsx` skeleton. SEO metadata.
+
+### `/blog/[slug]` (Blog Post Detail)
+
+- **File:** `src/app/(shop)/blog/[slug]/page.tsx`
+- **Type:** Server Component
+- **Features:** Full blog post with cover image hero, title, date, author, tags, and HTML content in a `prose` container. Related posts section (up to 3, same-tag overlap, excluding current). Dynamic `generateMetadata` with OpenGraph article type, `meta_title`/`meta_description` overrides. Breadcrumbs. `notFound()` for missing/unpublished posts.
+
 ---
 
 ## Customer Profile Section
@@ -716,7 +799,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Admin Panel
 
-**Status: COMPLETE** — All 15 admin pages fully implemented with agency_viewer read-only enforcement. Agency management pages moved to separate `/agency/*` route group (see [Agency Panel](#agency-panel)).
+**Status: COMPLETE** — All 16 admin pages fully implemented with agency_viewer read-only enforcement. Agency management pages moved to separate `/agency/*` route group (see [Agency Panel](#agency-panel)).
 
 ### `/admin` (Dashboard)
 
@@ -818,6 +901,32 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 - **Features:** Structured editor for the About Us page content. 5 collapsible sections (hero, story, team, values, contact). Team member add/remove (max 20). Values add/remove (max 12). Image upload via `SingleImageUpload` component for hero image and team member photos (drag-and-drop, click-to-browse, manual URL fallback, storage deletion). Character counters. Dirty state tracking with unsaved changes warning. Save button (calls `adminUpdatePageContent`). Publish/unpublish toggle (calls `adminTogglePagePublished`). External preview link to `/about`. Loading state with spinner. Error/success toast feedback via Sonner.
 - **Nav:** "Oldalak" link in admin sidebar (`BookOpen` icon)
 
+### `/admin/reviews` (Review Moderation)
+
+- **File:** `src/app/(admin)/admin/reviews/page.tsx`
+- **Type:** Client Component with server data fetching
+- **Features:** Full review moderation dashboard with stats cards (total, pending, approved, rejected counts), tab-based filtering (Összes/Függőben/Jóváhagyott/Elutasított), paginated review list with product title, customer name, rating, status badge, date. Per-review actions: approve, reject, add/edit admin reply. Bulk actions: approve all pending, reject all pending. Review detail shows full text, verified purchase badge, admin reply. Agency viewers see read-only view.
+- **Nav:** "Értékelések" (`Star` icon) in admin sidebar, gated by `siteConfig.features.enableReviews`
+
+### `/admin/blog` (Blog Post Management)
+
+- **File:** `src/app/(admin)/admin/blog/page.tsx`
+- **Type:** Client Component with server data fetching
+- **Features:** Blog post management dashboard with stats cards (total, published, draft counts). Tab-based filtering (Összes/Publikált/Vázlat), text search by title. Paginated post table with title, slug, tags, status badge, author, created date. Per-post actions: view on site (external link), toggle publish/unpublish, edit, delete with confirmation. Pagination via `AdminPagination`.
+- **Nav:** "Blog" (`Newspaper` icon) in admin sidebar, gated by `siteConfig.features.enableBlog` and `enable_blog` plan feature.
+
+### `/admin/blog/new` (Blog Post Create)
+
+- **File:** `src/app/(admin)/admin/blog/new/page.tsx`
+- **Type:** Client Component
+- **Features:** Blog post creation form with 3-column layout (2/3 main content + 1/3 sidebar). Main: title (auto-generates slug), slug (manually editable), excerpt (textarea, max 1000), Markdown editor (`@uiw/react-md-editor`, lazy-loaded, live preview). Sidebar: publish/draft toggle, cover image upload (`SingleImageUpload`), comma-separated tags input, SEO fields (meta title, meta description). Redirects to edit page on success.
+
+### `/admin/blog/[id]` (Blog Post Edit)
+
+- **File:** `src/app/(admin)/admin/blog/[id]/page.tsx`
+- **Type:** Client Component
+- **Features:** Same layout as create page. Pre-populates all fields from existing post. Status badge + creation date in header. External "Megtekintés" link for published posts. Delete button with confirmation dialog. Success/error feedback messages. Local state update on save for immediate UI refresh.
+
 ### `/admin/subscription` (Shop Owner Subscription View)
 
 **Purpose:** Shop owners (the agency's clients) can view their own plan details, understand what's included, and see billing history. This is a **read-only** page — no invoice creation or subscription management. All mutations are performed by the agency via `/agency/clients`.
@@ -851,7 +960,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 - **Desktop:** Fixed 260px collapsible sidebar + top bar with toggle
 - **Mobile:** Sheet-based slide-out sidebar
-- **Navigation items:** Feature-flag-driven (marketing only shows if `enableMarketingModule` is true, coupons only if `enableCoupons` is true). "Oldalak" link to `/admin/pages/about` (always visible).
+- **Navigation items:** Feature-flag-driven (marketing only shows if `enableMarketingModule` is true, coupons only if `enableCoupons` is true, reviews only if `enableReviews` is true). "Oldalak" link to `/admin/pages/about` (always visible).
 - **Nav items:** "Előfizetés" (Subscription) link to `/admin/subscription` (all admin roles).
 - **Agency link:** Conditional "Ügynökségi kezelő" link with `Building2` icon, shown only when `enableAgencyMode` is `true` AND user has `is_agency_owner = true`. Links to `/agency`. Separated from other nav items with a visual `Separator`.
 - **Agency viewer:** Yellow "Csak olvasás" (Read-only) badge in sidebar
@@ -922,7 +1031,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Server Actions
 
-**Status: COMPLETE** — 13 action files, 75 exported functions, all with Zod validation.
+**Status: COMPLETE** — 15 action files, 95 exported functions, all with Zod validation.
 
 ### `src/lib/actions/products.ts` (1150 lines)
 
@@ -1043,6 +1152,22 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | `uploadProductImage(formData)` | requireAdmin | Uploads a single image to Supabase Storage `product-images` bucket. Validates file type (JPEG/PNG/WebP/AVIF) and size (5 MB). Returns public URL.                                                 |
 | `deleteProductImage(url)`      | requireAdmin | Deletes an image from the `product-images` bucket. Extracts file path from Supabase Storage URL pattern. No-op for external URLs (returns success). Called automatically on image remove/replace. |
 
+### `src/lib/actions/reviews.ts` (~600 lines)
+
+| Function                                        | Guard                | What it does                                                                                                                                                                                                                 |
+| ----------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getProductReviews(productId, page?, perPage?)` | Public               | Fetches approved reviews for a product, paginated. Includes user full_name via profiles FK join (migration 017). Returns reviews + total count.                                                                              |
+| `getProductReviewStats(productId)`              | Public               | Fetches aggregated review stats from `product_review_stats` view: average rating, total count, per-star distribution.                                                                                                        |
+| `getUserReview(productId)`                      | requireAuth          | Checks if the authenticated user has already reviewed this product. Returns the review or null.                                                                                                                              |
+| `createReview(input)`                           | requireAuth          | Creates a new review with Zod validation. Enforces one-review-per-product constraint. Auto-sets `is_verified` by checking if user has a shipped order containing the product. Plan-gated via `enable_reviews`. Audit logged. |
+| `updateReview(reviewId, input)`                 | requireAuth          | Updates own review (title, body, rating). Resets status to 'pending' for re-moderation. Audit logged.                                                                                                                        |
+| `deleteReview(reviewId)`                        | requireAuth          | Deletes own review. Audit logged.                                                                                                                                                                                            |
+| `adminListReviews(filters)`                     | requireAdminOrViewer | Lists all reviews with filters (status, product, search). Paginated. Includes product title and user name.                                                                                                                   |
+| `adminGetReviewStats()`                         | requireAdminOrViewer | Returns aggregate moderation stats: total, pending, approved, rejected counts.                                                                                                                                               |
+| `adminUpdateReviewStatus(reviewId, status)`     | requireAdmin         | Approves or rejects a review. Audit logged.                                                                                                                                                                                  |
+| `adminReplyToReview(reviewId, reply)`           | requireAdmin         | Adds or updates admin reply on a review. Sets `admin_reply_at` timestamp. Audit logged.                                                                                                                                      |
+| `adminBulkUpdateStatus(status)`                 | requireAdmin         | Bulk approves or rejects all pending reviews. Audit logged with count.                                                                                                                                                       |
+
 ### `src/lib/actions/subscriptions.ts` (~743 lines)
 
 | Function                             | Guard                                    | What it does                                                                                                                                                             |
@@ -1061,6 +1186,22 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | `listInvoices(subscriptionId?)`      | requireAdminOrViewer                     | Lists invoices for a given subscription (or all if agency owner and no ID passed). Returns `SubscriptionInvoiceRow[]`.                                                   |
 | `adminCreateInvoice(input)`          | requireAgencyOwner + isAgencyModeEnabled | Creates a billing invoice record for a subscription. Validates with `invoiceCreateSchema`. Audit logged.                                                                 |
 | `adminUpdateInvoice(id, input)`      | requireAgencyOwner + isAgencyModeEnabled | Updates invoice fields (status, paid_at, invoice_provider, invoice_number, invoice_url, notes). Validates with `invoiceUpdateSchema`. Audit logged.                      |
+
+### `src/lib/actions/blog.ts` (~670 lines)
+
+| Function                        | Guard                | What it does                                                                                                                                             |
+| ------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getPublishedPosts(params)`     | Public (plan-gated)  | Paginated published posts with optional tag filter. Enriches with author names from profiles. Gated by `enableBlog` config + `enable_blog` plan feature. |
+| `getPostBySlug(slug)`           | Public (plan-gated)  | Fetches single published post by slug with author name. Gated by blog feature flags.                                                                     |
+| `getRelatedPosts(postId, tags)` | Public               | Fetches up to 3 related published posts by overlapping tags, excluding current post. Enriches with author names.                                         |
+| `adminGetPosts(params)`         | requireAdminOrViewer | Lists all posts (published + draft) with search, status filter, pagination. Enriches with author names.                                                  |
+| `adminGetPost(id)`              | requireAdminOrViewer | Single post by ID (any status) with author name. UUID validated via `uuidSchema`.                                                                        |
+| `adminCreatePost(input)`        | requireAdmin         | Creates post with Zod validation, auto-slug generation (collision-safe with -2, -3 suffixes), sets `published_at` on publish. Audit logged.              |
+| `adminUpdatePost(id, input)`    | requireAdmin         | Updates post fields. Handles publish state transitions (sets/clears `published_at`). Unique slug generation on slug change. Audit logged.                |
+| `adminDeletePost(id)`           | requireAdmin         | Hard delete. Fetches post for audit metadata before deletion. Audit logged.                                                                              |
+| `adminTogglePostPublished(id)`  | requireAdmin         | Toggles `is_published` flag. Sets `published_at` on first publish, clears on unpublish. Audit logged with `post.publish` / `post.unpublish` action.      |
+
+**Blog feature gate:** All public actions check both `siteConfig.features.enableBlog` (static) and `getPlanGate().check("enable_blog")` (dynamic plan feature) via the `checkBlogEnabled()` helper.
 
 **Agency mode guard:** All 10 agency-owner-only actions (marked with `isAgencyModeEnabled` above) check `siteConfig.admin.enableAgencyMode` before proceeding. If disabled, they return `{ success: false, error: "Az ügynökségi mód nincs engedélyezve." }`. This allows the boilerplate to be used for non-agency businesses by setting `enableAgencyMode: false`.
 
@@ -1123,7 +1264,7 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 
 ## Components Inventory
 
-**Status: COMPLETE** — 57 component files total.
+**Status: COMPLETE** — 62 component files total.
 
 ### Shared Components (12)
 
@@ -1142,19 +1283,24 @@ Single middleware intercepts every request. Uses `updateSession()` which refresh
 | CookieSettingsButton  | `shared/cookie-settings-button.tsx`     | Client | Floating button to reopen cookie consent settings. Used on cookie policy page.                                                                                                                                |
 | CookieConsentProvider | `providers/cookie-consent-provider.tsx` | Client | Context provider for cookie consent state. Wraps app in root layout.                                                                                                                                          |
 
-### Product Components (9)
+### Product Components (14)
 
-| Component           | File                                | Type   | Purpose                                                                                                                                                                                          |
-| ------------------- | ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ProductCard         | `product/product-card.tsx`          | Server | Card with image, title, price, compare-at price, category badges. Link to product detail.                                                                                                        |
-| ProductGrid         | `product/product-grid.tsx`          | Server | Responsive grid of ProductCards.                                                                                                                                                                 |
-| ProductDetailClient | `product/product-detail-client.tsx` | Client | Full product detail with variant state, price updates, extras checkboxes (FE-025), 30-day lowest price resolution per variant (FE-006), add to cart.                                             |
-| ProductFilters      | `product/product-filters.tsx`       | Client | Category select, price range, in-stock toggle, sort select. Updates URL params.                                                                                                                  |
-| VariantSelector     | `product/variant-selector.tsx`      | Client | Button/chip-based variant selection. Updates parent state.                                                                                                                                       |
-| Gallery             | `product/gallery.tsx`               | Client | Main image + thumbnail strip. Click to switch.                                                                                                                                                   |
-| AddToCartButton     | `product/add-to-cart-button.tsx`    | Client | Button with loading state. Calls Zustand addItem + adds checked extras as separate cart items. CartDrawer auto-opens as add-to-cart confirmation (FE-009, replaces toast).                       |
-| PriceDisplay        | `product/price-display.tsx`         | Server | Formats HUF price. Shows strikethrough for compare-at. EU Omnibus Directive: displays "Legalacsonyabb ár az elmúlt 30 napban" text with lowest 30-day price when product is discounted (FE-006). |
-| StockBadge          | `product/stock-badge.tsx`           | Server | Green/yellow/red badge based on stock level.                                                                                                                                                     |
+| Component           | File                                | Type   | Purpose                                                                                                                                                                                              |
+| ------------------- | ----------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ProductCard         | `product/product-card.tsx`          | Server | Card with image, title, price, compare-at price, category badges. Link to product detail.                                                                                                            |
+| ProductGrid         | `product/product-grid.tsx`          | Server | Responsive grid of ProductCards.                                                                                                                                                                     |
+| ProductDetailClient | `product/product-detail-client.tsx` | Client | Full product detail with variant state, price updates, extras checkboxes (FE-025), 30-day lowest price resolution per variant (FE-006), add to cart.                                                 |
+| ProductFilters      | `product/product-filters.tsx`       | Client | Category select, price range, in-stock toggle, sort select. Updates URL params.                                                                                                                      |
+| VariantSelector     | `product/variant-selector.tsx`      | Client | Button/chip-based variant selection. Updates parent state.                                                                                                                                           |
+| Gallery             | `product/gallery.tsx`               | Client | Main image + thumbnail strip. Click to switch.                                                                                                                                                       |
+| AddToCartButton     | `product/add-to-cart-button.tsx`    | Client | Button with loading state. Calls Zustand addItem + adds checked extras as separate cart items. CartDrawer auto-opens as add-to-cart confirmation (FE-009, replaces toast).                           |
+| PriceDisplay        | `product/price-display.tsx`         | Server | Formats HUF price. Shows strikethrough for compare-at. EU Omnibus Directive: displays "Legalacsonyabb ár az elmúlt 30 napban" text with lowest 30-day price when product is discounted (FE-006).     |
+| StockBadge          | `product/stock-badge.tsx`           | Server | Green/yellow/red badge based on stock level.                                                                                                                                                         |
+| StarRating          | `product/star-rating.tsx`           | Client | Reusable star rating display with interactive and read-only modes. Supports half-star rendering. Configurable size and color. Used in review form (interactive) and review list/summary (read-only). |
+| ReviewSummary       | `product/review-summary.tsx`        | Client | Review statistics panel: average rating with large star display, total review count, per-star distribution bar chart with percentages. Calls `getProductReviewStats`.                                |
+| ReviewList          | `product/review-list.tsx`           | Client | Paginated review list with star ratings, verified purchase badges, reviewer names, dates, admin replies (indented). Calls `getProductReviews`. Load more pagination.                                 |
+| ReviewForm          | `product/review-form.tsx`           | Client | Review submission form with interactive star rating, title, body textarea. Checks authentication, one-review-per-product, and plan gating. Edit/delete own review. Toast feedback.                   |
+| ReviewSection       | `product/review-section.tsx`        | Server | Orchestrator component for the product review section. Renders ReviewSummary + ReviewList + ReviewForm. Gated by `siteConfig.features.enableReviews`.                                                |
 
 ### Cart/Checkout Components (5)
 
@@ -1218,7 +1364,7 @@ Fully typed `SiteConfig` with these sections:
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **store**                 | name: "Agency Store", legalName: "Agency Kft.", currency: HUF, Budapest address, phone, email                                                                                                                                                                                |
 | **urls**                  | siteUrl (from env), supportEmail                                                                                                                                                                                                                                             |
-| **features**              | enableAccounts: true, enableGuestCheckout: true, enableCoupons: true, enableReviews: false (scaffold only), enableMarketingModule: true, enableAbandonedCart: true, enableB2BWholesaleMode: false                                                                            |
+| **features**              | enableAccounts: true, enableGuestCheckout: true, enableCoupons: true, enableReviews: true, enableMarketingModule: true, enableAbandonedCart: true, enableB2BWholesaleMode: false                                                                                             |
 | **payments**              | provider: "barion", environment from env (test/prod), posKey env var name, redirectUrls. **COD config:** `cod.enabled: true`, `cod.fee: 590` (HUF surcharge), `cod.maxOrderAmount: 100_000` (orders above must pay online), `cod.allowedShippingMethods: ["home", "pickup"]` |
 | **shipping.homeDelivery** | enabled: true, carriers: GLS, MPL, Express One                                                                                                                                                                                                                               |
 | **shipping.pickupPoint**  | enabled: true, carriers: Foxpost, GLS Automata, Packeta, MPL Automata, Easybox                                                                                                                                                                                               |
@@ -1271,13 +1417,15 @@ Fully typed `SiteConfig` with these sections:
 
 API: `getHooks()`, `overrideHooks(partial)`, `resetHooks()`
 
-### Zod Validators (5 files)
+### Zod Validators (8 files)
 
 | File                         | Schemas                                                                                                                                              |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validators/blog.ts`         | slugSchema, postCreateSchema, postUpdateSchema, postListParamsSchema, adminPostListParamsSchema                                                      |
 | `validators/checkout.ts`     | addressSchema, contactSchema, homeDeliverySchema, pickupPointSchema, checkoutSchema (includes `paymentMethod: z.enum(["barion", "cod"])`)            |
 | `validators/coupon.ts`       | couponCreateSchema, couponApplySchema                                                                                                                |
 | `validators/product.ts`      | vatRateSchema, variantSchema, productCreateSchema, productUpdateSchema                                                                               |
+| `validators/review.ts`       | reviewCreateSchema, reviewUpdateSchema (rating 1-5, title max 200, body max 2000)                                                                    |
 | `validators/subscriber.ts`   | subscribeSchema, unsubscribeSchema, tagSchema                                                                                                        |
 | `validators/subscription.ts` | planFeaturesSchema, planCreateSchema, planUpdateSchema, subscriptionCreateSchema, subscriptionUpdateSchema, invoiceCreateSchema, invoiceUpdateSchema |
 | `validators/uuid.ts`         | uuidSchema                                                                                                                                           |
@@ -1295,7 +1443,7 @@ Plus 15+ inline Zod schemas in individual action files.
 | Dynamic sitemap   | DONE   | `src/app/sitemap.ts` — includes all active products (limit 5000, filtered by published_at), categories (limit 500), and 5 static pages. Priority weighting: home 1.0, products 0.9, individual products 0.8, categories 0.7, legal 0.3. |
 | robots.txt        | DONE   | `src/app/robots.ts` — allows all crawlers on `/`. Disallows `/admin/`, `/agency/`, `/api/`, `/checkout/`, `/profile/`. Points to sitemap.                                                                                               |
 | Per-page metadata | DONE   | Custom title/description on every route. Product pages have dynamic metadata from DB.                                                                                                                                                   |
-| JSON-LD           | DONE   | Product structured data on `/products/[slug]` (Product schema with name, description, price, availability, image).                                                                                                                      |
+| JSON-LD           | DONE   | Product structured data on `/products/[slug]` (Product schema with name, description, price, availability, image, AggregateRating from reviews when available).                                                                         |
 | OpenGraph         | DONE   | Product pages include og:title, og:description, og:image.                                                                                                                                                                               |
 | next/image        | DONE   | Used for product images with placeholder blur.                                                                                                                                                                                          |
 | Loading skeletons | DONE   | `loading.tsx` files for products list and product detail pages.                                                                                                                                                                         |
@@ -1424,6 +1572,7 @@ All passwords: `password123`
 | Order Items            | 19    | Multi-item orders included                                                                                                     |
 | Subscribers            | 10    | 9 subscribed + 1 unsubscribed, varied sources and tags                                                                         |
 | Audit Logs             | 12    | Various actions by different actors                                                                                            |
+| Reviews                | 9     | 7 customer reviews (mix of approved/pending, 3-5 stars, verified/unverified) + 2 admin replies                                 |
 
 ---
 
@@ -1439,6 +1588,8 @@ These are small issues or architectural notes. All former "spec gaps" and "plann
 ### Architecture Notes
 
 3. **Checkout/admin components are inline:** ~~CheckoutStepper, AddressForm, ShippingMethodSelector, DataTable, StatusBadge, ConfirmDialog, ProductForm, OrderDetailPanel are built inline within their pages rather than extracted as reusable components.~~ → **Resolved in FE-005.** CheckoutStepper, AddressFields, FormField, ReviewSection, AdminPagination, StatusBadge (generic), StatusStepper, StatusTransitionButton, AddressDisplay, and toSlug() all extracted to standalone files. `ProductForm` extraction remains deferred (two 800–1000 line files with significant differences). `DataTable`, `ShippingMethodSelector`, and `ConfirmDialog` not yet extracted.
+4. **Reviews FK — FIXED in migration 017:** The `reviews` table originally only referenced `auth.users(id)` for `user_id`. Migration `017_add_reviews_profiles_fk.sql` adds `FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL`, enabling PostgREST to resolve `.select("*, profiles(full_name)")` joins natively. After applying the migration and regenerating types, the `as unknown as` casts in `reviews.ts` can be removed.
+5. **Type system: generated types use `Json` for JSONB columns.** All JSONB columns (addresses, features, variant_snapshot, metadata, page content) are typed as `Json` in `database.generated.ts`. Small shape types (`AddressJson`, `PlanFeaturesJson`, `VariantSnapshotJson`, etc.) in `database.ts` are used for **casting at point of use** only. Supabase SDK `.select("*")` type inference may differ from `Row` types in generated types — explicit `as XxxRow` casts are used where needed.
 
 ### Documentation Inaccuracies
 
@@ -1465,13 +1616,22 @@ These are small issues or architectural notes. All former "spec gaps" and "plann
 
 ---
 
+### Reviews & Type System
+
+21. **FE-010 (Reviews System):** Full customer review system with moderation. **Database:** `reviews` table (uuid PK, product_id FK CASCADE, user_id FK to auth.users SET NULL, rating 1-5, title max 200, body max 2000, status enum `review_status` (pending/approved/rejected), is_verified boolean, admin_reply, admin_reply_at, timestamps). UNIQUE(product_id, user_id) — one review per user per product. 3 indexes. RLS: public SELECT (approved only), authenticated INSERT (own), admin full. `product_review_stats` regular VIEW aggregating average_rating, review_count, per-star distribution from approved reviews. Migration: `014_reviews.sql`. **Validators:** `src/lib/validators/review.ts` — reviewCreateSchema, reviewUpdateSchema. **Server actions:** `src/lib/actions/reviews.ts` — 11 exported functions (getProductReviews, getProductReviewStats, getUserReview, createReview with verified-purchase auto-detection and plan gating, updateReview, deleteReview, adminListReviews, adminGetReviewStats, adminUpdateReviewStatus, adminReplyToReview, adminBulkUpdateStatus). **Components:** 5 new files in `src/components/product/`: `star-rating.tsx` (interactive + read-only, half-star), `review-summary.tsx` (stats panel with bar chart), `review-list.tsx` (paginated with verified badges), `review-form.tsx` (submit/edit/delete with auth checks), `review-section.tsx` (orchestrator, feature-gated). **Admin page:** `/admin/reviews` — moderation dashboard with stats cards, tab filtering, per-review approve/reject/reply, bulk actions. "Értékelések" nav in admin sidebar (gated by `enableReviews`). **Product page integration:** ReviewSection rendered below product detail. JSON-LD AggregateRating added when reviews exist. **Config:** `enableReviews: true` in siteConfig.features. Plan gating via `enable_reviews` in plan features JSON. **Seed:** 9 reviews (7 customer reviews with mix of ratings/statuses/verified + 2 admin replies). `pnpm build` passes cleanly.
+22. **Type System Overhaul:** Migrated all TypeScript types from hand-coded definitions to auto-generated types from `supabase gen types`. **Database migration 016** (`016_convert_text_checks_to_pg_enums.sql`): converted 5 text+CHECK columns to proper PostgreSQL enums — `payment_method` (orders), `discount_type` (coupons), `invoice_status` (subscription_invoices), `billing_cycle` (shop_subscriptions), `shipping_method` (orders). Plus created `review_status` enum for the reviews table. **Generated types:** `src/lib/types/database.generated.ts` is now the auto-generated source of truth (via `supabase gen types typescript`). **Convenience aliases:** `src/lib/types/database.ts` rewritten as a minimal re-export file (~265 lines) using `Tables<'table_name'>`, `TablesInsert<'table_name'>`, `TablesUpdate<'table_name'>`, and `Enums<'enum_name'>` helpers. Manual JSONB shape types kept for casting: `AddressJson`, `PlanFeaturesJson`, `VariantSnapshotJson`, `PickupPointJson`, `AboutUsContent`, `ReviewStats`. **Codebase-wide type fixes:** ~25 files updated with proper casts for JSONB fields (`as AddressJson`, `as PlanFeaturesJson`, `as Json`), explicit `as XxxRow` casts where SDK inference differs from generated types, and updated test fixtures. All 10 new PostgreSQL enums properly typed. `pnpm build` passes with zero TypeScript errors and zero ESLint errors.
+
 ### Bug Fixes
 
-21. **CartCount hydration mismatch fix:** `CartCount` (`src/components/shared/cart-count.tsx`) had a React hydration error caused by Zustand's `persist` middleware. Server rendered `null` (cart count 0), but client immediately rendered the visible badge after localStorage rehydration. Fixed by adding a `mounted` state guard (`useState(false)` + `useEffect`) that defers rendering the persisted count until after the first client render, ensuring server/client output matches exactly.
+23. **CartCount hydration mismatch fix:** `CartCount` (`src/components/shared/cart-count.tsx`) had a React hydration error caused by Zustand's `persist` middleware. Server rendered `null` (cart count 0), but client immediately rendered the visible badge after localStorage rehydration. Fixed by adding a `mounted` state guard (`useState(false)` + `useEffect`) that defers rendering the persisted count until after the first client render, ensuring server/client output matches exactly.
 
 ### Tooling
 
-22. **Prettier configuration:** Complete Prettier setup with `prettier-plugin-tailwindcss` for automatic Tailwind class sorting. Config: `semi: false`, `singleQuote: false`, `trailingComma: "all"`, `tabWidth: 2`, `printWidth: 100`, `endOfLine: "lf"`. Scripts: `pnpm format` (write) and `pnpm format:check` (CI check). `.prettierignore` excludes `.next/`, `node_modules/`, `pnpm-lock.yaml`, and build artifacts. ESLint integration via `eslint-config-prettier` (already installed).
+24. **Prettier configuration:** Complete Prettier setup with `prettier-plugin-tailwindcss` for automatic Tailwind class sorting. Config: `semi: false`, `singleQuote: false`, `trailingComma: "all"`, `tabWidth: 2`, `printWidth: 100`, `endOfLine: "lf"`. Scripts: `pnpm format` (write) and `pnpm format:check` (CI check). `.prettierignore` excludes `.next/`, `node_modules/`, `pnpm-lock.yaml`, and build artifacts. ESLint integration via `eslint-config-prettier` (already installed).
+
+### Blog
+
+25. **FE-022 (Blog System):** Full blog with admin CRUD, public pages, Markdown editor, SEO, and tag filtering. **Database:** `posts` table (uuid PK, slug UNIQUE, title, excerpt, content_html, cover_image_url, author_id FK to auth.users, is_published, published_at, tags text[], meta_title, meta_description, timestamps). Indexes on slug, is_published, published_at, tags (GIN). RLS: public SELECT (published only), admin full CRUD. `updated_at` trigger. Migration: `015_blog.sql`. **Types:** `PostRow`, `PostInsert`, `PostUpdate` + enriched `PostSummary`, `PostDetail`, `PostAdmin` in `database.ts`. `enable_blog` added to `PlanFeaturesJson`. **Config:** `enableBlog: boolean` in `siteConfig.features`. `enable_blog: "blog"` in plan-gate `FEATURE_LABELS`. **Validators:** `src/lib/validators/blog.ts` — `slugSchema`, `postCreateSchema`, `postUpdateSchema`, `postListParamsSchema`, `adminPostListParamsSchema`. **Server actions:** `src/lib/actions/blog.ts` — 9 exported functions (getPublishedPosts, getPostBySlug, getRelatedPosts, adminGetPosts, adminGetPost, adminCreatePost, adminUpdatePost, adminDeletePost, adminTogglePostPublished). Two-tier feature gate: `siteConfig.features.enableBlog` (static) + `getPlanGate().check("enable_blog")` (dynamic). Collision-safe slug generation with `-2, -3` suffixes. Author name enrichment via profiles join. **Admin pages:** `/admin/blog` (list with stats cards, search, status filter, pagination, toggle publish, delete), `/admin/blog/new` (3-column form with `@uiw/react-md-editor` lazy-loaded Markdown editor, cover image upload, tag input, SEO fields), `/admin/blog/[id]` (pre-populated edit form with delete, success feedback). "Blog" nav item (`Newspaper` icon) in admin sidebar, gated by `enableBlog` + `enable_blog`. **Public pages:** `/blog` (card grid with cover images, tag filtering via `?tag=` param, pagination, generateMetadata), `/blog/[slug]` (full post with cover hero, breadcrumbs, author, date, tags, `react-markdown` + `remark-gfm` rendering, related posts by tag overlap, OpenGraph metadata), `/blog/loading.tsx` (skeleton). **Navigation:** "Blog" added to header navLinks, footer shopLinks, and mobile nav. **Sitemap:** published posts added to `sitemap.ts` with blog static entry. **Dependencies:** `@uiw/react-md-editor`, `react-markdown`, `remark-gfm`, `@tailwindcss/typography` (prose styles). **Markdown flow:** Admin writes in Markdown editor → stored in `content_html` column → rendered via `react-markdown` with GFM on public page. `pnpm build` passes cleanly.
 
 ---
 

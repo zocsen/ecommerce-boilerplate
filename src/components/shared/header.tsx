@@ -14,6 +14,7 @@ import type { AppRole } from "@/lib/types/database";
 const navLinks = [
   { label: "Termékek", href: "/products" },
   { label: "Kategóriák", href: "/products?category=all" },
+  { label: "Blog", href: "/blog" },
 ] as const;
 
 /* ------------------------------------------------------------------ */

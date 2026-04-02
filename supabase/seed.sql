@@ -1014,6 +1014,126 @@ INSERT INTO public.subscription_invoices (
 );
 
 -- ================================================================
+-- 11. REVIEWS (FE-010)
+-- ================================================================
+
+-- Customer 1 (Kovács Mária, verified purchase — has shipped order e0000001)
+INSERT INTO public.reviews (id, product_id, user_id, order_id, rating, title, body, status, is_verified_purchase) VALUES
+(
+  'f0000001-0000-0000-0000-000000000001',
+  'a0000001-0000-0000-0000-000000000001', -- Prémium Bőr Pénztárca
+  '44444444-4444-4444-4444-444444444444', -- Kovács Mária
+  'e0000001-0000-0000-0000-000000000001', -- shipped order
+  5,
+  'Kiváló minőség!',
+  'Nagyon elégedett vagyok a pénztárcával. A bőr minősége kifogástalan, a varrás precíz. Ajánlom mindenkinek, aki minőségi terméket keres.',
+  'approved',
+  true
+),
+(
+  'f0000001-0000-0000-0000-000000000002',
+  'a0000001-0000-0000-0000-000000000002', -- Kézműves Kerámia Bögre
+  '44444444-4444-4444-4444-444444444444', -- Kovács Mária
+  'e0000001-0000-0000-0000-000000000001',
+  4,
+  'Szép darab, de apró hiba',
+  'A bögre gyönyörű, egyedi mintázattal. Egy kis zománchiba volt az alján, de összességében nagyon tetszik. A kávé is jobban esik belőle!',
+  'approved',
+  true
+);
+
+-- Customer 2 (Kiss János, no verified purchase for these products)
+INSERT INTO public.reviews (id, product_id, user_id, rating, title, body, status, is_verified_purchase) VALUES
+(
+  'f0000001-0000-0000-0000-000000000003',
+  'a0000001-0000-0000-0000-000000000001', -- Prémium Bőr Pénztárca
+  '55555555-5555-5555-5555-555555555555', -- Kiss János
+  4,
+  'Jó ár-érték arány',
+  'Szép pénztárca, kellemes tapintású bőr. A cipzáras rész kicsit nehezen jár, de az összhatás pozitív. Egy éve használom, szinte új állapotú.',
+  'approved',
+  false
+),
+(
+  'f0000001-0000-0000-0000-000000000004',
+  'a0000001-0000-0000-0000-000000000003', -- Minimalista Óra
+  '55555555-5555-5555-5555-555555555555', -- Kiss János
+  5,
+  'Elegáns és megbízható',
+  'Már régóta kerestem egy ilyen minimalista órát. A számlap kristálytiszta, a szíj kényelmes. Pontosan jár, ajándéknak is tökéletes. Nagyon ajánlom!',
+  'approved',
+  false
+),
+(
+  'f0000001-0000-0000-0000-000000000005',
+  'a0000001-0000-0000-0000-000000000005', -- Bambusz Napkendő Szett
+  '55555555-5555-5555-5555-555555555555', -- Kiss János
+  3,
+  null,
+  'A szín kicsit eltér a képeken látottaktól, de az anyag kellemes. Mosás után nem ment össze, ez pozitív. Összességében átlagos termék.',
+  'approved',
+  false
+);
+
+-- Customer 3 (Horváth Éva, no orders at all)
+INSERT INTO public.reviews (id, product_id, user_id, rating, title, body, status, is_verified_purchase) VALUES
+(
+  'f0000001-0000-0000-0000-000000000006',
+  'a0000001-0000-0000-0000-000000000002', -- Kézműves Kerámia Bögre
+  '66666666-6666-6666-6666-666666666666', -- Horváth Éva
+  5,
+  'Csodálatos ajándék volt!',
+  'Karácsonyra vettem anyukámnak és imádta. Az egyedi mintázat különlegessé teszi, nem egy gyári darab. A csomagolás is igényes volt, nem kellett külön becsomagolnom.',
+  'approved',
+  false
+),
+(
+  'f0000001-0000-0000-0000-000000000007',
+  'a0000001-0000-0000-0000-000000000004', -- Aromaterápiás Gyertya
+  '66666666-6666-6666-6666-666666666666', -- Horváth Éva
+  2,
+  'Gyenge illat, gyorsan leég',
+  'Sajnos csalódtam. Az illata alig érezhető, és a gyertya nagyon gyorsan leégett. A megadott égési idő közel sem valós. Nem venném meg újra.',
+  'pending',
+  false
+);
+
+-- Customer 4 (Varga Balázs)
+INSERT INTO public.reviews (id, product_id, user_id, rating, title, body, status, is_verified_purchase) VALUES
+(
+  'f0000001-0000-0000-0000-000000000008',
+  'a0000001-0000-0000-0000-000000000003', -- Minimalista Óra
+  '77777777-7777-7777-7777-777777777777', -- Varga Balázs
+  4,
+  null,
+  'Szép óra, letisztult design. A szíj cseréje egyszerű, több színt is rendeltem hozzá. Egyetlen kifogásom, hogy a számlapra könnyebben kerül karcolás, mint vártam.',
+  'approved',
+  false
+),
+(
+  'f0000001-0000-0000-0000-000000000009',
+  'a0000001-0000-0000-0000-000000000001', -- Prémium Bőr Pénztárca
+  '77777777-7777-7777-7777-777777777777', -- Varga Balázs
+  1,
+  'Nem tartós',
+  'Két hónap használat után a varrás felbomlott az egyik sarkánál. A bőr felülete is karcos lett, holott óvtam. Ennyi pénzért többet vártam. Kértem visszatérítést.',
+  'rejected',
+  false
+);
+
+-- Admin reply on an approved review
+UPDATE public.reviews
+SET admin_reply = 'Köszönjük a szép szavakat! Örülünk, hogy elégedett a termékkel. Visszatérő vásárlóinknak különleges kedvezményeket kínálunk!',
+    admin_reply_at = now() - interval '2 days'
+WHERE id = 'f0000001-0000-0000-0000-000000000001';
+
+-- Admin reply on the rejected review
+UPDATE public.reviews
+SET admin_reply = 'Sajnáljuk a kellemetlenséget. Kérjük, vegye fel velünk a kapcsolatot a support@agency.hu címen a garanciális ügyintézéshez.',
+    admin_reply_at = now() - interval '1 day'
+WHERE id = 'f0000001-0000-0000-0000-000000000009';
+
+-- ================================================================
 -- Seed complete.
 -- All test users password: password123
 -- ================================================================

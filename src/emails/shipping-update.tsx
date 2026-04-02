@@ -282,6 +282,7 @@ ShippingUpdateEmail.PreviewProps = {
     idempotency_key: null,
     payment_method: "barion",
     cod_fee: 0,
-  },
+    abandoned_cart_sent_at: null,
+  } satisfies OrderRow,
   trackingCode: "GLS-123456789HU",
 } satisfies ShippingUpdateEmailProps;

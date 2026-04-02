@@ -616,6 +616,7 @@ describe("Scheduled Publishing — createOrderFromCart filter", () => {
         carrier: "gls",
         notes: "",
         couponCode: "",
+        paymentMethod: "barion",
       },
     });
 

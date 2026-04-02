@@ -3,6 +3,7 @@
 /* ------------------------------------------------------------------ */
 
 import { z } from "zod";
+import { uuidSchema } from "@/lib/validators/uuid";
 
 // ── Shared helpers ─────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ export const planFeaturesSchema = z.object({
   enable_scheduled_publishing: z.boolean(),
   enable_agency_viewer: z.boolean(),
   enable_custom_pages: z.boolean(),
+  enable_blog: z.boolean(),
 });
 
 export type PlanFeaturesInput = z.infer<typeof planFeaturesSchema>;
@@ -77,7 +79,7 @@ export type PlanUpdateInput = z.infer<typeof planUpdateSchema>;
 // ── Subscription create/update schemas ────────────────────────────
 
 export const subscriptionCreateSchema = z.object({
-  plan_id: z.string().uuid("Érvénytelen csomag azonosító"),
+  plan_id: uuidSchema,
   shop_identifier: z
     .string()
     .min(1, "A bolt azonosító kötelező")
@@ -96,7 +98,7 @@ export const subscriptionCreateSchema = z.object({
 export type SubscriptionCreateInput = z.infer<typeof subscriptionCreateSchema>;
 
 export const subscriptionUpdateSchema = z.object({
-  plan_id: z.string().uuid("Érvénytelen csomag azonosító").optional(),
+  plan_id: uuidSchema.optional(),
   shop_identifier: z.string().min(1).max(255).optional(),
   status: subscriptionStatusSchema.optional(),
   billing_cycle: billingCycleSchema.optional(),
@@ -115,7 +117,7 @@ export type SubscriptionUpdateInput = z.infer<typeof subscriptionUpdateSchema>;
 // ── Invoice create/update schemas ─────────────────────────────────
 
 export const invoiceCreateSchema = z.object({
-  subscription_id: z.string().uuid("Érvénytelen előfizetés azonosító"),
+  subscription_id: uuidSchema,
   amount: z.int().min(1, "A számlázandó összeg legalább 1 HUF kell legyen"),
   currency: z.string().length(3).optional(),
   billing_period_start: z.string().datetime("Érvénytelen számlázási időszak kezdete"),

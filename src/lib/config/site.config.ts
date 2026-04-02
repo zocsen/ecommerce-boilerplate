@@ -31,6 +31,7 @@ export interface FeaturesConfig {
   enableMarketingModule: boolean;
   enableAbandonedCart: boolean;
   enableB2BWholesaleMode: boolean;
+  enableBlog: boolean;
 }
 
 export interface BarionConfig {
@@ -205,10 +206,11 @@ export const siteConfig: SiteConfig = {
     enableAccounts: true,
     enableGuestCheckout: true,
     enableCoupons: true,
-    enableReviews: false,
+    enableReviews: true,
     enableMarketingModule: true,
     enableAbandonedCart: true,
     enableB2BWholesaleMode: false,
+    enableBlog: true,
   },
 
   /* ── cookie consent ──────────────────────────────────── */

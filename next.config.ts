@@ -31,6 +31,9 @@ const supabasePattern = getSupabaseImagePattern();
 const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
+    // Allow next/image optimization for local Supabase Storage (127.0.0.1) during development.
+    // This is a Next.js 16 security default — safe to enable for local dev.
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === "development",
     remotePatterns: [
       {
         protocol: "https",

@@ -28,6 +28,7 @@ const FEATURE_LABELS: Record<keyof PlanFeaturesJson, string> = {
   enable_scheduled_publishing: "Ütemezett közzététel",
   enable_agency_viewer: "Agency Viewer",
   enable_custom_pages: "Egyedi oldalak",
+  enable_blog: "Blog",
 };
 
 const NUMERIC_KEYS: (keyof PlanFeaturesJson)[] = [
@@ -127,10 +128,8 @@ function PricingCard({
   isCurrent: boolean;
 }) {
   const price = cycle === "annual" ? plan.base_annual_price : plan.base_monthly_price;
-  const featureEntries = Object.entries(plan.features) as [
-    keyof PlanFeaturesJson,
-    boolean | number,
-  ][];
+  const features = plan.features as unknown as PlanFeaturesJson;
+  const featureEntries = Object.entries(features) as [keyof PlanFeaturesJson, boolean | number][];
 
   // Sort: numeric limits first, then booleans
   const sortedFeatures = featureEntries.sort((a, b) => {

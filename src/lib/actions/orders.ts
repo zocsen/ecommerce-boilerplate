@@ -36,6 +36,7 @@ import type {
   OrderItemInsert,
   OrderNoteWithAuthor,
 } from "@/lib/types/database";
+import type { Json } from "@/lib/types/database.generated";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -373,7 +374,7 @@ export async function createOrderFromCart(input: {
       product_id: item.productId,
       variant_id: item.variantId,
       title_snapshot: item.titleSnapshot,
-      variant_snapshot: item.variantSnapshot as Record<string, unknown>,
+      variant_snapshot: (item.variantSnapshot ?? {}) as Json,
       unit_price_snapshot: item.unitPrice,
       quantity: item.quantity,
       line_total: item.lineTotal,

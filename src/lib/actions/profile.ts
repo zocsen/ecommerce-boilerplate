@@ -12,6 +12,7 @@ import { uuidSchema } from "@/lib/validators/uuid";
 import type {
   ProfileRow,
   OrderRow,
+  OrderItemRow,
   AddressJson,
   BillingAddressJson,
   PickupPointJson,
@@ -77,7 +78,7 @@ export async function getProfile(): Promise<ActionResult<ProfileRow>> {
       return { success: false, error: "A profil nem található." };
     }
 
-    return { success: true, data: profile };
+    return { success: true, data: profile as ProfileRow };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[getProfile] Unexpected error:", message);
@@ -269,14 +270,7 @@ export async function listUserOrders(input?: {
 export async function getUserOrder(orderId: string): Promise<
   ActionResult<{
     order: OrderRow;
-    items: Array<{
-      id: string;
-      title_snapshot: string;
-      variant_snapshot: Record<string, unknown>;
-      unit_price_snapshot: number;
-      quantity: number;
-      line_total: number;
-    }>;
+    items: OrderItemRow[];
   }>
 > {
   try {
@@ -305,8 +299,8 @@ export async function getUserOrder(orderId: string): Promise<
     return {
       success: true,
       data: {
-        order: orderResult.data,
-        items: itemsResult.data ?? [],
+        order: orderResult.data as OrderRow,
+        items: (itemsResult.data ?? []) as OrderItemRow[],
       },
     };
   } catch (err) {

@@ -11,6 +11,7 @@ import { CookieSettingsButton } from "@/components/shared/cookie-settings-button
 const shopLinks = [
   { label: "Termékek", href: "/products" },
   { label: "Kategóriák", href: "/products?category=all" },
+  { label: "Blog", href: "/blog" },
   { label: "Rólunk", href: "/about" },
   { label: "Kosár", href: "/cart" },
   { label: "Rendeléskövetés", href: "/order-tracking" },

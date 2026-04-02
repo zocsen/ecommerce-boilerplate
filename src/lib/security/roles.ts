@@ -27,7 +27,7 @@ export async function getCurrentProfile(): Promise<ProfileRow | null> {
   const supabase = await createClient();
   const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
-  return data;
+  return data as ProfileRow | null;
 }
 
 // ── Require authentication (redirect to /login if not) ─────────────
@@ -59,7 +59,7 @@ export async function requireRole(roles: AppRole[]): Promise<ProfileRow> {
     redirect("/unauthorized");
   }
 
-  return profile;
+  return profile as ProfileRow;
 }
 
 // ── Shortcut: require admin ────────────────────────────────────────
@@ -101,9 +101,11 @@ export async function requireAgencyOwner(): Promise<ProfileRow> {
     redirect("/login");
   }
 
-  if (!profile.is_agency_owner) {
+  const typedProfile = profile as ProfileRow;
+
+  if (!typedProfile.is_agency_owner) {
     redirect("/unauthorized");
   }
 
-  return profile;
+  return typedProfile;
 }

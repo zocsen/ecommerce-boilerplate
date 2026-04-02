@@ -158,7 +158,10 @@ export default function AdminAuditPage() {
                   )}
                 </TableCell>
                 <TableCell className="max-w-xs">
-                  {Object.keys(log.metadata).length > 0 ? (
+                  {typeof log.metadata === "object" &&
+                  log.metadata !== null &&
+                  !Array.isArray(log.metadata) &&
+                  Object.keys(log.metadata).length > 0 ? (
                     <code className="text-muted-foreground block truncate text-xs">
                       {JSON.stringify(log.metadata)}
                     </code>

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { CheckoutFormData } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
 /*  Integration test: createOrderFromCart                              */
@@ -95,12 +96,7 @@ function makeCartItem(
   };
 }
 
-function makeCheckout(
-  overrides: Partial<{
-    couponCode: string;
-    shippingMethod: "home" | "pickup";
-  }> = {},
-) {
+function makeCheckout(overrides: Partial<CheckoutFormData> = {}): CheckoutFormData {
   return {
     email: "teszt@example.com",
     phone: "+36301234567",
@@ -126,6 +122,7 @@ function makeCheckout(
     pickupPointLabel: null,
     notes: "",
     couponCode: "",
+    paymentMethod: "barion" as const,
     ...overrides,
   };
 }

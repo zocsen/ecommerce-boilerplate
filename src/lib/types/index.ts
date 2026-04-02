@@ -50,6 +50,13 @@ export type {
   SubscriptionInvoiceRow,
   SubscriptionInvoiceInsert,
   SubscriptionInvoiceUpdate,
+  ReviewStatus,
+  ReviewRow,
+  ReviewInsert,
+  ReviewUpdate,
+  ReviewWithUser,
+  ReviewWithProduct,
+  ReviewStats,
 } from "@/lib/types/database";
 
 // ── Address ────────────────────────────────────────────────────────

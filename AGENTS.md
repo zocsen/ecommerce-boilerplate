@@ -33,7 +33,36 @@ You are an Elite Principal Next.js Engineer and High-End UI Designer with 135 IQ
 - Date formatting should follow the Hungarian standard (e.g., `YYYY. MM. DD.`).
 - **Hungarian Accents (STRICT):** ALL Hungarian text in the codebase — UI strings, labels, button text, email content, error messages, validation messages, test data, documentation, and comments — MUST use proper Hungarian accent marks. Never write accent-free "ASCII Hungarian." The full Hungarian alphabet includes: `á, é, í, ó, ö, ő, ú, ü, ű` (and their uppercase forms). Examples of **wrong vs. correct**: `kosár` not `kosar`, `termék` not `termek`, `szállítás` not `szallitas`, `rendelés` not `rendeles`, `előfizetés` not `elofizetes`, `küszöbérték` not `kuszobertek`. The only exception is URL slugs and email addresses, which must remain ASCII.
 
-## 5. OpenCode Workflow
+## 5. Database & Type System Workflow (STRICT)
+
+The project uses auto-generated TypeScript types from the Supabase schema. **Never hand-write** `Row`, `Insert`, or `Update` types for database tables.
+
+### Migration → Types → Code Flow
+
+1. **Write the migration** in `supabase/migrations/NNN_description.sql`.
+2. **Push the migration** to the remote database: `npx supabase db push`.
+3. **Regenerate types** into `src/lib/types/database.generated.ts`:
+   ```bash
+   npx supabase gen types typescript --project-id wzyyozqfcuqnznfvqfzc > src/lib/types/database.generated.ts
+   ```
+4. **Add convenience aliases** (if needed) in `src/lib/types/database.ts` using the generated helpers:
+   ```ts
+   export type ProductRow = Tables<"products">;
+   export type ProductInsert = TablesInsert<"products">;
+   export type ReviewStatus = Enums<"review_status">;
+   ```
+5. **Use the types** in server actions and components via imports from `@/lib/types/database`.
+
+### Key Rules
+
+- **`database.generated.ts`** is the single source of truth — never edit it manually.
+- **`database.ts`** contains only `type` aliases (not `interface`) derived from the generated file, plus JSONB shape types (e.g., `AddressJson`, `PlanFeaturesJson`).
+- **Prioritize simple table creation** where no additional convenience types are needed.
+- **JSONB columns** come through as `Json` in generated types. Cast at point of use: `row.features as PlanFeaturesJson`.
+- **PostgREST joins** require explicit FK constraints in the database. If you need `.select('*, other_table(col)')`, ensure the FK exists in the migration.
+- **Seed data** (`supabase/seed.sql`) — after modifying seed data, regenerate types if new enums or tables were added.
+
+## 6. OpenCode Workflow
 
 - Use `context7` MCP whenever you need current library, framework, API, or setup documentation.
 - Use `supabase` MCP for Supabase docs, schema inspection, project diagnostics, and safe non-production investigation.

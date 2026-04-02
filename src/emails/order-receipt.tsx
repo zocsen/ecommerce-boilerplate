@@ -21,7 +21,12 @@ import {
 } from "@react-email/components";
 
 import { siteConfig } from "@/lib/config/site.config";
-import type { OrderRow, OrderItemRow } from "@/lib/types/database";
+import type {
+  OrderRow,
+  OrderItemRow,
+  AddressJson,
+  VariantSnapshotJson,
+} from "@/lib/types/database";
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -48,8 +53,8 @@ export interface OrderReceiptEmailProps {
 
 export default function OrderReceiptEmail({ order, items }: OrderReceiptEmailProps) {
   const { store, branding, urls } = siteConfig;
-  const shippingAddr = order.shipping_address;
-  const billingAddr = order.billing_address;
+  const shippingAddr = order.shipping_address as AddressJson | null;
+  const billingAddr = order.billing_address as AddressJson | null;
   const isPickup = order.shipping_method === "pickup";
   const isCod = order.payment_method === "cod";
 
@@ -218,21 +223,24 @@ export default function OrderReceiptEmail({ order, items }: OrderReceiptEmailPro
                     }}
                   >
                     <strong>{item.title_snapshot}</strong>
-                    {item.variant_snapshot.option1Value && (
-                      <Text
-                        style={{
-                          margin: "2px 0 0",
-                          fontSize: "12px",
-                          color: branding.theme.mutedForeground,
-                        }}
-                      >
-                        {item.variant_snapshot.option1Name ?? "Méret"}:{" "}
-                        {item.variant_snapshot.option1Value}
-                        {item.variant_snapshot.option2Value
-                          ? `, ${item.variant_snapshot.option2Name ?? "Szín"}: ${item.variant_snapshot.option2Value}`
-                          : ""}
-                      </Text>
-                    )}
+                    {(() => {
+                      const vs = item.variant_snapshot as VariantSnapshotJson | null;
+                      if (!vs?.option1Value) return null;
+                      return (
+                        <Text
+                          style={{
+                            margin: "2px 0 0",
+                            fontSize: "12px",
+                            color: branding.theme.mutedForeground,
+                          }}
+                        >
+                          {vs.option1Name ?? "Méret"}: {vs.option1Value}
+                          {vs.option2Value
+                            ? `, ${vs.option2Name ?? "Szín"}: ${vs.option2Value}`
+                            : ""}
+                        </Text>
+                      );
+                    })()}
                   </Column>
                   <Column
                     style={{
@@ -365,7 +373,7 @@ export default function OrderReceiptEmail({ order, items }: OrderReceiptEmailPro
                     <Text style={{ margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
                       {order.pickup_point_provider ?? ""} – {order.pickup_point_label ?? ""}
                     </Text>
-                  ) : (
+                  ) : shippingAddr ? (
                     <Text style={{ margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
                       {shippingAddr.name}
                       <br />
@@ -375,7 +383,7 @@ export default function OrderReceiptEmail({ order, items }: OrderReceiptEmailPro
                       <br />
                       {shippingAddr.country}
                     </Text>
-                  )}
+                  ) : null}
                 </Column>
                 <Column style={{ verticalAlign: "top", paddingLeft: "16px" }}>
                   <Text
@@ -390,15 +398,17 @@ export default function OrderReceiptEmail({ order, items }: OrderReceiptEmailPro
                   >
                     Számlázási cím
                   </Text>
-                  <Text style={{ margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
-                    {billingAddr.name}
-                    <br />
-                    {billingAddr.zip} {billingAddr.city}
-                    <br />
-                    {billingAddr.street}
-                    <br />
-                    {billingAddr.country}
-                  </Text>
+                  {billingAddr ? (
+                    <Text style={{ margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
+                      {billingAddr.name}
+                      <br />
+                      {billingAddr.zip} {billingAddr.city}
+                      <br />
+                      {billingAddr.street}
+                      <br />
+                      {billingAddr.country}
+                    </Text>
+                  ) : null}
                 </Column>
               </Row>
             </Section>
@@ -498,7 +508,8 @@ OrderReceiptEmail.PreviewProps = {
     shipping_phone: null,
     pickup_point_id: null,
     idempotency_key: null,
-  },
+    abandoned_cart_sent_at: null,
+  } satisfies OrderRow,
   items: [
     {
       id: "item-1",

@@ -51,6 +51,7 @@ const FULL_FEATURES: PlanFeaturesJson = {
   enable_scheduled_publishing: false,
   enable_agency_viewer: true,
   enable_custom_pages: false,
+  enable_blog: true,
 };
 
 const MOCK_PLAN = {

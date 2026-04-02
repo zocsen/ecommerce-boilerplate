@@ -8,7 +8,12 @@
 /* ------------------------------------------------------------------ */
 
 import { siteConfig } from "@/lib/config/site.config";
-import type { OrderRow, OrderItemRow } from "@/lib/types/database";
+import type {
+  OrderRow,
+  OrderItemRow,
+  AddressJson,
+  VariantSnapshotJson,
+} from "@/lib/types/database";
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -72,7 +77,10 @@ export class BillingoAdapter implements InvoicingAdapter {
     }
 
     // Build Billingo partner (customer) data from billing address
-    const billing = order.billing_address;
+    const billing = order.billing_address as AddressJson | null;
+    if (!billing) {
+      throw new Error("A rendeléshez nem tartozik számlázási cím.");
+    }
     const partnerData = {
       name: billing.name,
       address: {
@@ -86,17 +94,20 @@ export class BillingoAdapter implements InvoicingAdapter {
     };
 
     // Build invoice items
-    const invoiceItems = items.map((item) => ({
-      name: item.title_snapshot,
-      unit_price: item.unit_price_snapshot,
-      unit_price_type: "gross",
-      quantity: item.quantity,
-      unit: "db",
-      vat: billingoVatString(item.vat_rate),
-      comment: item.variant_snapshot.option1Value
-        ? `${item.variant_snapshot.option1Name ?? "Méret"}: ${item.variant_snapshot.option1Value}`
-        : "",
-    }));
+    const invoiceItems = items.map((item) => {
+      const variant = item.variant_snapshot as VariantSnapshotJson | null;
+      return {
+        name: item.title_snapshot,
+        unit_price: item.unit_price_snapshot,
+        unit_price_type: "gross",
+        quantity: item.quantity,
+        unit: "db",
+        vat: billingoVatString(item.vat_rate),
+        comment: variant?.option1Value
+          ? `${variant.option1Name ?? "Méret"}: ${variant.option1Value}`
+          : "",
+      };
+    });
 
     // Add shipping as a line item if applicable (service → general VAT rate)
     if (order.shipping_fee > 0) {
@@ -238,7 +249,10 @@ export class SzamlazzAdapter implements InvoicingAdapter {
       throw error;
     }
 
-    const billing = order.billing_address;
+    const billing = order.billing_address as AddressJson | null;
+    if (!billing) {
+      throw new Error("A rendeléshez nem tartozik számlázási cím.");
+    }
 
     // Build XML payload for Számlázz.hu Agent API
     const xmlItems = items

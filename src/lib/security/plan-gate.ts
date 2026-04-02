@@ -50,6 +50,7 @@ const FEATURE_LABELS: Partial<Record<keyof PlanFeaturesJson, string>> = {
   enable_scheduled_publishing: "ütemezett közzététel",
   enable_agency_viewer: "agency viewer",
   enable_custom_pages: "egyedi oldalak",
+  enable_blog: "blog",
   max_products: "termékek",
   max_admins: "adminisztrátorok",
   max_categories: "kategóriák",
@@ -96,8 +97,8 @@ export async function getPlanGate(): Promise<PlanGate> {
 
   // Merge plan features with per-shop overrides
   const merged: PlanFeaturesJson = {
-    ...plan.features,
-    ...subscription.feature_overrides,
+    ...(plan.features as PlanFeaturesJson),
+    ...(subscription.feature_overrides as Partial<PlanFeaturesJson>),
   };
 
   return {

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/actions/products";
+import { getProductReviewStats } from "@/lib/actions/reviews";
 import { getLowest30DayPriceMap } from "@/lib/utils/price-history";
 import { siteConfig } from "@/lib/config/site.config";
 import { formatHUF } from "@/lib/utils/format";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ProductDetailClient } from "@/components/product/product-detail-client";
+import { ReviewSection } from "@/components/product/review-section";
 
 /* ------------------------------------------------------------------ */
 /*  Product detail page (server component)                             */
@@ -60,6 +62,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
         )
       : undefined;
 
+  // Fetch review stats for JSON-LD AggregateRating (FE-010)
+  const reviewStatsResult = siteConfig.features.enableReviews
+    ? await getProductReviewStats(product.id)
+    : null;
+  const reviewStats =
+    reviewStatsResult?.success && reviewStatsResult.data?.stats
+      ? reviewStatsResult.data.stats
+      : null;
+
   // Build breadcrumb trail
   const breadcrumbItems = [
     { label: "Termékek", href: "/products" },
@@ -75,7 +86,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   ];
 
   // JSON-LD structured data
-  const jsonLd = {
+  const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
@@ -96,6 +107,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
     },
   };
 
+  // Add AggregateRating if reviews exist (FE-010)
+  if (reviewStats && reviewStats.review_count > 0) {
+    jsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: reviewStats.average_rating,
+      reviewCount: reviewStats.review_count,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
       {/* ── Breadcrumbs ──────────────────────────────────── */}
@@ -111,6 +133,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         extras={extras}
         lowestPriceMap={lowestPriceMap}
       />
+
+      {/* ── Reviews section (FE-010) ────────────────────── */}
+      <div className="border-border/40 mt-16 border-t pt-16">
+        <ReviewSection productId={product.id} />
+      </div>
 
       {/* ── JSON-LD ──────────────────────────────────────── */}
       <script

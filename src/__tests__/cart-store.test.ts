@@ -23,6 +23,7 @@ function makeItem(overrides: Partial<CartItem> = {}): CartItem {
     image: null,
     slug: "teszt-termek",
     stock: 10,
+    weightGrams: 500,
     ...overrides,
   };
 }

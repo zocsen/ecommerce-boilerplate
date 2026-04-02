@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ProductRow } from "@/lib/types/database";
 import { PriceDisplay } from "@/components/product/price-display";
+import { StarRating } from "@/components/product/star-rating";
 
 /* ------------------------------------------------------------------ */
 /*  Product card — server component for catalog grids                  */
@@ -10,9 +11,11 @@ import { PriceDisplay } from "@/components/product/price-display";
 interface ProductCardProps {
   product: ProductRow;
   priority?: boolean;
+  /** Optional aggregated review stats for star display */
+  reviewStats?: { averageRating: number; reviewCount: number } | null;
 }
 
-export function ProductCard({ product, priority = false }: ProductCardProps) {
+export function ProductCard({ product, priority = false, reviewStats }: ProductCardProps) {
   return (
     <Link href={`/products/${product.slug}`} className="group block">
       {/* ── Image ──────────────────────────────────────── */}
@@ -51,6 +54,13 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         <h3 className="text-foreground group-hover:text-foreground/70 text-sm leading-snug font-medium tracking-[-0.01em] transition-colors duration-300">
           {product.title}
         </h3>
+        {reviewStats && reviewStats.reviewCount > 0 && (
+          <StarRating
+            value={reviewStats.averageRating}
+            size="sm"
+            reviewCount={reviewStats.reviewCount}
+          />
+        )}
         <PriceDisplay
           price={product.base_price}
           compareAtPrice={product.compare_at_price}

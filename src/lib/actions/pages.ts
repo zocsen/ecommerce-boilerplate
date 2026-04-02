@@ -13,6 +13,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireAdminOrViewer } from "@/lib/security/roles";
 import { logAudit } from "@/lib/security/logger";
 import type { AboutUsContent } from "@/lib/types/database";
+import type { Json } from "@/lib/types/database.generated";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -188,7 +189,7 @@ export async function adminUpdatePageContent(
   const { error } = await admin.from("shop_pages").upsert(
     {
       page_key: keyParsed.data,
-      content: contentParsed.data as unknown as Record<string, unknown>,
+      content: contentParsed.data as unknown as Json,
       is_published: isPublished,
     },
     { onConflict: "page_key" },
